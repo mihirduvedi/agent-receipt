@@ -4,12 +4,17 @@ import type {
   NativeTraceV1,
   RawEventAccounting,
 } from "../core/schemas/index";
-import { toInstantMs } from "../core/timestamps";
+import {
+  CANONICAL_EVENT_SCHEMA_VERSION,
+  NATIVE_TRACE_SCHEMA_VERSION,
+} from "../core/schemas/index";
+import { compareInstants } from "../core/timestamps";
 
 export const NATIVE_ADAPTER_VERSION = "1.0.0";
-export const NATIVE_ADAPTER_FORMAT = "agent-receipt.native-trace.v1";
+export const NATIVE_ADAPTER_FORMAT = NATIVE_TRACE_SCHEMA_VERSION;
+export const NATIVE_ADAPTER_NAME = "nativeTrace";
 
-const CANONICAL_EVENT_SCHEMA = "agent-receipt.canonical-event.v1" as const;
+const CANONICAL_EVENT_SCHEMA = CANONICAL_EVENT_SCHEMA_VERSION;
 
 /**
  * Convert a validated NativeTraceV1 into canonical events with full accounting.
@@ -45,9 +50,8 @@ export function adaptNativeTrace(trace: NativeTraceV1): AdapterResult {
     originalIndex,
   }));
   indexed.sort((a: Indexed, b: Indexed) => {
-    const ta = toInstantMs(a.ev.timestamp);
-    const tb = toInstantMs(b.ev.timestamp);
-    if (ta !== tb) return ta - tb;
+    const instantOrder = compareInstants(a.ev.timestamp, b.ev.timestamp);
+    if (instantOrder !== 0) return instantOrder;
     return a.originalIndex - b.originalIndex;
   });
 

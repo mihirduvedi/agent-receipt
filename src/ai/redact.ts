@@ -9,8 +9,10 @@
  *  2. Key substring-matches: token, secret, api_key, apikey, password, credential, passwd → REDACTED
  *  3. Value is `{ secret: true, …rest }` → entire node REDACTED
  *  4. Key is exactly `input` or `output` at any depth → REDACTED
- *  5. Value is a string matching email pattern → REDACTED
- *  6. Value is a string with length ≥ 20 AND Shannon entropy ≥ 4.5 → REDACTED
+ *  5. String contains a bearer credential or inline secret assignment → REDACTED
+ *  6. Value matches a common credential token format → REDACTED
+ *  7. Value is a string matching email pattern → REDACTED
+ *  8. Value is a string with length ≥ 20 AND Shannon entropy ≥ 4.5 → REDACTED
  *
  * Pure function — never mutates input.
  */
@@ -27,7 +29,11 @@ const SECRET_KEY_SUBSTRINGS = [
 ] as const;
 
 const EMAIL_RE = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
-const BEARER_RE = /^\s*bearer\s+\S+/i;
+const BEARER_RE = /\bbearer\s+\S+/i;
+const INLINE_SECRET_ASSIGNMENT_RE =
+  /\b(?:authorization|x-api-key|api[-_]?key|access[-_]?token|refresh[-_]?token|client[-_]?secret|token|secret|password|passwd|credential)\b\s*[:=]\s*\S+/i;
+const COMMON_CREDENTIAL_VALUE_RE =
+  /\b(?:(?:AKIA|ASIA|AIDA|AROA|AIPA|ANPA|ANVA|ASCA)[A-Z0-9]{16}|(?:sk_(?:live|test)_|sk-|gh[pousr]_|github_pat_|xox[baprs]-)[A-Za-z0-9_-]{6,}|AIza[A-Za-z0-9_-]{20,})\b/;
 
 function shannonEntropy(s: string): number {
   if (s.length === 0) return 0;
@@ -98,6 +104,8 @@ export function redactForModel(value: unknown): unknown {
 
   if (typeof value === "string") {
     if (BEARER_RE.test(value)) return "[REDACTED]";
+    if (INLINE_SECRET_ASSIGNMENT_RE.test(value)) return "[REDACTED]";
+    if (COMMON_CREDENTIAL_VALUE_RE.test(value)) return "[REDACTED]";
     if (EMAIL_RE.test(value)) return "[REDACTED]";
     if (isHighEntropySecret(value)) return "[REDACTED]";
   }

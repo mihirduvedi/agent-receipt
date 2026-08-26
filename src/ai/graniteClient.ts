@@ -1,10 +1,18 @@
 import { z } from "zod";
+import { deterministicFallback } from "./deterministicFallback";
 import type { GraniteFactBundle } from "./factBundle";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export type GraniteCallSuccess = {
+  ok: true;
+  text: string;
+  modelId: string;
+  apiVersion: string;
+};
+
 export type GraniteCallResult =
-  | { ok: true; text: string; modelId: string; apiVersion: string }
+  | GraniteCallSuccess
   | {
       ok: false;
       reason:
@@ -14,6 +22,16 @@ export type GraniteCallResult =
         | "http_error"
         | "network_error";
     };
+
+export type GraniteCallOptions = {
+  repairErrors?: string[];
+  signal?: AbortSignal;
+};
+
+export type GraniteCaller = (
+  bundle: GraniteFactBundle,
+  options?: GraniteCallOptions,
+) => Promise<GraniteCallResult>;
 
 // ─── Response schemas ─────────────────────────────────────────────────────────
 
@@ -42,13 +60,17 @@ const OUTPUT_CONTRACT = `Return exactly one JSON object with this shape:
     { "text": "...", "eventIds": ["evt-..."] }
   ]
 }
-Do not add keys. Keep limitation items in the same order and count as the bundle limitations. Use domain identifiers exactly as written in cited evidence. Every headline, outcome, and notable action needs a valid evidence citation.`;
+Do not add keys. Copy the deterministic fallback headline for verdictCode exactly into headline.text and copy verdictQualifier exactly into outcome.text. For notableActions, select and reorder zero or more bundle findings, but copy each as "label: description" with that finding's exact eventIds and findingId; do not paraphrase it. Keep limitation text and eventIds in exactly the same order and count as the bundle limitations. Use domain identifiers exactly as written in cited evidence. Every headline, outcome, and notable action needs a valid evidence citation.`;
 
 function buildPrompt(
   bundle: GraniteFactBundle,
   repairErrors?: string[],
 ): string {
   const bundleJson = JSON.stringify(bundle);
+  const requiredHeadline = deterministicFallback(bundle).headline.text;
+  const projectionRequirements =
+    `Required headline.text: ${JSON.stringify(requiredHeadline)}\n` +
+    `Required outcome.text: ${JSON.stringify(bundle.verdictQualifier)}\n`;
 
   if (repairErrors && repairErrors.length > 0) {
     return (
@@ -57,6 +79,7 @@ function buildPrompt(
       "\n\nPlease produce a corrected response.\n" +
       OUTPUT_CONTRACT +
       "\n" +
+      projectionRequirements +
       "The fact bundle is:\n" +
       bundleJson
     );
@@ -66,6 +89,7 @@ function buildPrompt(
     "Generate receipt copy JSON for an AI operations manager.\n" +
     OUTPUT_CONTRACT +
     "\n" +
+    projectionRequirements +
     "The fact bundle is:\n" +
     bundleJson
   );
@@ -73,9 +97,28 @@ function buildPrompt(
 
 // ─── IAM token exchange ───────────────────────────────────────────────────────
 
-async function exchangeIamToken(apiKey: string): Promise<string | null> {
+function forwardAbort(
+  source: AbortSignal | undefined,
+  destination: AbortController,
+): () => void {
+  if (!source) return () => undefined;
+  if (source.aborted) {
+    destination.abort();
+    return () => undefined;
+  }
+
+  const abort = () => destination.abort();
+  source.addEventListener("abort", abort, { once: true });
+  return () => source.removeEventListener("abort", abort);
+}
+
+async function exchangeIamToken(
+  apiKey: string,
+  signal?: AbortSignal,
+): Promise<string | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 4000);
+  const stopForwardingAbort = forwardAbort(signal, controller);
 
   try {
     const response = await fetch(
@@ -111,6 +154,7 @@ async function exchangeIamToken(apiKey: string): Promise<string | null> {
     return null;
   } finally {
     clearTimeout(timer);
+    stopForwardingAbort();
   }
 }
 
@@ -118,7 +162,7 @@ async function exchangeIamToken(apiKey: string): Promise<string | null> {
 
 export async function callGranite(
   bundle: GraniteFactBundle,
-  options?: { repairErrors?: string[] },
+  options?: GraniteCallOptions,
 ): Promise<GraniteCallResult> {
   // Step 1: parse GRANITE_MODE alone with .catch("fallback")
   const mode = z
@@ -151,7 +195,7 @@ export async function callGranite(
   } = configResult.data;
 
   // Step 3: IAM token exchange
-  const accessToken = await exchangeIamToken(WATSONX_API_KEY);
+  const accessToken = await exchangeIamToken(WATSONX_API_KEY, options?.signal);
   if (!accessToken) {
     return { ok: false, reason: "iam_error" };
   }
@@ -173,6 +217,7 @@ export async function callGranite(
   const baseUrl = WATSONX_URL.replace(/\/+$/, "");
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 4000);
+  const stopForwardingAbort = forwardAbort(options?.signal, controller);
 
   try {
     const response = await fetch(
@@ -214,5 +259,6 @@ export async function callGranite(
     return { ok: false, reason: "network_error" };
   } finally {
     clearTimeout(timer);
+    stopForwardingAbort();
   }
 }

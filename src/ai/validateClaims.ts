@@ -1,5 +1,10 @@
-import type { GeneratedReceiptCopy } from "../core/schemas/index";
-import { UI_LIMITS } from "../core/schemas/index";
+import type {
+  CanonicalOperation,
+  GeneratedReceiptCopy,
+  Verdict,
+} from "../core/schemas/index";
+import { UI_LIMITS, VERDICT_LABELS } from "../core/schemas/index";
+import { deterministicFallback } from "./deterministicFallback";
 import type { GraniteFactBundle } from "./factBundle";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -7,6 +12,115 @@ import type { GraniteFactBundle } from "./factBundle";
 export type ValidationResult =
   | { valid: true }
   | { valid: false; errors: string[] };
+
+const LEXICAL_TOKEN_RE = /[A-Za-z]+(?:'[A-Za-z]+)?|\d+/g;
+const SAFE_MANAGER_COPY_TOKENS = new Set([
+  "a",
+  "an",
+  "and",
+  "agent",
+  "as",
+  "at",
+  "authority",
+  "assessment",
+  "based",
+  "before",
+  "by",
+  "complete",
+  "contains",
+  "declared",
+  "detected",
+  "deviation",
+  "deviations",
+  "does",
+  "envelope",
+  "evidence",
+  "finding",
+  "findings",
+  "for",
+  "found",
+  "from",
+  "fully",
+  "had",
+  "has",
+  "have",
+  "in",
+  "is",
+  "it",
+  "its",
+  "manager",
+  "material",
+  "no",
+  "not",
+  "of",
+  "on",
+  "only",
+  "or",
+  "outcome",
+  "recommended",
+  "review",
+  "run",
+  "supplied",
+  "support",
+  "task",
+  "that",
+  "the",
+  "this",
+  "to",
+  "trace",
+  "unable",
+  "under",
+  "violation",
+  "warrant",
+  "warrants",
+  "was",
+  "were",
+  "with",
+  "within",
+]);
+
+function addLexicalTokens(target: Set<string>, text: string): void {
+  for (const match of text.matchAll(LEXICAL_TOKEN_RE)) {
+    target.add(match[0].toLowerCase());
+  }
+}
+
+function addEventLexicalTokens(
+  target: Set<string>,
+  event: GraniteFactBundle["events"][number],
+): void {
+  const scalarValues = [
+    event.eventId,
+    String(event.sequence),
+    event.timestamp,
+    event.actorType,
+    event.actorId,
+    event.operation,
+    event.toolName,
+    event.sourceSystem,
+    event.destinationSystem,
+    event.destinationBoundary,
+    event.resourceType,
+    event.status,
+    event.actionKey,
+  ];
+  for (const value of scalarValues) {
+    if (value !== undefined) addLexicalTokens(target, value);
+  }
+  for (const value of [
+    ...event.dataCategories,
+    ...event.adapterWarnings,
+    ...event.riskTags,
+  ]) {
+    addLexicalTokens(target, value);
+  }
+  if (event.quantity) {
+    addLexicalTokens(
+      target,
+      `${event.quantity.value} ${event.quantity.unit}`,
+    );
+  }
+}
 
 // ─── Support-set builder ──────────────────────────────────────────────────────
 
@@ -20,6 +134,7 @@ type SupportSets = {
   statuses: Set<string>;
   actionKeys: Set<string>;
   identifiers: Set<string>;
+  lexicalTokens: Set<string>;
 };
 
 function buildPerItemSupportSets(
@@ -54,6 +169,7 @@ function buildPerItemSupportSets(
   const actorIds = new Set<string>();
   const statuses = new Set<string>();
   const actionKeys = new Set<string>();
+  const lexicalTokens = new Set<string>();
   const identifiers = new Set<string>([
     ...resolvedEventIds,
     ...itemFindingIds,
@@ -61,6 +177,7 @@ function buildPerItemSupportSets(
   ].map((value) => value.toLowerCase()));
 
   for (const ev of cited) {
+    addEventLexicalTokens(lexicalTokens, ev);
     if (ev.sourceSystem) systems.add(ev.sourceSystem.toLowerCase());
     if (ev.destinationSystem) systems.add(ev.destinationSystem.toLowerCase());
     operations.add(ev.operation.toLowerCase());
@@ -87,7 +204,10 @@ function buildPerItemSupportSets(
     set.forEach((value) => identifiers.add(value));
   }
 
+  addLexicalTokens(lexicalTokens, bundle.verdictQualifier);
+
   for (const text of [...citedFindingTexts, ...sourceTexts]) {
+    addLexicalTokens(lexicalTokens, text);
     for (const match of text.matchAll(QUOTED_ID_RE)) {
       identifiers.add(match[1].toLowerCase());
     }
@@ -112,6 +232,7 @@ function buildPerItemSupportSets(
     statuses,
     actionKeys,
     identifiers,
+    lexicalTokens,
   };
 }
 
@@ -253,6 +374,58 @@ function checkFindingEventRelationship(
   return errors;
 }
 
+/**
+ * A valid ID is not automatically relevant to the deterministic verdict. When
+ * findings or limitations identify verdict-supporting events, headline and
+ * outcome citations must stay within that evidence set. Limitation-only
+ * verdicts with no event-linked evidence fall back to the allowed event set so
+ * the required outcome citation can still be rendered.
+ */
+function checkVerdictCitationGrounding(
+  copy: GeneratedReceiptCopy,
+  bundle: GraniteFactBundle,
+): string[] {
+  if (bundle.verdictCode === "within_declared_authority") return [];
+
+  const supportEventIds = new Set([
+    ...bundle.findings.flatMap((finding) => finding.eventIds),
+    ...bundle.limitations.flatMap((limitation) => limitation.eventIds),
+  ]);
+  if (supportEventIds.size === 0) return [];
+
+  const supportFindingIds = new Set([
+    ...bundle.findings.map((finding) => finding.findingId),
+    ...bundle.limitations.flatMap((limitation) => limitation.findingIds),
+  ]);
+  const errors: string[] = [];
+
+  for (const [location, eventIds] of [
+    ["headline.eventIds", copy.headline.eventIds],
+    ["outcome.eventIds", copy.outcome.eventIds],
+  ] as const) {
+    for (const eventId of eventIds) {
+      if (!supportEventIds.has(eventId)) {
+        errors.push(
+          `${location} eventId "${eventId}" does not support the deterministic verdict`,
+        );
+      }
+    }
+  }
+
+  if (
+    copy.headline.eventIds.length === 0 &&
+    !copy.headline.findingIds.some((findingId) =>
+      supportFindingIds.has(findingId),
+    )
+  ) {
+    errors.push(
+      "headline must cite an event or finding that supports the deterministic verdict",
+    );
+  }
+
+  return errors;
+}
+
 function hasOverlap(a: Set<string>, b: Set<string>): boolean {
   for (const item of a) {
     if (b.has(item)) return true;
@@ -321,6 +494,74 @@ const LABELED_DATA_RE =
   /\bdata\s+(?:category|field)\s+(?:named\s+|called\s+|is\s+|was\s+|:\s*)["'`]?([A-Za-z][A-Za-z0-9_-]*)/gi;
 const LABELED_ACTOR_RE =
   /\bactor(?:\s+id)?\s+(?:named\s+|called\s+|is\s+|was\s+|:\s*)["'`]?([A-Za-z][A-Za-z0-9_-]*)/gi;
+const UNSUPPORTED_TASK_COMPLETION_RE =
+  /\b(?:(?:agent|workflow|run)\s+(?:(?:has|had)\s+)?(?:completed|finished|fulfilled|accomplished)\s+(?:the\s+)?(?:declared\s+)?task|(?:the\s+)?(?:declared\s+)?task\s+(?:(?:has|had)\s+been\s+|(?:was|is)\s+)(?:completed|finished|fulfilled|accomplished))\b/i;
+const UNSUPPORTED_RUN_COMPLETION_RE =
+  /\b(?:run|trace|assessment|task)\s+(?:(?:is|was|appears|seems)\s+)?(?:complete|completed|finished)\b/i;
+const OPERATION_CLAIM_SUBJECT =
+  String.raw`(?:the\s+)?(?:agent|workflow|tool|run|event|action|system|it|they)`;
+const OPERATION_CLAIM_OBJECT =
+  String.raw`(?:records?|messages?|files?|data|resources?|items?|funds?)`;
+const OPERATION_AUXILIARY =
+  String.raw`(?:(?:can|could|did|does|do|will|would|may|might|must|should|has|had|was|were|is|are)\s+)?`;
+
+function operationClaimPattern(forms: string, passiveForms: string): RegExp {
+  return new RegExp(
+    String.raw`\b${OPERATION_CLAIM_SUBJECT}\s+${OPERATION_AUXILIARY}(?:${forms})\b|\b${OPERATION_CLAIM_OBJECT}\s+(?:(?:has|had)\s+been\s+|(?:was|were|is|are)\s+)(?:${passiveForms})\b`,
+    "i",
+  );
+}
+
+const CONTROLLED_OPERATION_CLAIMS: Array<{
+  operation: CanonicalOperation;
+  pattern: RegExp;
+}> = [
+  {
+    operation: "read",
+    pattern: operationClaimPattern("read|reads|reading", "read"),
+  },
+  {
+    operation: "retrieve",
+    pattern: operationClaimPattern(
+      "retrieve|retrieves|retrieved|retrieving",
+      "retrieved",
+    ),
+  },
+  {
+    operation: "create",
+    pattern: operationClaimPattern("create|creates|created|creating", "created"),
+  },
+  {
+    operation: "update",
+    pattern: operationClaimPattern("update|updates|updated|updating", "updated"),
+  },
+  {
+    operation: "delete",
+    pattern: operationClaimPattern("delete|deletes|deleted|deleting", "deleted"),
+  },
+  {
+    operation: "send",
+    pattern: operationClaimPattern("send|sends|sent|sending", "sent"),
+  },
+  {
+    operation: "execute",
+    pattern: operationClaimPattern(
+      "execute|executes|executed|executing",
+      "executed",
+    ),
+  },
+  {
+    operation: "approve",
+    pattern: operationClaimPattern(
+      "approve|approves|approved|approving",
+      "approved",
+    ),
+  },
+  {
+    operation: "error",
+    pattern: operationClaimPattern("errored|erroring", "errored"),
+  },
+];
 
 function hasValue(set: Set<string>, value: string): boolean {
   return set.has(value.toLowerCase());
@@ -429,6 +670,35 @@ function checkUnsupportedFacts(
       }
     }
 
+    for (const { operation, pattern } of CONTROLLED_OPERATION_CLAIMS) {
+      if (pattern.test(text) && !support.operations.has(operation)) {
+        errors.push(
+          `Unsupported operation claim "${operation}" in ${loc} not found in cited events`,
+        );
+      }
+    }
+
+    if (
+      UNSUPPORTED_TASK_COMPLETION_RE.test(text) ||
+      UNSUPPORTED_RUN_COMPLETION_RE.test(text)
+    ) {
+      errors.push(
+        `Unsupported task-completion claim in ${loc}; run termination does not prove task outcome`,
+      );
+    }
+
+    for (const match of text.matchAll(LEXICAL_TOKEN_RE)) {
+      const token = match[0].toLowerCase();
+      if (
+        !SAFE_MANAGER_COPY_TOKENS.has(token) &&
+        !support.lexicalTokens.has(token)
+      ) {
+        errors.push(
+          `Unsupported lexical claim token "${match[0]}" in ${loc} is absent from cited evidence`,
+        );
+      }
+    }
+
     const labeledChecks: Array<{
       regex: RegExp;
       supported: Set<string>;
@@ -469,6 +739,11 @@ function checkLimitationGrounding(
   const errors: string[] = [];
   copy.limitations.forEach((limitation, index) => {
     const source = bundle.limitations[index];
+    if (!source || limitation.text !== source.text) {
+      errors.push(
+        `limitations[${index}] text must exactly match the evidence limitation`,
+      );
+    }
     if (!source || !sameIds(limitation.eventIds, source.eventIds)) {
       errors.push(
         `limitations[${index}] eventIds do not match the corresponding evidence limitation`,
@@ -510,16 +785,155 @@ function checkUiLengthLimits(copy: GeneratedReceiptCopy): string[] {
   return errors;
 }
 
-/** Check 8: evidence qualifier phrase */
-const QUALIFIER_PHRASE = "Based on the supplied trace and authority envelope";
+/** Check 8: deterministic verdict language and evidence qualifier. */
+const VERDICT_HEADLINE_MARKERS: Record<Verdict, RegExp[]> = {
+  within_declared_authority: [
+    /\bwithin (?:the )?declared authority\b/i,
+    /\bno (?:material )?deviations?\b/i,
+  ],
+  review_recommended: [
+    /\breview recommended\b/i,
+    /\bmanager review\b/i,
+    /\bwarrant(?:s|ed)? review\b/i,
+  ],
+  material_deviations_found: [/\bmaterial deviations?\b/i],
+  unable_to_assess_fully: [
+    /\bunable to assess(?: fully)?\b/i,
+    /\bdoes not support a complete authority assessment\b/i,
+  ],
+};
 
-function checkEvidenceQualifier(copy: GeneratedReceiptCopy): string[] {
-  if (!copy.outcome.text.includes(QUALIFIER_PHRASE)) {
+const NEGATED_MATERIAL_DEVIATION_RE =
+  /\bno material deviations?(?: (?:were|was))?(?: found)?\b/gi;
+
+function verdictScanText(verdictCode: Verdict, text: string): string {
+  return verdictCode === "material_deviations_found"
+    ? text.replace(NEGATED_MATERIAL_DEVIATION_RE, "")
+    : text;
+}
+
+function hasVerdictMarker(verdictCode: Verdict, text: string): boolean {
+  const scannable = verdictScanText(verdictCode, text);
+  return VERDICT_HEADLINE_MARKERS[verdictCode].some((marker) =>
+    marker.test(scannable),
+  );
+}
+
+function checkVerdictLanguage(
+  copy: GeneratedReceiptCopy,
+  bundle: GraniteFactBundle,
+): string[] {
+  const errors: string[] = [];
+  if (!copy.outcome.text.includes(bundle.verdictQualifier)) {
+    errors.push(
+      `outcome.text must contain the exact deterministic verdict qualifier "${bundle.verdictQualifier}"`,
+    );
+  }
+
+  if (!hasVerdictMarker(bundle.verdictCode, copy.headline.text)) {
+    errors.push(
+      `headline.text must express deterministic verdict "${bundle.verdictCode}"`,
+    );
+  }
+
+  const verdictText = `${copy.headline.text}\n${copy.outcome.text}`;
+  for (const verdictCode of Object.keys(VERDICT_LABELS) as Verdict[]) {
+    if (verdictCode === bundle.verdictCode) continue;
+
+    const scannable = verdictScanText(verdictCode, verdictText);
+    const hasWrongCode = scannable.toLowerCase().includes(verdictCode);
+    const hasWrongLabel = scannable
+      .toLowerCase()
+      .includes(VERDICT_LABELS[verdictCode].toLowerCase());
+    const hasWrongMarker = hasVerdictMarker(verdictCode, verdictText);
+    if (hasWrongCode || hasWrongLabel || hasWrongMarker) {
+      errors.push(
+        `headline/outcome text contradicts deterministic verdict with "${verdictCode}" language`,
+      );
+    }
+  }
+
+  return errors;
+}
+
+const NEGATED_FINDING_PATTERN =
+  String.raw`\b(?:no|zero)\s+(?:material\s+)?(?:findings?|deviations?|violations?|issues?)(?:\s+(?:were|was|are|is))?(?:\s+(?:found|detected|identified|present))?|\b(?:findings?|deviations?|violations?|issues?)\s+(?:were|was|are|is)\s+(?:not|never)\s+(?:found|detected|identified|present)|\b(?:(?:this|the)\s+)?(?:run|trace|assessment)\s+(?:does|do|did)\s+not\s+have\s+(?:any\s+)?(?:findings?|deviations?|violations?|issues?)|\b(?:(?:this|the)\s+)?(?:run|trace|assessment)\s+(?:has|have|had)\s+no\s+(?:findings?|deviations?|violations?|issues?)|\bwithout\s+(?:any\s+)?(?:findings?|deviations?|violations?|issues?)|\bthere\s+(?:are|were|is|was)\s+no\s+(?:findings?|deviations?|violations?|issues?)`;
+const POSITIVE_FINDING_PATTERN =
+  /\b(?:findings?|deviations?|violations?|issues?)\s+(?:(?:were|was|are|is)\s+)?(?:found|detected|identified|present)\b|\bcontains\s+(?:material\s+)?(?:findings?|deviations?|violations?|issues?)\b|\b(?:(?:this|the)\s+)?(?:run|trace|assessment)\s+(?:has|have|had)\s+(?:findings?|deviations?|violations?|issues?)\b|\bthere\s+(?:are|were|is|was)\s+(?:findings?|deviations?|violations?|issues?)\b/i;
+
+function checkHeadlineFindingConsistency(
+  copy: GeneratedReceiptCopy,
+  bundle: GraniteFactBundle,
+): string[] {
+  const headline = copy.headline.text;
+  if (
+    bundle.allowedFindingIds.length > 0 &&
+    new RegExp(NEGATED_FINDING_PATTERN, "i").test(headline)
+  ) {
     return [
-      `outcome.text must contain the exact phrase "${QUALIFIER_PHRASE}"`,
+      "headline.text cannot negate deterministic findings or limitations",
     ];
   }
+
+  if (bundle.allowedFindingIds.length === 0) {
+    const withoutGroundedNegation = headline.replace(
+      new RegExp(NEGATED_FINDING_PATTERN, "gi"),
+      "",
+    );
+    if (POSITIVE_FINDING_PATTERN.test(withoutGroundedNegation)) {
+      return [
+        "headline.text cannot introduce findings absent from deterministic evidence",
+      ];
+    }
+  }
   return [];
+}
+
+/**
+ * Deterministic text anchors keep trust-critical semantics decidable. Granite
+ * may select and order notable findings, but every rendered sentence stays a
+ * canonical server projection. This avoids trying to prove semantic entailment
+ * from arbitrary model prose with an open-ended list of forbidden phrases.
+ */
+function checkDeterministicTextProjection(
+  copy: GeneratedReceiptCopy,
+  bundle: GraniteFactBundle,
+): string[] {
+  const expected = deterministicFallback(bundle);
+  const errors: string[] = [];
+
+  if (copy.headline.text !== expected.headline.text) {
+    errors.push(
+      `headline.text must exactly match the deterministic verdict projection "${expected.headline.text}"`,
+    );
+  }
+
+  if (copy.outcome.text !== expected.outcome.text) {
+    errors.push(
+      `outcome.text must exactly match the deterministic evidence projection "${expected.outcome.text}"`,
+    );
+  }
+  const usedProjectionIndexes = new Set<number>();
+  copy.notableActions.forEach((action, index) => {
+    const projectionIndex = expected.notableActions.findIndex(
+      (candidate) => JSON.stringify(candidate) === JSON.stringify(action),
+    );
+    if (projectionIndex === -1) {
+      errors.push(
+        `notableActions[${index}] must exactly match a cited deterministic finding projection`,
+      );
+      return;
+    }
+    if (usedProjectionIndexes.has(projectionIndex)) {
+      errors.push(
+        `notableActions[${index}] duplicates a deterministic finding projection`,
+      );
+      return;
+    }
+    usedProjectionIndexes.add(projectionIndex);
+  });
+
+  return errors;
 }
 
 // ─── Main validator ───────────────────────────────────────────────────────────
@@ -533,11 +947,14 @@ export function validateClaims(
     ...checkUnknownEventIds(copy, bundle.allowedEventIds),
     ...checkUnknownFindingIds(copy, bundle.allowedFindingIds),
     ...checkFindingEventRelationship(copy, bundle),
+    ...checkVerdictCitationGrounding(copy, bundle),
     ...checkProhibitedAssuranceLanguage(copy),
     ...checkLimitationGrounding(copy, bundle),
     ...checkUnsupportedFacts(copy, bundle),
     ...checkUiLengthLimits(copy),
-    ...checkEvidenceQualifier(copy),
+    ...checkVerdictLanguage(copy, bundle),
+    ...checkHeadlineFindingConsistency(copy, bundle),
+    ...checkDeterministicTextProjection(copy, bundle),
   ];
 
   if (errors.length > 0) {

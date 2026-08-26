@@ -95,6 +95,26 @@ describe("AR-OP-001 — unpermitted operation", () => {
     expect(findings.filter(f => f.ruleId === "AR-OP-001")).toHaveLength(0);
   });
 
+  it.each(["started", "cancelled"] as const)(
+    "does not flag %s non-state-changing attempt",
+    (status) => {
+      const ev = makeEvent({
+        eventId: "evt-000001",
+        operation: "delete",
+        stateChange: false,
+        status,
+      });
+      const auth = makeAuthority();
+      const { findings } = runPolicyEngine({
+        events: [ev],
+        accounting: [],
+        authority: auth,
+        traceCompletionStatus: "succeeded",
+      });
+      expect(findings.filter(f => f.ruleId === "AR-OP-001")).toHaveLength(0);
+    },
+  );
+
   it("does not flag permitted operation", () => {
     const ev = makeEvent({ eventId: "evt-000001", operation: "read", status: "succeeded" });
     const auth = makeAuthority();
@@ -219,7 +239,7 @@ describe("AR-APPROVAL-001 — missing approval", () => {
     expect(f!.severity).toBe("high");
   });
 
-  it("does not flag when a prior human approval exists for same actionKey", () => {
+  it("does not flag when a prior human approval is explicitly referenced", () => {
     const approval = makeEvent({
       eventId: "evt-000001",
       sequence: 1,
@@ -228,7 +248,6 @@ describe("AR-APPROVAL-001 — missing approval", () => {
       actorId: "user-1",
       operation: "approve",
       status: "succeeded",
-      actionKey: "send-action",
       stateChange: false,
     });
     const action = makeEvent({
@@ -237,7 +256,7 @@ describe("AR-APPROVAL-001 — missing approval", () => {
       timestamp: "2024-01-01T00:01:00Z",
       operation: "send",
       status: "succeeded",
-      actionKey: "send-action",
+      approvalRef: "evt-000001",
     });
     const auth = makeAuthority({ approvalRequiredFor: ["send"], permittedOperations: ["read", "send"] });
     const { findings } = runPolicyEngine({ events: [approval, action], accounting: [], authority: auth, traceCompletionStatus: "succeeded" });
@@ -255,7 +274,6 @@ describe("AR-APPROVAL-002 — approval timestamp not before action", () => {
       actorId: "user-1",
       operation: "approve",
       status: "succeeded",
-      actionKey: "send-action",
       stateChange: false,
     });
     const action = makeEvent({
@@ -264,7 +282,7 @@ describe("AR-APPROVAL-002 — approval timestamp not before action", () => {
       timestamp: "2024-01-01T00:01:00Z",
       operation: "send",
       status: "succeeded",
-      actionKey: "send-action",
+      approvalRef: "evt-000001",
     });
     const auth = makeAuthority({ approvalRequiredFor: ["send"], permittedOperations: ["read", "send"] });
     const { findings } = runPolicyEngine({ events: [approval, action], accounting: [], authority: auth, traceCompletionStatus: "succeeded" });

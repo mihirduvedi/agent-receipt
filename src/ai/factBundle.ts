@@ -2,11 +2,12 @@ import { z } from "zod";
 import type {
   AuthorityEnvelopeV1,
   CanonicalEvent,
+  CoverageSummary,
   Finding,
   RawEventAccounting,
   Verdict,
 } from "../core/schemas/index";
-import { VerdictSchema } from "../core/schemas/index";
+import { UI_LIMITS, VerdictSchema } from "../core/schemas/index";
 import { qualifyVerdict } from "../core/product";
 import { redactForModel } from "./redact";
 
@@ -84,6 +85,7 @@ export type BuildFactBundleInput = {
   verdict: Verdict;
   authority: AuthorityEnvelopeV1;
   hasAssessmentLimitation: boolean;
+  coverage?: CoverageSummary;
 };
 
 // ─── Zod schema ───────────────────────────────────────────────────────────────
@@ -158,6 +160,9 @@ const INSTRUCTIONS =
   "Produce a single valid JSON object matching the required output schema — no Markdown, no prose outside JSON. " +
   "Do not infer, classify, or assert any fact not present in this bundle. " +
   "Do not claim compliance, certification, or safety beyond what the evidence shows. " +
+  "Copy the deterministic verdict headline and verdictQualifier exactly into the headline and outcome. " +
+  "Notable actions may select and reorder findings but must copy each selected finding as label: description with its exact citations. " +
+  "Copy every limitation text and event citation exactly and in order. " +
   "Qualify all conclusions as based on the supplied trace and authority envelope.";
 
 // ─── Builder ──────────────────────────────────────────────────────────────────
@@ -168,6 +173,11 @@ export function buildFactBundle(input: BuildFactBundleInput): GraniteFactBundle 
   // 1. Partition findings: AR-TRACE-001 → limitations; others → bundle.findings
   const normalFindings = findings.filter((f) => f.ruleId !== "AR-TRACE-001");
   const traceFindings = findings.filter((f) => f.ruleId === "AR-TRACE-001");
+  if (input.hasAssessmentLimitation !== (traceFindings.length > 0)) {
+    throw new Error(
+      "GraniteFactBundle limitation flag does not match AR-TRACE-001 findings",
+    );
+  }
 
   // 2. Reduce canonical events (strip rawPointer, input, output, metadata)
   const reducedEvents: ReducedCanonicalEvent[] = events.map((ev) => ({
@@ -210,10 +220,16 @@ export function buildFactBundle(input: BuildFactBundleInput): GraniteFactBundle 
 
   // 5. Coverage counts
   const coverageCounts = {
-    total: accounting.length,
-    mapped: accounting.filter((a) => a.status === "mapped").length,
-    metadataOnly: accounting.filter((a) => a.status === "metadata-only").length,
-    unparsed: accounting.filter((a) => a.status === "unparsed").length,
+    total: input.coverage?.rawEvents ?? accounting.length,
+    mapped:
+      input.coverage?.mapped ??
+      accounting.filter((a) => a.status === "mapped").length,
+    metadataOnly:
+      input.coverage?.metadataOnly ??
+      accounting.filter((a) => a.status === "metadata-only").length,
+    unparsed:
+      input.coverage?.unparsed ??
+      accounting.filter((a) => a.status === "unparsed").length,
   };
 
   // 6. allowedEventIds = all canonical event IDs
@@ -240,9 +256,16 @@ export function buildFactBundle(input: BuildFactBundleInput): GraniteFactBundle 
 
   // 8. Apply redactForModel
   const redacted = redactForModel(bundle) as GraniteFactBundle;
+  const projected: GraniteFactBundle = {
+    ...redacted,
+    limitations: redacted.limitations.map((limitation) => ({
+      ...limitation,
+      text: limitation.text.slice(0, UI_LIMITS.LIMITATION_MAX),
+    })),
+  };
 
   // 9. Validate with GraniteFactBundleSchema; throw on failure (internal contract error)
-  const parsed = GraniteFactBundleSchema.safeParse(redacted);
+  const parsed = GraniteFactBundleSchema.safeParse(projected);
   if (!parsed.success) {
     throw new Error(
       `GraniteFactBundle internal contract error: ${JSON.stringify(parsed.error.issues)}`,

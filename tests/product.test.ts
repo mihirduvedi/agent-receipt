@@ -13,7 +13,7 @@ describe("product foundation", () => {
   });
 
   it("qualifies every verdict against supplied evidence", () => {
-    expect(qualifyVerdict("Within declared authority.")).toBe(
+    expect(qualifyVerdict("within_declared_authority")).toBe(
       "Within declared authority. Based on the supplied trace and authority envelope.",
     );
   });

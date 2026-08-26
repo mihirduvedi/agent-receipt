@@ -67,8 +67,11 @@ function checkOperations(
   const findings: Finding[] = [];
 
   for (const ev of events) {
-    // Failed non-state-changing attempts do not create an operation violation
-    if (ev.status === "failed" && !ev.stateChange) continue;
+    // PRD §7 applies operation allowlisting to succeeded or unknown-status
+    // events, plus any event explicitly marked as state-changing.
+    const applicable =
+      ev.status === "succeeded" || ev.status === "unknown" || ev.stateChange;
+    if (!applicable) continue;
     if (permittedOps.has(ev.operation)) continue;
     // "unknown" and "error" operations: only flag if not already filtered
     if (ev.operation === "error" || ev.operation === "unknown") continue;
@@ -165,7 +168,7 @@ function checkVolume(
 
   const contributing: CanonicalEvent[] = [];
   const unknownQuantityEvents: CanonicalEvent[] = [];
-  let total = 0;
+  let total = 0n;
 
   for (const ev of events) {
     if (!["read", "retrieve"].includes(ev.operation)) continue;
@@ -175,7 +178,7 @@ function checkVolume(
       continue;
     }
     contributing.push(ev);
-    total += ev.quantity.value;
+    total += BigInt(ev.quantity.value);
   }
 
   // PRD §7: "Unknown quantities generate an assessment limitation rather than
@@ -195,7 +198,9 @@ function checkVolume(
     });
   }
 
-  if (total > limit) {
+  if (total > BigInt(limit)) {
+    const observedTotal: number | string =
+      total <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(total) : total.toString();
     findings.push({
       findingId: nextFindingId(),
       ruleId: "AR-VOLUME-001",
@@ -204,7 +209,7 @@ function checkVolume(
       description: `Sum of successful read/retrieve record quantities (${total}) exceeds maxRecordsRead limit (${limit}).`,
       eventIds: contributing.map((e: CanonicalEvent) => e.eventId),
       policyPath: "maxRecordsRead",
-      observedValue: total,
+      observedValue: observedTotal,
       expectedValue: limit,
     });
   }
@@ -221,10 +226,10 @@ function checkVolume(
 // In the native format, approvalRef is a native source event ID. Canonical
 // events retain sourceEventId so linkage remains deterministic and serializable.
 //
-// Two linkage directions are supported:
+// Only the two explicit linkage directions are supported:
 //   (A) action.approvalRef === approval.sourceEventId  (action → approval)
 //   (B) approval.approvalRef === action.sourceEventId  (approval → action)
-//   (C) action.actionKey  === approval.actionKey       (shared key)
+// A shared actionKey alone is not approval evidence.
 function checkApprovals(
   events: CanonicalEvent[],
   authority: AuthorityEnvelopeV1,
@@ -234,13 +239,11 @@ function checkApprovals(
 
   const findings: Finding[] = [];
 
-  // Index approval events by their canonical ID, source ID, and actionKey.
+  // Index approval events by their canonical and native source IDs.
   // approvalsByCanonicalId: canonical eventId  → approval CanonicalEvent
   // approvalsBySourceId:    sourceEventId      → approval CanonicalEvent
-  // approvalsByActionKey:   actionKey          → approval CanonicalEvent[]
   const approvalsByCanonicalId = new Map<string, CanonicalEvent>();
   const approvalsBySourceId = new Map<string, CanonicalEvent>();
-  const approvalsByActionKey = new Map<string, CanonicalEvent[]>();
 
   for (const ev of events) {
     if (ev.operation !== "approve" || ev.status !== "succeeded") continue;
@@ -250,18 +253,13 @@ function checkApprovals(
     if (ev.sourceEventId) {
       approvalsBySourceId.set(ev.sourceEventId, ev);
     }
-    if (ev.actionKey) {
-      const list = approvalsByActionKey.get(ev.actionKey) ?? [];
-      list.push(ev);
-      approvalsByActionKey.set(ev.actionKey, list);
-    }
   }
 
   for (const ev of events) {
     if (!requiredOps.has(ev.operation)) continue;
     if (ev.status !== "succeeded") continue;
 
-    // Collect linked approvals via all three directions (deduplicate by eventId).
+    // Collect explicitly linked approvals in either direction (deduplicate by eventId).
     const linkedMap = new Map<string, CanonicalEvent>();
 
     // Direction A: action.approvalRef is a native source ID → look up approval
@@ -279,14 +277,6 @@ function checkApprovals(
         if (approval.approvalRef === ev.sourceEventId) {
           linkedMap.set(approval.eventId, approval);
         }
-      }
-    }
-
-    // Direction C: shared actionKey
-    if (ev.actionKey) {
-      const byKey = approvalsByActionKey.get(ev.actionKey) ?? [];
-      for (const approval of byKey) {
-        linkedMap.set(approval.eventId, approval);
       }
     }
 

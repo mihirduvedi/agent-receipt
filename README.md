@@ -6,7 +6,7 @@ The core product rule is:
 
 > Rules establish what happened relative to authority; Granite explains the verified result to a human.
 
-This repository is in the build-foundation stage. The product requirements and trust contracts are frozen in [docs/PRD.md](docs/PRD.md); the application shell and GitHub Codespaces environment are ready for implementation.
+This repository is in active MVP implementation. The deterministic evidence pipeline, Granite/fallback boundary, and complete receipt orchestration are implemented; the manager-facing interface remains in progress. The product requirements and trust contracts are frozen in [docs/PRD.md](docs/PRD.md).
 
 ## Deadline and MVP
 
@@ -17,6 +17,10 @@ This repository is in the build-foundation stage. The product requirements and t
 - Required workflow: IBM Bob is the primary development tool and every teammate completes the required IBM SkillsBuild Bob learning activity
 
 Live rules can change. Recheck the [challenge platform](https://aibuilderschallenge-bobhub.bemyapp.com/) and [official rules](https://res.cloudinary.com/ideation/image/upload/q_100,f_pdf,dpr_auto/id-ibm-skillsbuil-3eec69/pkqvg8j3q3a4teedy1kd.pdf) before submission.
+
+## Input parser behavior
+
+The MVP accepts one UTF-8 Agent Receipt Native Trace v1 JSON document up to 2 MiB. Duplicate JSON property names follow the platform's standard `JSON.parse` behavior: the last value is retained. Inputs should not rely on duplicate names, and the committed synthetic fixtures contain none.
 
 ## Start locally
 

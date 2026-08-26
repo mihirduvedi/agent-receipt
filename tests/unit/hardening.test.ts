@@ -7,6 +7,7 @@
 
 import { describe, it, expect, beforeEach } from "vitest";
 import {
+  compareInstants,
   isRfc3339WithTz,
   instantBefore,
   toInstantMs,
@@ -208,6 +209,16 @@ describe("instantBefore — cross-timezone comparison", () => {
     expect(instantBefore(earlier, later)).toBe(true);
     expect(instantBefore(later, earlier)).toBe(false);
   });
+
+  it("preserves ordering below JavaScript Date millisecond precision", () => {
+    const earlier = "2024-01-01T00:00:00.0001Z";
+    const later = "2024-01-01T00:00:00.0002Z";
+
+    expect(toInstantMs(earlier)).toBe(toInstantMs(later));
+    expect(compareInstants(earlier, later)).toBe(-1);
+    expect(compareInstants(later, earlier)).toBe(1);
+    expect(instantBefore(earlier, later)).toBe(true);
+  });
 });
 
 describe("Adapter — instant-based event ordering across timezone offsets", () => {
@@ -266,6 +277,36 @@ describe("Adapter — instant-based event ordering across timezone offsets", () 
     // Tie broken by original source order (first in input wins)
     expect(result.events[0].sourceEventId).toBe("ev-first");
     expect(result.events[1].sourceEventId).toBe("ev-second");
+  });
+
+  it("orders distinct sub-millisecond instants instead of treating them as ties", () => {
+    const trace = baseTrace([
+      {
+        id: "ev-later",
+        timestamp: "2024-01-01T00:00:00.0002Z",
+        actor: { type: "agent", id: "a" },
+        operation: "send",
+        stateChange: true,
+        status: "succeeded",
+        dataCategories: [],
+      },
+      {
+        id: "ev-earlier",
+        timestamp: "2024-01-01T00:00:00.0001Z",
+        actor: { type: "human", id: "h" },
+        operation: "approve",
+        stateChange: false,
+        status: "succeeded",
+        dataCategories: [],
+      },
+    ]);
+
+    const result = adaptNativeTrace(trace);
+
+    expect(result.events.map((event) => event.sourceEventId)).toEqual([
+      "ev-earlier",
+      "ev-later",
+    ]);
   });
 });
 
@@ -489,8 +530,8 @@ describe("Approval linkage — direction B: approval.approvalRef → action.sour
   });
 });
 
-describe("Approval linkage — shared actionKey (direction C)", () => {
-  it("resolves approval via shared actionKey (prior approval)", () => {
+describe("Approval linkage — shared actionKey is not an explicit reference", () => {
+  it("raises AR-APPROVAL-001 when events only share an actionKey", () => {
     const trace = baseTrace([
       {
         id: "native-approval-03",
@@ -521,11 +562,47 @@ describe("Approval linkage — shared actionKey (direction C)", () => {
       authority: auth,
       traceCompletionStatus: "succeeded",
     });
-    expect(findings.filter((f: { ruleId: string }) => f.ruleId === "AR-APPROVAL-001")).toHaveLength(0);
+    expect(findings.filter((f: { ruleId: string }) => f.ruleId === "AR-APPROVAL-001")).toHaveLength(1);
   });
 });
 
 describe("Approval linkage — AR-APPROVAL-002: timestamp comparison uses instants", () => {
+  it("accepts an explicitly linked approval earlier by a sub-millisecond", () => {
+    const trace = baseTrace([
+      {
+        id: "native-action-subms",
+        timestamp: "2024-01-01T00:00:00.0002Z",
+        actor: { type: "agent", id: "agent-1" },
+        operation: "send",
+        stateChange: true,
+        status: "succeeded",
+        dataCategories: [],
+        approvalRef: "native-approval-subms",
+      },
+      {
+        id: "native-approval-subms",
+        timestamp: "2024-01-01T00:00:00.0001Z",
+        actor: { type: "human", id: "user-1" },
+        operation: "approve",
+        stateChange: false,
+        status: "succeeded",
+        dataCategories: [],
+      },
+    ]);
+    const adapter = adaptNativeTrace(trace);
+    const auth = makeAuthority({ approvalRequiredFor: ["send"] });
+
+    const { findings } = runPolicyEngine({
+      events: adapter.events,
+      accounting: adapter.accounting,
+      authority: auth,
+      traceCompletionStatus: "succeeded",
+    });
+
+    expect(findings.some((finding) => finding.ruleId === "AR-APPROVAL-001")).toBe(false);
+    expect(findings.some((finding) => finding.ruleId === "AR-APPROVAL-002")).toBe(false);
+  });
+
   it("raises AR-APPROVAL-002 when approval and action are the same instant in different timezones", () => {
     // Same instant: 2024-01-01T00:00:00Z = 2024-01-01T05:30:00+05:30
     const trace = baseTrace([
@@ -537,7 +614,6 @@ describe("Approval linkage — AR-APPROVAL-002: timestamp comparison uses instan
         stateChange: false,
         status: "succeeded",
         dataCategories: [],
-        actionKey: "same-instant-key",
       },
       {
         id: "native-action-04",
@@ -547,7 +623,7 @@ describe("Approval linkage — AR-APPROVAL-002: timestamp comparison uses instan
         stateChange: true,
         status: "succeeded",
         dataCategories: [],
-        actionKey: "same-instant-key",
+        approvalRef: "native-approval-04",
       },
     ]);
     const adapter = adaptNativeTrace(trace);
@@ -572,7 +648,6 @@ describe("Approval linkage — AR-APPROVAL-002: timestamp comparison uses instan
         stateChange: false,
         status: "succeeded",
         dataCategories: [],
-        actionKey: "tz-key",
       },
       {
         id: "native-action-05",
@@ -582,7 +657,7 @@ describe("Approval linkage — AR-APPROVAL-002: timestamp comparison uses instan
         stateChange: true,
         status: "succeeded",
         dataCategories: [],
-        actionKey: "tz-key",
+        approvalRef: "native-approval-05",
       },
     ]);
     const adapter = adaptNativeTrace(trace);

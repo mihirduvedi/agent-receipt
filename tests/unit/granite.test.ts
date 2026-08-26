@@ -96,20 +96,7 @@ function makeValidCopy(bundle: GraniteFactBundle): {
   notableActions: { text: string; eventIds: string[]; findingIds: string[] }[];
   limitations: { text: string; eventIds: string[] }[];
 } {
-  const firstEventId = bundle.allowedEventIds[0] ?? "evt-000001";
-  return {
-    headline: {
-      text: "The agent completed the task.",
-      eventIds: [firstEventId],
-      findingIds: [] as string[],
-    },
-    outcome: {
-      text: `Outcome: Based on the supplied trace and authority envelope.`,
-      eventIds: [firstEventId],
-    },
-    notableActions: [] as { text: string; eventIds: string[]; findingIds: string[] }[],
-    limitations: [] as { text: string; eventIds: string[] }[],
-  };
+  return structuredClone(deterministicFallback(bundle));
 }
 
 // ─── Fixture bundles (built once per test via beforeEach) ─────────────────────
@@ -177,6 +164,29 @@ describe("Group A — redactForModel", () => {
   it("redacts a bearer value even when its key is not authorization", () => {
     const result = redactForModel({ headerValue: "Bearer opaque-value" }) as Record<string, unknown>;
     expect(result["headerValue"]).toBe("[REDACTED]");
+  });
+
+  it("redacts embedded bearer credentials and low-entropy secret assignments", () => {
+    const result = redactForModel({
+      prose: "Header Authorization: Bearer low-low-low",
+      system: "token=aaaaaaaaaaaaaaaaaaaa",
+      url: "https://example.invalid?password:hunter2",
+    }) as Record<string, unknown>;
+    expect(result["prose"]).toBe("[REDACTED]");
+    expect(result["system"]).toBe("[REDACTED]");
+    expect(result["url"]).toBe("[REDACTED]");
+  });
+
+  it("redacts common low-entropy credential value formats", () => {
+    const result = redactForModel({
+      awsId: "AKIAIOSFODNN7EXAMPLE",
+      stripeToken: "sk_live_abc123",
+      githubToken: "ghp_abcdef123456",
+    }) as Record<string, unknown>;
+
+    expect(result["awsId"]).toBe("[REDACTED]");
+    expect(result["stripeToken"]).toBe("[REDACTED]");
+    expect(result["githubToken"]).toBe("[REDACTED]");
   });
 
   it("redacts hyphenated api-key fields", () => {
@@ -378,6 +388,54 @@ describe("Group B — buildFactBundle", () => {
     expect(serialized).not.toContain("raw model response");
   });
 
+  it("serialized bundle redacts low-entropy inline secrets in domain fields and findings", () => {
+    const inlineSecret = "token=aaaaaaaaaaaaaaaaaaaa";
+    const ev = makeEvent({
+      eventId: "evt-000001",
+      sourceSystem: inlineSecret,
+    });
+    const finding: Finding = {
+      findingId: "finding-secret-0001",
+      ruleId: "AR-SYS-001",
+      severity: "high",
+      label: "Unpermitted system accessed",
+      description: `Event evt-000001 references sourceSystem "${inlineSecret}".`,
+      eventIds: ["evt-000001"],
+    };
+    const bundle = buildFactBundle({
+      events: [ev],
+      findings: [finding],
+      accounting: [makeAccounting("events[0]", ["evt-000001"])],
+      verdict: "material_deviations_found",
+      authority: makeAuthority(),
+      hasAssessmentLimitation: false,
+    });
+
+    expect(JSON.stringify(bundle)).not.toContain(inlineSecret);
+  });
+
+  it("serialized bundle redacts common credential values in allowed metadata fields", () => {
+    const awsAccessKeyId = "AKIAIOSFODNN7EXAMPLE";
+    const prefixedToken = "sk_live_abc123";
+    const ev = makeEvent({
+      eventId: "evt-000001",
+      sourceSystem: awsAccessKeyId,
+      destinationSystem: prefixedToken,
+    });
+    const bundle = buildFactBundle({
+      events: [ev],
+      findings: [],
+      accounting: [makeAccounting("events[0]", ["evt-000001"])],
+      verdict: "within_declared_authority",
+      authority: makeAuthority(),
+      hasAssessmentLimitation: false,
+    });
+    const serialized = JSON.stringify(bundle);
+
+    expect(serialized).not.toContain(awsAccessKeyId);
+    expect(serialized).not.toContain(prefixedToken);
+  });
+
   it("GraniteFactBundleSchema.safeParse(bundleA) succeeds", () => {
     const result = GraniteFactBundleSchema.safeParse(bundleA);
     expect(result.success).toBe(true);
@@ -401,34 +459,7 @@ describe("Group C — validateClaims", () => {
   });
 
   it("valid copy for Fixture B bundle (citing findings and events) → { valid: true }", () => {
-    // Pick a finding that has at least one eventId, and use that event in both
-    // the finding citation and the item eventIds so the relationship check passes.
-    const firstFinding = bundleB.findings.find((f) => f.eventIds.length > 0);
-    expect(firstFinding).toBeDefined();
-    const findingId = firstFinding!.findingId;
-    const sharedEventId = firstFinding!.eventIds[0];
-
-    const copy = {
-      headline: {
-        text: "The agent exceeded authority.",
-        eventIds: [sharedEventId],
-        findingIds: [],
-      },
-      outcome: {
-        text: "Based on the supplied trace and authority envelope, material deviations were found.",
-        eventIds: [sharedEventId],
-      },
-      notableActions: [
-        {
-          // When both eventIds and findingIds are supplied, the finding's eventIds
-          // must overlap with the item's eventIds. Use the same sharedEventId.
-          text: "A violation was detected.",
-          eventIds: [sharedEventId],
-          findingIds: [findingId],
-        },
-      ],
-      limitations: [],
-    };
+    const copy = deterministicFallback(bundleB);
     const result = validateClaims(copy, bundleB);
     expect(result.valid).toBe(true);
   });
@@ -572,10 +603,15 @@ describe("Group C — validateClaims", () => {
 
   it('"certified" in an evidence-derived limitation → passes', () => {
     const base = makeSimpleBundle();
+    const limitationText =
+      "This limitation is not certified; the trace status is unknown.";
     const bundle: GraniteFactBundle = {
       ...base,
+      verdictCode: "unable_to_assess_fully",
+      verdictQualifier:
+        "Unable to assess fully. Based on the supplied trace and authority envelope.",
       limitations: [{
-        text: "The trace status is unknown.",
+        text: limitationText,
         eventIds: [],
         findingIds: ["finding-trace-0001"],
       }],
@@ -584,12 +620,44 @@ describe("Group C — validateClaims", () => {
     const copy = makeValidCopy(bundle);
     copy.limitations = [
       {
-        text: "This limitation is not certified; the trace status is unknown.",
+        text: limitationText,
         eventIds: [],
       },
     ];
     const result = validateClaims(copy, bundle);
     expect(result.valid).toBe(true);
+  });
+
+  it("generated limitation text cannot negate the evidence limitation", () => {
+    const base = makeSimpleBundle();
+    const bundle: GraniteFactBundle = {
+      ...base,
+      limitations: [{
+        text: "The event operation is unknown and cannot be fully assessed.",
+        eventIds: ["evt-000001"],
+        findingIds: ["finding-trace-0001"],
+      }],
+      allowedFindingIds: ["finding-trace-0001"],
+    };
+    const copy = makeValidCopy(bundle);
+    copy.limitations = [{
+      text: "No limitation applies.",
+      eventIds: ["evt-000001"],
+    }];
+
+    expect(validateClaims(copy, bundle).valid).toBe(false);
+  });
+
+  it("generated notable action cannot negate a cited deterministic finding", () => {
+    const copy = deterministicFallback(bundleB);
+    copy.notableActions[0].text = "No findings were found.";
+
+    const result = validateClaims(copy, bundleB);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errors.some((error) => error.includes("deterministic finding projection"))).toBe(true);
+    }
   });
 
   it("headline.text 201 characters → fails", () => {
@@ -614,6 +682,106 @@ describe("Group C — validateClaims", () => {
     copy.outcome.text = "The agent acted within declared limits.";
     const result = validateClaims(copy, bundle);
     expect(result.valid).toBe(false);
+  });
+
+  it("semantically compatible alternate headline still fails the constructive contract", () => {
+    const copy = makeValidCopy(bundleA);
+    copy.headline.text =
+      "No material deviations were found in the supplied trace.";
+
+    const result = validateClaims(copy, bundleA);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errors.some((error) => error.includes("deterministic verdict projection"))).toBe(true);
+    }
+  });
+
+  it("headline and outcome that claim a different deterministic verdict → fail", () => {
+    const copy = makeValidCopy(bundleA);
+    copy.headline.text = "The supplied trace contains material deviations.";
+    copy.outcome.text =
+      "Material deviations found. Based on the supplied trace and authority envelope.";
+
+    const result = validateClaims(copy, bundleA);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errors.some((error) => error.includes("deterministic verdict"))).toBe(true);
+    }
+  });
+
+  it("headline cannot negate findings that determine the verdict", () => {
+    const copy = deterministicFallback(bundleB);
+    copy.headline.text =
+      "Material deviations found; no findings were found.";
+    copy.notableActions = [];
+
+    const result = validateClaims(copy, bundleB);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errors.some((error) => error.includes("cannot negate"))).toBe(true);
+    }
+  });
+
+  it.each([
+    ["within-authority run claims findings", "within", "Within declared authority; this run has findings."],
+    ["material run denies findings", "material", "Material deviations found; this run does not have findings."],
+    ["material run claims task completion", "material", "Material deviations found; the task is complete."],
+    ["within verdict negates its own authority", "within", "Within declared authority; the agent was not within authority."],
+    ["within verdict denies authority", "within", "Within declared authority; the agent had no authority."],
+    ["material verdict claims within authority", "material", "Material deviations found; the agent was within authority."],
+    ["material verdict paraphrases away deviations", "material", "Material deviations found; the evidence does not have deviations."],
+  ] as const)("constructive headline rejects %s", (_name, bundleKind, headline) => {
+    const bundle = bundleKind === "within" ? bundleA : bundleB;
+    const copy = deterministicFallback(bundle);
+    copy.headline.text = headline;
+
+    const result = validateClaims(copy, bundle);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errors.some((error) => error.includes("deterministic verdict projection"))).toBe(true);
+    }
+  });
+
+  it("unable verdict headline cannot claim the run is complete", () => {
+    const bundle: GraniteFactBundle = {
+      ...bundleA,
+      verdictCode: "unable_to_assess_fully",
+      verdictQualifier:
+        "Unable to assess fully. Based on the supplied trace and authority envelope.",
+      limitations: [{
+        text: 'The trace status is "unknown", which does not provide required run termination evidence.',
+        eventIds: [],
+        findingIds: ["finding-trace-0001"],
+      }],
+      allowedFindingIds: ["finding-trace-0001"],
+    };
+    const copy = deterministicFallback(bundle);
+    copy.headline.text = "Unable to assess fully; the run is complete.";
+
+    const result = validateClaims(copy, bundle);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errors.some((error) => error.includes("task-completion"))).toBe(true);
+    }
+  });
+
+  it("verdict headline and outcome cannot cite unrelated allowed events", () => {
+    const copy = deterministicFallback(bundleB);
+    copy.headline.eventIds = ["evt-000001"];
+    copy.headline.findingIds = [];
+    copy.outcome.eventIds = ["evt-000001"];
+
+    const result = validateClaims(copy, bundleB);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errors.some((error) => error.includes("does not support"))).toBe(true);
+    }
   });
 
   // ── Unsupported facts — one invented claim per category ──
@@ -654,6 +822,97 @@ describe("Group C — validateClaims", () => {
     const copy = makeValidCopy(bundle);
     copy.headline.text = "The agent performed a transfer operation.";
     expect(validateClaims(copy, bundle).valid).toBe(false);
+  });
+
+  it('ordinary inflected operation absent from cited events → fails', () => {
+    const copy = makeValidCopy(bundleA);
+    copy.notableActions = [{
+      text: "The agent sent funds.",
+      eventIds: ["evt-000001"],
+      findingIds: [],
+    }];
+
+    const result = validateClaims(copy, bundleA);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errors.some((error) => error.includes('"send"'))).toBe(true);
+    }
+  });
+
+  it('unsupported person and personal outcome prose → fails', () => {
+    const copy = makeValidCopy(bundleA);
+    copy.headline.text =
+      "No deviations were found; Alice earned a promotion.";
+
+    const result = validateClaims(copy, bundleA);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errors.some((error) => error.includes('"Alice"'))).toBe(true);
+      expect(result.errors.some((error) => error.includes('"promotion"'))).toBe(true);
+    }
+  });
+
+  it('unsupported business outcome prose → fails', () => {
+    const copy = makeValidCopy(bundleA);
+    copy.headline.text = "No deviations were found; profits doubled.";
+
+    const result = validateClaims(copy, bundleA);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errors.some((error) => error.includes('"profits"'))).toBe(true);
+      expect(result.errors.some((error) => error.includes('"doubled"'))).toBe(true);
+    }
+  });
+
+  it('run evidence cannot be promoted into a task-completion claim', () => {
+    const copy = makeValidCopy(bundleA);
+    copy.headline.text =
+      "No deviations were found; the agent completed the task.";
+
+    const result = validateClaims(copy, bundleA);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errors.some((error) => error.includes("task-completion"))).toBe(true);
+    }
+  });
+
+  it('declared-task vocabulary cannot be promoted into observed action', () => {
+    const copy = makeValidCopy(bundleA);
+    copy.headline.text =
+      "Within declared authority contacting customers.";
+
+    const result = validateClaims(copy, bundleA);
+
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.errors.some((error) => error.includes('"contacting"'))).toBe(true);
+    }
+  });
+
+  it.each(["riskTags", "adapterWarnings"])(
+    "empty event metadata field name cannot become a claim: %s",
+    (fieldName) => {
+      const copy = makeValidCopy(bundleA);
+      copy.headline.text =
+        `Within declared authority; ${fieldName} detected.`;
+
+      expect(validateClaims(copy, bundleA).valid).toBe(false);
+    },
+  );
+
+  it.each([
+    "No deviations were found; Bob was promoted.",
+    "No deviations were found; customers were delighted.",
+    "No deviations were found; profit surged.",
+  ])("unsupported paraphrased outcome is rejected: %s", (headline) => {
+    const copy = makeValidCopy(bundleA);
+    copy.headline.text = headline;
+
+    expect(validateClaims(copy, bundleA).valid).toBe(false);
   });
 
   it('quoted identifier for a resource type not in cited events → fails', () => {
@@ -758,6 +1017,94 @@ describe("Group D — deterministicFallback", () => {
     const output = deterministicFallback(bundleB);
     const result = validateClaims(output, bundleB);
     expect(result.valid).toBe(true);
+  });
+
+  it("Granite may select and order a subset of canonical notable actions", () => {
+    const output = deterministicFallback(bundleB);
+    output.notableActions = [
+      output.notableActions.at(-1)!,
+      output.notableActions[0],
+    ];
+
+    expect(validateClaims(output, bundleB)).toEqual({ valid: true });
+  });
+
+  it("self-validates deterministic fallback text for all four verdicts", () => {
+    const event = makeEvent({ eventId: "evt-000001" });
+    const accounting = [makeAccounting("events[0]", [event.eventId])];
+    const authority = makeAuthority();
+    const reviewFinding: Finding = {
+      findingId: "finding-review-0001",
+      ruleId: "AR-REVIEW-TEST",
+      severity: "medium",
+      label: "Manager review warranted",
+      description: "Event evt-000001 warrants manager review.",
+      eventIds: [event.eventId],
+    };
+    const limitationFinding: Finding = {
+      findingId: "finding-trace-0001",
+      ruleId: "AR-TRACE-001",
+      severity: "high",
+      label: "Missing run termination evidence",
+      description:
+        'The trace status is "unknown", which does not provide required run termination evidence.',
+      eventIds: [],
+    };
+    const reviewBundle = buildFactBundle({
+      events: [event],
+      findings: [reviewFinding],
+      accounting,
+      verdict: "review_recommended",
+      authority,
+      hasAssessmentLimitation: false,
+    });
+    const unableBundle = buildFactBundle({
+      events: [event],
+      findings: [limitationFinding],
+      accounting,
+      verdict: "unable_to_assess_fully",
+      authority,
+      hasAssessmentLimitation: true,
+    });
+
+    for (const bundle of [bundleA, reviewBundle, bundleB, unableBundle]) {
+      const result = validateClaims(deterministicFallback(bundle), bundle);
+      if (!result.valid) {
+        throw new Error(
+          `${bundle.verdictCode} fallback failed: ${result.errors.join(" | ")}`,
+        );
+      }
+    }
+  });
+
+  it("read-only volume finding fallback remains claim-valid", () => {
+    const event = makeEvent({
+      eventId: "evt-000001",
+      operation: "read",
+      quantity: { value: 250, unit: "records" },
+    });
+    const accounting = [makeAccounting("events[0]", [event.eventId])];
+    const authority = makeAuthority({ maxRecordsRead: 0 });
+    const policy = runPolicyEngine({
+      events: [event],
+      accounting,
+      authority,
+      traceCompletionStatus: "succeeded",
+    });
+    expect(policy.findings.map((finding) => finding.ruleId)).toContain(
+      "AR-VOLUME-001",
+    );
+    const bundle = buildFactBundle({
+      events: [event],
+      findings: policy.findings,
+      accounting,
+      verdict: policy.verdict,
+      authority,
+      hasAssessmentLimitation: policy.hasAssessmentLimitation,
+    });
+    const output = deterministicFallback(bundle);
+
+    expect(validateClaims(output, bundle)).toEqual({ valid: true });
   });
 
   it("Fixture B fallback verdict copy cites the events that support its findings", () => {
@@ -889,7 +1236,8 @@ describe("Group E — callGranite (mocked fetch)", () => {
 
   it("GRANITE_MODE absent → missing_credentials, fetch never called", async () => {
     vi.stubEnv("GRANITE_MODE", "");
-    const result = await callGranite(makeSimpleBundle());
+    const bundle = makeSimpleBundle();
+    const result = await callGranite(bundle);
     expect(result).toEqual({ ok: false, reason: "missing_credentials" });
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -1013,7 +1361,8 @@ describe("Group E — callGranite (mocked fetch)", () => {
         ),
       );
 
-    const result = await callGranite(makeSimpleBundle());
+    const bundle = makeSimpleBundle();
+    const result = await callGranite(bundle);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.text).toBe('{"headline": "test"}');
@@ -1029,6 +1378,12 @@ describe("Group E — callGranite (mocked fetch)", () => {
     expect(body.input).toContain('"notableActions"');
     expect(body.input).toContain('"limitations"');
     expect(body.input).toContain("Do not add keys");
+    expect(body.input).toContain(
+      `Required headline.text: ${JSON.stringify(deterministicFallback(bundle).headline.text)}`,
+    );
+    expect(body.input).toContain(
+      `Required outcome.text: ${JSON.stringify(bundle.verdictQualifier)}`,
+    );
   });
 
   it("repair call (with repairErrors) → prompt contains error strings; IAM fetched once per callGranite invocation", async () => {
@@ -1161,6 +1516,7 @@ function makeRouteBody(trace: typeof fixtureA, traceStatus: string) {
   _resetFindingCounter();
   const adapter = adaptNativeTrace(trace);
   return {
+    rawEventCount: trace.events.length,
     events: adapter.events,
     accounting: adapter.accounting,
     authority: sharedAuthority,
@@ -1178,21 +1534,7 @@ function makeRequest(body: unknown): Request {
 
 // Build a valid granite copy that will pass validateClaims for Fixture A
 function makeValidGraniteCopyForA(bundle: GraniteFactBundle): string {
-  const firstEventId = bundle.allowedEventIds[0];
-  const copy = {
-    headline: {
-      text: "The agent completed the declared task within its permitted authority.",
-      eventIds: [firstEventId],
-      findingIds: [],
-    },
-    outcome: {
-      text: "Based on the supplied trace and authority envelope, the agent operated within declared limits.",
-      eventIds: [firstEventId],
-    },
-    notableActions: [],
-    limitations: [],
-  };
-  return JSON.stringify(copy);
+  return JSON.stringify(deterministicFallback(bundle));
 }
 
 describe("Group F — POST /api/receipt-copy (mocked callGranite)", () => {
@@ -1359,6 +1701,39 @@ describe("Group F — POST /api/receipt-copy (mocked callGranite)", () => {
     expect(copyResult.success).toBe(true);
   });
 
+  it("long unparsed reason still produces a bounded offline limitation", async () => {
+    mockedCallGranite.mockResolvedValue({
+      ok: false,
+      reason: "missing_credentials",
+    });
+    const body = makeRouteBody(fixtureA, "succeeded");
+    const removedEvent = body.events.pop();
+    expect(removedEvent).toBeDefined();
+    const accountingIndex = body.accounting.findIndex(
+      (entry) => entry.canonicalEventIds.includes(removedEvent!.eventId),
+    );
+    expect(accountingIndex).toBeGreaterThanOrEqual(0);
+    body.accounting[accountingIndex] = {
+      rawPointer: body.accounting[accountingIndex].rawPointer,
+      sourceEventId: body.accounting[accountingIndex].sourceEventId,
+      status: "unparsed",
+      canonicalEventIds: [],
+      reason: `Unsupported trace detail ${"x".repeat(500)}`,
+      material: true,
+    };
+
+    const res = await POST(makeRequest(body));
+    const json = await res.json() as {
+      generationSource: string;
+      copy: { limitations: Array<{ text: string }> };
+    };
+
+    expect(res.status).toBe(200);
+    expect(json.generationSource).toBe("deterministic_fallback");
+    expect(json.copy.limitations).toHaveLength(1);
+    expect(json.copy.limitations[0].text.length).toBeLessThanOrEqual(300);
+  });
+
   it("invalid JSON body to route → 400", async () => {
     const req = new Request("http://localhost/api/receipt-copy", {
       method: "POST",
@@ -1408,6 +1783,33 @@ describe("Group F — POST /api/receipt-copy (mocked callGranite)", () => {
   it("canonical event missing from raw-event accounting → 400", async () => {
     const body = makeRouteBody(fixtureA, "succeeded");
     body.accounting = body.accounting.slice(1);
+    const res = await POST(makeRequest(body));
+    expect(res.status).toBe(400);
+  });
+
+  it("rawEventCount that does not match accounting length → 400", async () => {
+    const body = makeRouteBody(fixtureA, "succeeded");
+    body.rawEventCount += 1;
+    const res = await POST(makeRequest(body));
+    expect(res.status).toBe(400);
+  });
+
+  it("zero-event copy request → 400 instead of an impossible fallback", async () => {
+    const body = {
+      rawEventCount: 0,
+      events: [],
+      accounting: [],
+      authority: sharedAuthority,
+      traceCompletionStatus: "succeeded",
+    };
+    const res = await POST(makeRequest(body));
+    expect(res.status).toBe(400);
+  });
+
+  it("empty canonical event IDs at the route boundary → 400", async () => {
+    const body = makeRouteBody(fixtureA, "succeeded");
+    body.events[0] = { ...body.events[0], eventId: "" };
+    body.accounting[0] = { ...body.accounting[0], canonicalEventIds: [""] };
     const res = await POST(makeRequest(body));
     expect(res.status).toBe(400);
   });

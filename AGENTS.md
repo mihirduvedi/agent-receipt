@@ -27,3 +27,13 @@ Build the six-day MVP defined in `docs/PRD.md`. The primary user is an AI operat
 ## IBM Bob evidence
 
 IBM Bob must be the primary development tool for hackathon implementation. Record material AI-assisted sessions honestly in `docs/AI_ASSISTANCE_LOG.md`; do not attribute another tool’s work to Bob.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

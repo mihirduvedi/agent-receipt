@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isRfc3339WithTz } from "../timestamps.js";
+import { isRfc3339WithTz } from "../timestamps";
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
@@ -221,3 +221,45 @@ export const ReceiptResultSchema = z.object({
   integrity: IntegrityMetadataSchema,
 });
 export type ReceiptResult = z.infer<typeof ReceiptResultSchema>;
+
+// ─── UI length limits (P0 constants) ─────────────────────────────────────────
+
+export const UI_LIMITS = {
+  HEADLINE_MAX: 200,
+  OUTCOME_MAX: 500,
+  NOTABLE_ACTION_MAX: 300,
+  LIMITATION_MAX: 300,
+} as const;
+
+// ─── Generated receipt copy (Granite output contract) ─────────────────────────
+
+/**
+ * The output schema Granite must produce. Strict objects reject unknown fields
+ * from model-generated JSON. All text fields require at least one character.
+ * limitations items intentionally have no findingIds — matches PRD § 9 exactly.
+ */
+export const GeneratedReceiptCopySchema = z.object({
+  headline: z.object({
+    text: z.string().min(1),
+    eventIds: z.array(z.string()),
+    findingIds: z.array(z.string()),
+  }).strict(),
+  outcome: z.object({
+    text: z.string().min(1),
+    eventIds: z.array(z.string()),
+  }).strict(),
+  notableActions: z.array(
+    z.object({
+      text: z.string().min(1),
+      eventIds: z.array(z.string()),
+      findingIds: z.array(z.string()),
+    }).strict(),
+  ),
+  limitations: z.array(
+    z.object({
+      text: z.string().min(1),
+      eventIds: z.array(z.string()),
+    }).strict(),
+  ),
+}).strict();
+export type GeneratedReceiptCopy = z.infer<typeof GeneratedReceiptCopySchema>;

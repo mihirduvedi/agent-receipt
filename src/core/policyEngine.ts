@@ -4,8 +4,8 @@ import type {
   Finding,
   RawEventAccounting,
   Verdict,
-} from "./schemas/index.js";
-import { instantBefore } from "./timestamps.js";
+} from "./schemas/index";
+import { instantBefore } from "./timestamps";
 
 let _findingCounter = 0;
 

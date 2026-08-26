@@ -1,4 +1,4 @@
-import type { AuthorityEnvelopeV1, NativeTraceV1 } from "../core/schemas/index.js";
+import type { AuthorityEnvelopeV1, NativeTraceV1 } from "../core/schemas/index";
 
 // ─── Shared authority ─────────────────────────────────────────────────────────
 

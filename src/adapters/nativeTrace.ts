@@ -3,8 +3,8 @@ import type {
   CanonicalEvent,
   NativeTraceV1,
   RawEventAccounting,
-} from "../core/schemas/index.js";
-import { toInstantMs } from "../core/timestamps.js";
+} from "../core/schemas/index";
+import { toInstantMs } from "../core/timestamps";
 
 export const NATIVE_ADAPTER_VERSION = "1.0.0";
 export const NATIVE_ADAPTER_FORMAT = "agent-receipt.native-trace.v1";

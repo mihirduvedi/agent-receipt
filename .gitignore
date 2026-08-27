@@ -27,3 +27,6 @@ coverage/
 # Logs
 *.log
 npm-debug.log*
+
+# Personal, not for the public repo
+docs/AI_ASSISTANCE_LOG.md

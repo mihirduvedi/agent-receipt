@@ -10,6 +10,8 @@ The product rule is simple: deterministic rules establish what happened relative
 
 The receipt puts the deterministic verdict, evidence scope, and manager attention queue first.
 
+For a complete walkthrough that starts with the basic idea and builds through the architecture, trust model, code, testing, and deployment, read the [complete project guide](docs/PROJECT_GUIDE.md) or [download the designed PDF](output/pdf/agent-receipt-complete-project-guide.pdf).
+
 ## What the prototype does
 
 - Preserves the exact uploaded bytes and computes their SHA-256 before normalization.

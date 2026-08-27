@@ -11,8 +11,8 @@ This ledger separates automated evidence from browser, manual-accessibility, liv
 | Check | Latest result | What it supports |
 |---|---|---|
 | `npm run verify` | Passed: lint with zero warnings, strict TypeScript, 12 test files and 287 tests, production build, release audit | Current repository compiles and the tested deterministic and release-safety contracts pass |
-| GitHub Actions `CI` | Passed for commit `f3897aa9a6aed63c9a54965a0f7860dd1240387f`: clean checkout, Node.js 24, dependency install, and `npm run verify` | Hosted verification matches the pushed release candidate |
-| `npm run release:audit` | Passed: 56 staged source text files, 147 production-build text files, 474 dependency entries, 0 app-owned media assets, 8 exact build-root references in Next.js required-server metadata | Repeatable high-signal secret, personal-path/email, dependency-license, and app-asset-attribution checks; the deployed artifact must still be scanned separately |
+| GitHub Actions `CI` | Passed for commit `8530a895d559ac2de8e9cc69c03e120e5dde7b14`: clean checkout, Node.js 24, dependency install, and `npm run verify` | Hosted verification matches the latest pushed release-audit commit; this new documentation/license slice is not pushed yet |
+| `npm run release:audit` | Passed against the staged candidate: 58 source text files, 147 production-build text files, 474 dependency entries, 7 app-owned media assets, 8 exact build-root references in Next.js required-server metadata | Repeatable high-signal secret, personal-path/email, dependency-license, and app-asset-attribution checks; the deployed artifact must still be scanned separately |
 | Strict UI static scan | Passed: 0 errors, 0 warnings | Source-level UI heuristics only; not rendered or assistive-technology proof |
 | `git diff --check` | Passed | No whitespace-error patch defects |
 
@@ -34,6 +34,7 @@ Target: local Next.js development server at `http://localhost:3000`, determinist
 | Accessibility-tree spot check | Chromium accessibility tree exposed the banner, main landmark, named receipt navigation, verdict/summary/movement/disposition regions and headings, focusable evidence/export controls, and a named evidence dialog with a focusable Close control | Passed; this is not a real screen-reader session |
 | Status communication | Unknown and succeeded outcomes use explicit text labels in addition to color | Passed |
 | Browser console | No warnings or errors in either fixture journey | Passed |
+| README release screenshots | Seven production-build captures at 1280 × 720: trace intake, authority review, deterministic verdict, action summary, systems/data movement, one finding opened into its canonical event, and manager disposition/export | Passed original-size visual inspection; every JPEG uses only the synthetic fixture and is declared in `docs/ASSET_LICENSES.md` |
 
 The browser checks used pointer interaction plus focused keyboard checks on the evidence dialog. The drawer kept forward and reverse traversal inside the dialog, Escape closed it, focus returned to the exact trigger, and body scrolling was restored. These checks are not a real screen-reader, real-touch-device, or cross-browser certification.
 
@@ -59,6 +60,8 @@ These checks should be repeated against the deployed commit before submission.
 - [ ] Deploy the exact release commit.
 - [ ] Complete both fixture journeys on the public URL in a signed-out private window.
 - [ ] Scan the public repository and build output for secrets, personal data, absolute local paths, and unlicensed assets.
+- [x] Add a proprietary evaluation license, declare all seven project-owned README screenshots, and include documentation screenshots in the deterministic asset audit.
+- [ ] Have the custom proprietary terms reviewed by qualified counsel before relying on them for commercial enforcement.
 - [ ] Confirm every teammate’s challenge eligibility, registration, and required IBM SkillsBuild Bob activity.
 - [ ] Recheck the live deadline, rules, track selection, and prior-submission eligibility.
 - [ ] Record a public video no longer than three minutes and verify its signed-out playback.

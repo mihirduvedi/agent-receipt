@@ -105,12 +105,27 @@ describe("release audit", () => {
 
   it("requires every app-owned media asset to appear in the asset-license manifest", () => {
     const result = auditAssetLicenses(
-      ["README.md", "public/diagram.svg", "src/app/icon.png", "src/app/page.tsx"],
-      "# Asset licenses\n\n- `public/diagram.svg` — project-owned.\n",
+      [
+        "README.md",
+        "docs/screenshots/review.jpg",
+        "public/diagram.svg",
+        "src/app/icon.png",
+        "src/app/page.tsx",
+      ],
+      [
+        "# Asset licenses",
+        "",
+        "- `docs/screenshots/review.jpg` — project-owned.",
+        "- `public/diagram.svg` — project-owned.",
+      ].join("\n"),
     );
 
     expect(result).toEqual({
-      appAssets: ["public/diagram.svg", "src/app/icon.png"],
+      appAssets: [
+        "docs/screenshots/review.jpg",
+        "public/diagram.svg",
+        "src/app/icon.png",
+      ],
       unlicensedAssets: ["src/app/icon.png"],
     });
   });

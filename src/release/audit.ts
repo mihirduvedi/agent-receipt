@@ -216,7 +216,12 @@ export function auditAssetLicenses(
   assetLicenseManifest: string | null,
 ): AssetLicenseAudit {
   const appAssets = trackedPaths
-    .filter((file) => file.startsWith("public/") || file.startsWith("src/"))
+    .filter(
+      (file) =>
+        file.startsWith("public/") ||
+        file.startsWith("src/") ||
+        file.startsWith("docs/screenshots/"),
+    )
     .filter((file) => APP_ASSET_EXTENSIONS.has(path.extname(file).toLowerCase()))
     .sort();
   const unlicensedAssets = appAssets.filter(

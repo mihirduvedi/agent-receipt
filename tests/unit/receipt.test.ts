@@ -185,7 +185,7 @@ describe("receipt intake and assembly", () => {
     expect(result.error.code).toBe("invalid_trace");
     expect(result.error.issues).toContainEqual({
       path: "events",
-      message: "Expected at least one event",
+      message: "Add at least one event so every receipt note can cite evidence.",
     });
   });
 
@@ -477,7 +477,7 @@ describe("coverage and generation metadata contracts", () => {
         canonicalEvents: 1,
       }),
     ).toBe(
-      "2 of 2 raw events accounted for; 1 mapped, 0 metadata-only, 1 unparsed.",
+      "2 of 2 raw events accounted for: 1 mapped, 0 metadata-only, 1 unparsed.",
     );
   });
 

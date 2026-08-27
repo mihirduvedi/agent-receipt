@@ -6,13 +6,13 @@ import type { GraniteFactBundle } from "./factBundle";
 
 const HEADLINE_BY_VERDICT: Record<string, string> = {
   within_declared_authority:
-    "No deviations were found in the supplied trace under the declared authority.",
+    "No authority deviations appear in the supplied trace.",
   review_recommended:
-    "The supplied trace contains findings that warrant manager review.",
+    "The supplied trace has findings for a manager to review.",
   material_deviations_found:
-    "The supplied trace contains material deviations from the declared authority.",
+    "The supplied trace shows material deviations from the declared authority.",
   unable_to_assess_fully:
-    "The supplied trace does not support a complete authority assessment.",
+    "Material evidence gaps prevent a full authority assessment.",
 };
 
 function unique(values: string[]): string[] {
@@ -79,7 +79,7 @@ export function deterministicFallback(
   // headline
   const headlineText =
     HEADLINE_BY_VERDICT[bundle.verdictCode] ??
-    "Assessment complete. Based on the supplied trace and authority envelope.";
+    "Receipt prepared from the supplied trace and authority envelope.";
 
   const headlineCitations = headlineEvidence(bundle);
   const headline: GeneratedReceiptCopy["headline"] = {

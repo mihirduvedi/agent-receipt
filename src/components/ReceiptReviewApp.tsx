@@ -85,22 +85,22 @@ const DISPOSITIONS: Array<{
   {
     value: "unreviewed",
     label: "Unreviewed",
-    description: "No manager decision recorded.",
+    description: "No decision yet.",
   },
   {
     value: "accepted",
     label: "Accepted",
-    description: "Accept the run output as reviewed.",
+    description: "I reviewed the receipt and accept the run output.",
   },
   {
     value: "investigate",
     label: "Investigate",
-    description: "Request additional examination.",
+    description: "I need more evidence or follow-up before deciding.",
   },
   {
     value: "rejected",
     label: "Rejected",
-    description: "Decline the run output.",
+    description: "I reviewed the receipt and reject the run output.",
   },
 ];
 
@@ -228,13 +228,13 @@ export function ReceiptReviewApp() {
       !file.name.toLowerCase().endsWith(".json")
     ) {
       setIntakeError({
-        message: "Choose a UTF-8 .json file. JSONL, ZIP, YAML, and binary inputs are not supported.",
+        message: "Choose a UTF-8 .json file. Agent Receipt does not accept JSONL, ZIP, YAML, or binary input.",
       });
       return;
     }
     if (file.size > MAX_TRACE_BYTES) {
       setIntakeError({
-        message: "That file is larger than the 2 MiB trace limit.",
+        message: "This file is larger than the 2 MiB trace limit.",
       });
       return;
     }
@@ -279,7 +279,7 @@ export function ReceiptReviewApp() {
       setStep("receipt");
     } catch {
       setBuildError({
-        message: "The receipt could not be assembled. Your trace and authority edits are still here.",
+        message: "We could not build the receipt. Your trace and authority entries are still here.",
       });
     } finally {
       setAnalyzing(false);
@@ -312,9 +312,9 @@ export function ReceiptReviewApp() {
     try {
       const receipt = withReviewerDisposition(result.receipt, disposition);
       setResult({ ...result, receipt });
-      setExportStatus(`Disposition saved in this browser session: ${disposition}.`);
+      setExportStatus(`Decision saved for this browser session: ${disposition}.`);
     } catch {
-      setExportStatus("The disposition could not be validated and was not saved.");
+      setExportStatus("This decision did not pass validation, so it was not saved.");
     }
   }
 
@@ -332,9 +332,9 @@ export function ReceiptReviewApp() {
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
-      setExportStatus("Validated receipt JSON downloaded. Raw input was not included.");
+      setExportStatus("Receipt downloaded. The file passed schema validation and excludes the uploaded source.");
     } catch {
-      setExportStatus("Export validation failed. No file was downloaded.");
+      setExportStatus("Export stopped because the receipt failed validation.");
     }
   }
 
@@ -356,7 +356,7 @@ export function ReceiptReviewApp() {
           <span aria-hidden="true" className="brand-mark">AR</span>
           <span>
             <strong>Agent Receipt</strong>
-            <small>Post-run authority review</small>
+            <small>Review completed runs</small>
           </span>
         </a>
         <ol className="step-list" aria-label="Review progress">
@@ -381,7 +381,7 @@ export function ReceiptReviewApp() {
             New review
           </button>
         ) : (
-          <span className="fallback-chip">Works offline</span>
+          <span className="fallback-chip">No model required</span>
         )}
       </header>
 
@@ -458,17 +458,18 @@ function IntakeStep({
   return (
     <div className="intake-layout">
       <section className="intro-panel" aria-labelledby="intake-title">
-        <p className="kicker">Completed run review</p>
-        <h1 id="intake-title">What did the agent do with its authority?</h1>
+        <p className="kicker">Start with the record</p>
+        <h1 id="intake-title">Review a completed agent run.</h1>
         <p className="intro-copy">
-          Compare an exact execution trace with the authority a manager declared. Rules establish
-          the verdict; generated copy only explains cited evidence.
+          Add the execution trace, then compare it with the authority the manager approved. The
+          policy rules produce the verdict. Granite can help word the receipt once those rules
+          have finished.
         </p>
         <div className="trust-note">
           <span aria-hidden="true">01</span>
           <p>
-            The raw trace stays in this browser session. Only minimized, redacted facts may reach
-            Granite through the server route.
+            Your uploaded trace stays in this browser session. The Granite route receives the
+            event and finding facts needed to write the receipt, with sensitive fields removed.
           </p>
         </div>
       </section>
@@ -479,7 +480,7 @@ function IntakeStep({
             <p className="section-number">Step 01</p>
             <h2 id="choose-trace-title">Choose a trace</h2>
           </div>
-          <p>Native Trace v1 JSON · 2 MiB maximum</p>
+          <p>Agent Receipt Native Trace v1 JSON · 2 MiB max</p>
         </div>
 
         {error ? <ErrorSummary error={error} /> : null}
@@ -487,26 +488,26 @@ function IntakeStep({
         <div className="sample-list" aria-label="Synthetic sample traces">
           <SampleButton
             label="Expected run"
-            verdict="No deviations expected"
-            detail="3 events · internal read and local output"
+            verdict="Fits the declared authority"
+            detail="3 events: CRM read, internal guidance lookup, local summary"
             tone="calm"
             onClick={() => onSelectSample("expected")}
           />
           <SampleButton
             label="Overreaching run"
-            verdict="Material deviations expected"
-            detail="6 events · external write, retry, and send"
+            verdict="Crosses declared limits"
+            detail="6 events: external spreadsheet, retry, customer message"
             tone="alert"
             onClick={() => onSelectSample("overreaching")}
           />
         </div>
 
-        <div className="input-divider"><span>or use your own trace</span></div>
+        <div className="input-divider"><span>Use your own trace</span></div>
 
         <div className="custom-input-grid">
           <div className="upload-field">
-            <label htmlFor="trace-file">Upload JSON file</label>
-            <p id="trace-file-help">Exact file bytes are hashed before parsing.</p>
+            <label htmlFor="trace-file">Upload a JSON file</label>
+            <p id="trace-file-help">We hash the original file bytes before parsing.</p>
             <input
               ref={fileInputRef}
               id="trace-file"
@@ -518,7 +519,7 @@ function IntakeStep({
             />
           </div>
           <div className="paste-field">
-            <label htmlFor="trace-json">Paste JSON</label>
+            <label htmlFor="trace-json">Paste trace JSON</label>
             <textarea
               id="trace-json"
               name="trace-json"
@@ -530,9 +531,9 @@ function IntakeStep({
               placeholder={'{\n  "schemaVersion": "agent-receipt.native-trace.v1"\n}' }
             />
             <div className="field-action-row">
-              <p id="trace-json-help">One UTF-8 JSON object. JSONL and remote URLs are not accepted.</p>
+              <p id="trace-json-help">Paste one UTF-8 JSON object. JSONL files and remote URLs are not supported.</p>
               <button className="secondary-button" type="button" onClick={onUsePaste}>
-                Review pasted trace
+                Use pasted trace
               </button>
             </div>
           </div>
@@ -595,26 +596,25 @@ function AuthorityStep(props: AuthorityStepProps) {
       <aside className="authority-context">
         <button className="back-button" type="button" onClick={props.onBack}>← Back to trace</button>
         <p className="section-number">Step 02</p>
-        <h1>Confirm the authority envelope.</h1>
+        <h1>Set the authority for this review.</h1>
         <p>
-          This is the rule boundary the run will be measured against. It is never inferred from
-          what the agent happened to do.
+          The manager&rsquo;s rules for the run are recorded here and evaluated as written.
         </p>
         <dl className="source-facts">
           <div><dt>Trace</dt><dd>{props.source.label}</dd></div>
-          <div><dt>Source</dt><dd>{props.source.synthetic ? "Synthetic fixture" : "Browser-provided input"}</dd></div>
-          <div><dt>Exact bytes</dt><dd>{props.source.bytes.byteLength.toLocaleString()}</dd></div>
+          <div><dt>Input</dt><dd>{props.source.synthetic ? "Synthetic fixture" : "Uploaded or pasted trace"}</dd></div>
+          <div><dt>File size</dt><dd>{props.source.bytes.byteLength.toLocaleString()}</dd></div>
         </dl>
       </aside>
 
       <section className="authority-form-shell" aria-labelledby="authority-form-title">
         <div className="section-heading">
           <div>
-            <p className="section-number">Declared policy</p>
-            <h2 id="authority-form-title">Review before analysis</h2>
+            <p className="section-number">Authority for this run</p>
+            <h2 id="authority-form-title">Check these terms before building the receipt</h2>
           </div>
           <span className={props.validation.ok ? "validity valid" : "validity invalid"}>
-            {props.validation.ok ? "Ready to analyze" : "Needs information"}
+            {props.validation.ok ? "Ready" : "Complete required fields"}
           </span>
         </div>
 
@@ -630,7 +630,7 @@ function AuthorityStep(props: AuthorityStepProps) {
                 onChange={(event) => update("policyId", event.target.value)}
                 aria-describedby="policy-id-help"
               />
-              <small id="policy-id-help">Stable identifier recorded in receipt integrity.</small>
+              <small id="policy-id-help">Saved with the receipt so this policy can be identified later.</small>
             </label>
             <label className="wide-field">
               <span>Requested task</span>
@@ -641,13 +641,13 @@ function AuthorityStep(props: AuthorityStepProps) {
                 onChange={(event) => update("task", event.target.value)}
                 aria-describedby="task-help"
               />
-              <small id="task-help">Describe what the agent was asked to accomplish and its boundaries.</small>
+              <small id="task-help">State the assignment and the limits the agent was expected to follow.</small>
             </label>
           </div>
 
           <fieldset className="form-section">
             <legend>Permitted systems and boundaries</legend>
-            <p>Only listed systems are allowed. Boundary labels are declarations, not model guesses.</p>
+            <p>List every system the agent was allowed to use and mark its boundary.</p>
             <div className="system-editor">
               {props.draft.permittedSystems.map((system, index) => (
                 <div className="system-row" key={`system-${index}`}>
@@ -686,7 +686,7 @@ function AuthorityStep(props: AuthorityStepProps) {
                     className="remove-button"
                     type="button"
                     disabled={props.draft.permittedSystems.length === 1}
-                    title={props.draft.permittedSystems.length === 1 ? "At least one system row is kept for editing" : undefined}
+                    title={props.draft.permittedSystems.length === 1 ? "Keep at least one system row while editing." : undefined}
                     onClick={() => update(
                       "permittedSystems",
                       props.draft.permittedSystems.filter((_, itemIndex) => itemIndex !== index),
@@ -711,7 +711,7 @@ function AuthorityStep(props: AuthorityStepProps) {
 
           <OperationFieldset
             legend="Permitted operations"
-            description="Successful, unknown-status, or state-changing operations outside this allowlist create a finding."
+            description="A completed, unknown-outcome, or state-changing operation outside this list becomes a finding."
             selected={props.draft.permittedOperations}
             onToggle={(operation) => toggleOperation("permittedOperations", operation)}
           />
@@ -726,7 +726,7 @@ function AuthorityStep(props: AuthorityStepProps) {
                 onChange={(event) => update("prohibitedDataCategories", event.target.value)}
                 aria-describedby="category-help"
               />
-              <small id="category-help">Comma or line-separated slugs, such as customer_email.</small>
+              <small id="category-help">Enter lowercase slugs separated by commas or new lines, such as customer_email.</small>
             </label>
             <label>
               <span>Maximum records read <em>Optional</em></span>
@@ -740,14 +740,14 @@ function AuthorityStep(props: AuthorityStepProps) {
                 onChange={(event) => update("maxRecordsRead", event.target.value)}
                 aria-describedby="record-limit-help"
               />
-              <small id="record-limit-help">Unknown quantities remain unknown; they are never estimated.</small>
+              <small id="record-limit-help">Leave this blank when no limit was declared. Missing event quantities stay unknown.</small>
             </label>
           </div>
 
           <div className="toggle-row form-section">
             <div>
               <strong>Allow external egress</strong>
-              <p>Permit movement to destinations explicitly labeled external.</p>
+              <p>Allow data to move to destinations marked external.</p>
             </div>
             <label className="switch-control">
               <input
@@ -756,20 +756,20 @@ function AuthorityStep(props: AuthorityStepProps) {
                 checked={props.draft.externalEgressAllowed}
                 onChange={(event) => update("externalEgressAllowed", event.target.checked)}
               />
-              <span>{props.draft.externalEgressAllowed ? "Allowed" : "Not allowed"}</span>
+              <span>{props.draft.externalEgressAllowed ? "Permitted" : "Not permitted"}</span>
             </label>
           </div>
 
           <OperationFieldset
             legend="Operations requiring approval"
-            description="A qualifying action needs an explicitly linked, earlier, successful human approval event."
+            description="For each selected operation, the trace must contain a linked human approval recorded before the action."
             selected={props.draft.approvalRequiredFor}
             onToggle={(operation) => toggleOperation("approvalRequiredFor", operation)}
           />
 
           {!props.validation.ok ? (
             <div className="validation-note" role="status">
-              <strong>Complete the authority envelope to continue.</strong>
+              <strong>Fill in the required authority fields.</strong>
               <ul>
                 {props.validation.issues.slice(0, 5).map((issue, index) => (
                   <li key={`${issue.path}-${index}`}><code>{issue.path}</code>: {issue.message}</li>
@@ -780,7 +780,7 @@ function AuthorityStep(props: AuthorityStepProps) {
 
           <div className="form-submit-row">
             <p>
-              Analysis preserves the exact bytes above and computes policy findings locally.
+              The original bytes are hashed before the trace is mapped and checked against this authority.
             </p>
             <button
               className="primary-button"
@@ -788,14 +788,14 @@ function AuthorityStep(props: AuthorityStepProps) {
               disabled={!props.validation.ok || props.analyzing}
               aria-describedby={!props.validation.ok ? "analyze-disabled-reason" : undefined}
             >
-              {props.analyzing ? "Analyzing trace…" : "Analyze against authority"}
+              {props.analyzing ? "Building receipt…" : "Build receipt"}
             </button>
           </div>
           {!props.validation.ok ? (
-            <p className="sr-only" id="analyze-disabled-reason">Complete all required authority fields first.</p>
+            <p className="sr-only" id="analyze-disabled-reason">Complete the required authority fields first.</p>
           ) : null}
           <p className="analysis-status" aria-live="polite">
-            {props.analyzing ? "Computing exact digest, canonical events, coverage, policy findings, and receipt copy." : ""}
+            {props.analyzing ? "Hashing the source, mapping events, checking coverage, applying policy rules, and preparing cited copy." : ""}
           </p>
         </form>
       </section>
@@ -858,19 +858,19 @@ function ReceiptStep(props: {
   return (
     <div className="receipt-shell">
       <nav className="receipt-nav" aria-label="Receipt sections">
-        <span>Review receipt</span>
+        <span>In this receipt</span>
         <a href="#overview">Overview</a>
-        <a href="#human-summary">Summary</a>
-        <a href="#activity">Activity</a>
-        <a href="#movement">Systems & data</a>
-        <a href="#deviations">Deviations</a>
+        <a href="#human-summary">Trace summary</a>
+        <a href="#activity">Timeline</a>
+        <a href="#movement">Systems and data</a>
+        <a href="#deviations">Findings</a>
         <a href="#integrity">Integrity</a>
-        <a href="#disposition">Disposition</a>
+        <a href="#disposition">Decision</a>
       </nav>
 
       <section id="overview" className={`verdict-hero verdict-${receipt.verdict}`} aria-labelledby="verdict-title">
         <div className="verdict-register">
-          <p className="section-number">Deterministic verdict</p>
+          <p className="section-number">Policy verdict</p>
           <span className="verdict-icon" aria-hidden="true">
             {receipt.verdict === "within_declared_authority" ? "✓" : "!"}
           </span>
@@ -879,8 +879,8 @@ function ReceiptStep(props: {
         </div>
         <div className="verdict-copy">
           <p className="source-line">
-            <span>{receipt.integrity.generationSource === "granite" ? "Granite explained" : "Deterministic fallback"}</span>
-            <span>{props.source.synthetic ? "Synthetic sample" : "User-provided trace"}</span>
+            <span>{receipt.integrity.generationSource === "granite" ? "Granite explanation" : "Deterministic template"}</span>
+            <span>{props.source.synthetic ? "Synthetic sample" : "Uploaded trace"}</span>
           </p>
           <h1 id="verdict-title">{receipt.verdictLabel}</h1>
           <p className="verdict-qualifier">{receipt.verdictQualifier}</p>
@@ -894,19 +894,19 @@ function ReceiptStep(props: {
         </div>
         <div className="verdict-attention">
           <span className="attention-count">{receipt.findings.length.toString().padStart(2, "0")}</span>
-          <p>items deserve attention</p>
-          <a href="#deviations">Review deviations ↓</a>
+          <p>{receipt.findings.length} {receipt.findings.length === 1 ? "finding" : "findings"} to review</p>
+          <a href="#deviations">Go to findings ↓</a>
         </div>
       </section>
 
       <section className="task-outcome" aria-labelledby="task-outcome-title">
         <div>
           <p className="section-number">Requested task</p>
-          <h2 id="task-outcome-title">Authority and observed outcome</h2>
+          <h2 id="task-outcome-title">Task and receipt conclusion</h2>
           <p>{receipt.authority.task}</p>
         </div>
         <div>
-          <p className="section-number">Observed outcome</p>
+          <p className="section-number">Receipt conclusion</p>
           <EvidenceClaim
             text={receipt.copy.outcome.text}
             label="Open outcome evidence"
@@ -924,8 +924,8 @@ function ReceiptStep(props: {
             ["Events", metrics.events],
             ["Systems", metrics.systems],
             ["State changes", metrics.stateChanges],
-            ["External transfers", metrics.externalTransfers],
-            ["Approvals", metrics.approvals],
+            ["External events", metrics.externalTransfers],
+            ["Human approvals", metrics.approvals],
             ["Errors", metrics.errors],
             ["Findings", metrics.findings],
           ] as Array<[string, number]>
@@ -937,17 +937,17 @@ function ReceiptStep(props: {
       <section className="attention-section" aria-labelledby="attention-title">
         <div className="section-heading">
           <div>
-            <p className="section-number">Manager queue</p>
-            <h2 id="attention-title">What deserves attention</h2>
+            <p className="section-number">Review queue</p>
+            <h2 id="attention-title">Findings to review</h2>
           </div>
-          <p>Ordered by severity, then event sequence.</p>
+          <p>Highest severity first. Ties follow event order.</p>
         </div>
         {attention.length === 0 ? (
           <div className="clean-state">
             <span aria-hidden="true">✓</span>
             <div>
-              <strong>No deterministic findings.</strong>
-              <p>The supplied trace stayed within this authority envelope. Review evidence before recording a disposition.</p>
+              <strong>No findings in this trace.</strong>
+              <p>The recorded events fit the declared authority. Check the evidence you need, then record your decision.</p>
             </div>
           </div>
         ) : (
@@ -972,7 +972,7 @@ function ReceiptStep(props: {
       />
 
       <section id="activity" className="receipt-section" aria-labelledby="activity-title">
-        <SectionTitle number="02" title="Activity timeline" detail="Stable chronological order · unknown values remain visible" id="activity-title" />
+        <SectionTitle number="02" title="Event timeline" detail="Events stay in trace order. Missing values are shown as unknown." id="activity-title" />
         <ol className="timeline">
           {receipt.events.map((event) => (
             <TimelineEvent
@@ -986,16 +986,16 @@ function ReceiptStep(props: {
       </section>
 
       <section id="movement" className="receipt-section" aria-labelledby="movement-title">
-        <SectionTitle number="03" title="Systems and data movement" detail="Every edge has a complete text equivalent below" id="movement-title" />
+        <SectionTitle number="03" title="Systems and data movement" detail="The table below contains every observed connection" id="movement-title" />
         <SystemMap receipt={receipt} onOpen={props.onOpenEvidence} />
       </section>
 
       <section id="deviations" className="receipt-section deviations-section" aria-labelledby="deviations-title">
-        <SectionTitle number="04" title="Deviations and coverage" detail="Deterministic rules only" id="deviations-title" />
+        <SectionTitle number="04" title="Findings and coverage" detail="Policy findings and the trace evidence behind them" id="deviations-title" />
         <div className="deviation-layout">
           <div className="finding-stack">
             {receipt.findings.length === 0 ? (
-              <div className="empty-findings"><strong>No deviations found.</strong><p>Parser warnings and coverage still remain visible.</p></div>
+              <div className="empty-findings"><strong>Policy rules produced no findings.</strong><p>Coverage details are shown alongside this result.</p></div>
             ) : receipt.findings.map((finding) => (
               <FindingCard key={finding.findingId} finding={finding} onOpen={props.onOpenEvidence} />
             ))}
@@ -1020,16 +1020,16 @@ function ReceiptStep(props: {
       </section>
 
       <section className="receipt-section generated-section" aria-labelledby="generated-title">
-        <SectionTitle number="05" title="Cited receipt copy" detail="Select any statement to inspect its evidence" id="generated-title" />
+        <SectionTitle number="05" title="Evidence-linked receipt notes" detail="Open any note to see its citations" id="generated-title" />
         <div className="generated-copy-grid">
           <div>
-            <h3>Notable actions</h3>
-            {receipt.copy.notableActions.length === 0 ? <p>No notable deviations were generated.</p> : (
+            <h3>Finding notes</h3>
+            {receipt.copy.notableActions.length === 0 ? <p>No cited finding notes.</p> : (
               <ul>{receipt.copy.notableActions.map((action, index) => (
                 <li key={`${action.text}-${index}`}>
                   <EvidenceClaim
                     text={action.text}
-                    label={`Open notable action ${index + 1} evidence`}
+                    label={`Open finding note ${index + 1}`}
                     eventIds={action.eventIds}
                     findingIds={action.findingIds}
                     onOpen={props.onOpenEvidence}
@@ -1040,13 +1040,13 @@ function ReceiptStep(props: {
             )}
           </div>
           <div>
-            <h3>Limitations</h3>
-            {receipt.copy.limitations.length === 0 ? <p>No additional assessment limitations were generated.</p> : (
+            <h3>Assessment limits</h3>
+            {receipt.copy.limitations.length === 0 ? <p>No additional evidence limits.</p> : (
               <ul>{receipt.copy.limitations.map((limitation, index) => (
                 <li key={`${limitation.text}-${index}`}>
                   <EvidenceClaim
                     text={limitation.text}
-                    label={`Open limitation ${index + 1} evidence`}
+                    label={`Open assessment limit ${index + 1}`}
                     eventIds={limitation.eventIds}
                     findingIds={[]}
                     onOpen={props.onOpenEvidence}
@@ -1060,15 +1060,15 @@ function ReceiptStep(props: {
       </section>
 
       <section id="integrity" className="receipt-section" aria-labelledby="integrity-title">
-        <SectionTitle number="06" title="Integrity record" detail="Reproducibility context, not proof of trusted capture" id="integrity-title" />
+        <SectionTitle number="06" title="Integrity record" detail="Input hash, schema versions, policy ID, and copy source" id="integrity-title" />
         <IntegrityStrip receipt={receipt} />
       </section>
 
       <section id="disposition" className="disposition-section" aria-labelledby="disposition-title">
         <div>
-          <p className="section-number">Human review · separate from verdict</p>
-          <h2 id="disposition-title">Record a manager disposition.</h2>
-          <p>Changing this state will not alter the verdict, findings, or evidence.</p>
+          <p className="section-number">Manager decision</p>
+          <h2 id="disposition-title">Record your decision.</h2>
+          <p>The selected disposition is stored with the receipt. The product verdict and evidence stay as recorded.</p>
         </div>
         <fieldset className="disposition-options">
           <legend className="sr-only">Reviewer disposition</legend>
@@ -1086,7 +1086,7 @@ function ReceiptStep(props: {
           ))}
         </fieldset>
         <div className="export-panel">
-          <p>Validated JSON includes canonical evidence, findings, authority, copy, coverage, integrity, and disposition.</p>
+          <p>The JSON export contains the authority, canonical events, findings, receipt notes, coverage, integrity record, and your decision. The uploaded source stays in this browser session.</p>
           <button className="primary-button" type="button" onClick={props.onDownload}>Download receipt JSON</button>
           <p className="export-status" aria-live="polite">{props.exportStatus}</p>
         </div>
@@ -1129,27 +1129,27 @@ function HumanActionSummaryPanel(props: {
     >
       <SectionTitle
         number="01"
-        title="What the run did"
-        detail="Every canonical action, translated into plain language"
+        title="What the trace records"
+        detail="One sentence for each canonical event"
         id="human-summary-title"
       />
       <div className="human-summary-qualifier">
-        <strong>Read this as an evidence summary, not a surveillance claim.</strong>
+        <strong>Scope of this summary</strong>
         <p>
-          Based on the supplied trace and authority envelope. “No observed activity” means no
-          supplied event referenced that item; it does not prove activity was absent outside this
-          trace.
+          This receipt covers the supplied trace and authority envelope. “No observed activity”
+          means that no event in this trace names the item. Activity missing from the trace
+          remains unknown.
         </p>
       </div>
 
       <div className="human-summary-highlights">
         <section aria-labelledby="accessed-title">
           <div className="human-summary-subhead">
-            <p className="section-number">Accessed or targeted</p>
+            <p className="section-number">Systems in the trace</p>
             <h3 id="accessed-title">Systems and named data</h3>
           </div>
           {props.summary.systems.length === 0 ? (
-            <p className="summary-empty">No system name was supplied by any canonical event.</p>
+            <p className="summary-empty">The canonical events do not name a system.</p>
           ) : (
             <ol className="system-summary-list">
               {props.summary.systems.map((system) => (
@@ -1159,23 +1159,23 @@ function HumanActionSummaryPanel(props: {
                     <span>{formatPlainList(system.boundaries)} boundary</span>
                   </div>
                   <p>
-                    {system.eventIds.length} observed {system.eventIds.length === 1 ? "action" : "actions"}
+                    {system.eventIds.length} recorded {system.eventIds.length === 1 ? "event" : "events"}
                     {" · "}{formatSystemRoles(system.roles)}
                     {" · "}{formatPlainList(system.operations)}
                   </p>
                   <p>
                     {system.dataCategories.length > 0
                       ? `Named data: ${formatPlainList(system.dataCategories.map(formatIdentifier))}.`
-                      : "No data category was supplied for these events."}
+                      : "Data category: not supplied."}
                   </p>
                   <div className="system-summary-footer">
-                    <span>{formatPlainList(system.statuses)} status</span>
+                    <span>Status: {formatPlainList(system.statuses)}</span>
                     <button
                       type="button"
                       onClick={(event) =>
                         props.onOpen(
                           event,
-                          `Observed activity for ${system.systemId}`,
+                          `Activity recorded for ${system.systemId}`,
                           system.eventIds,
                         )
                       }
@@ -1192,7 +1192,7 @@ function HumanActionSummaryPanel(props: {
         <section className="no-observed-panel" aria-labelledby="untouched-title">
           <div className="human-summary-subhead">
             <p className="section-number">No observed activity</p>
-            <h3 id="untouched-title">What can be called untouched here</h3>
+            <h3 id="untouched-title">Declared items absent from this trace</h3>
           </div>
           <ul>
             {props.summary.noObservedActivity.map((item, index) => (
@@ -1200,7 +1200,7 @@ function HumanActionSummaryPanel(props: {
                 <p>{item.text}</p>
                 <button
                   type="button"
-                  aria-label={`Review trace evidence for no-observed-activity statement ${index + 1}`}
+                  aria-label={`Open evidence for absence statement ${index + 1}`}
                   onClick={(event) =>
                     props.onOpen(event, item.text, item.eventIds)
                   }
@@ -1216,12 +1216,12 @@ function HumanActionSummaryPanel(props: {
       <section className="work-summary" aria-labelledby="work-summary-title">
         <div className="work-summary-heading">
           <div>
-            <p className="section-number">Work performed or attempted</p>
-            <h3 id="work-summary-title">All actions in order</h3>
+            <p className="section-number">Trace order</p>
+            <h3 id="work-summary-title">Actions and attempts</h3>
           </div>
           <p>
-            Completed work and incomplete attempts stay distinct. Missing quantities and data
-            categories remain visible as missing.
+            Each line keeps the event&rsquo;s recorded status, quantity, and data categories.
+            Missing values are shown as unknown.
           </p>
         </div>
         <ol>
@@ -1237,7 +1237,7 @@ function HumanActionSummaryPanel(props: {
                 onClick={(event) =>
                   props.onOpen(
                     event,
-                    `Plain-language action ${action.eventId}`,
+                    `Recorded action ${action.eventId}`,
                     [action.eventId],
                   )
                 }
@@ -1266,10 +1266,7 @@ function formatPlainList(values: string[]): string {
 }
 
 function formatSystemRoles(roles: Array<"source" | "destination">): string {
-  const labels = roles.map((role) =>
-    role === "source" ? "used as a source" : "used as a destination",
-  );
-  return formatPlainList(labels);
+  return `${formatPlainList([...roles])} role`;
 }
 
 function TimelineEvent(props: {
@@ -1290,14 +1287,14 @@ function TimelineEvent(props: {
         <h3>{event.actorId} <span>· {event.actorType}</span></h3>
         <dl className="event-details">
           <div><dt>System path</dt><dd>{formatSystemPath(event)}</dd></div>
-          <div><dt>Boundary</dt><dd>{event.destinationBoundary}</dd></div>
+          <div><dt>Destination boundary</dt><dd>{event.destinationBoundary}</dd></div>
           <div><dt>Resource</dt><dd>{event.resourceType ?? "unknown"}</dd></div>
-          <div><dt>Data</dt><dd>{event.dataCategories.length > 0 ? event.dataCategories.join(", ") : "unknown"}</dd></div>
+          <div><dt>Data categories</dt><dd>{event.dataCategories.length > 0 ? event.dataCategories.join(", ") : "unknown"}</dd></div>
           <div><dt>Quantity</dt><dd>{event.quantity ? `${event.quantity.value} ${event.quantity.unit}` : "unknown"}</dd></div>
-          <div><dt>State change</dt><dd>{event.stateChange ? "Yes" : "No"}</dd></div>
+          <div><dt>Changed state</dt><dd>{event.stateChange ? "Yes" : "No"}</dd></div>
         </dl>
         {props.findings.length > 0 ? (
-          <div className="event-findings" aria-label={`${props.findings.length} linked findings`}>
+          <div className="event-findings" aria-label={`${props.findings.length} linked ${props.findings.length === 1 ? "finding" : "findings"}`}>
             {props.findings.map((finding) => <span key={finding.findingId}>{finding.ruleId}</span>)}
           </div>
         ) : null}
@@ -1326,8 +1323,8 @@ function SystemMap(props: { receipt: ReceiptResult; onOpen: OpenEvidence }) {
   return (
     <div className="system-map-wrap">
       <p className="map-instruction">
-        Four boundary columns follow. Scroll horizontally on narrow screens; the external boundary
-        is marked with an exclamation point and a red rule.
+        Destinations are grouped by boundary. On narrow screens, scroll to reach the external and
+        unknown columns. The external column has an exclamation point and a red rule.
       </p>
       <div className="system-map" aria-hidden="true">
         <div className="agent-node"><span>Agent</span><strong>{props.receipt.run.agent.name ?? props.receipt.run.agent.id}</strong></div>
@@ -1336,15 +1333,15 @@ function SystemMap(props: { receipt: ReceiptResult; onOpen: OpenEvidence }) {
             <h3>{boundary} boundary</h3>
             {systemsByBoundary[boundary].length > 0 ? systemsByBoundary[boundary].map((system) => (
               <span className="system-node" key={system}>{system}</span>
-            )) : <span className="empty-boundary">No named destination</span>}
+            )) : <span className="empty-boundary">No named system</span>}
           </div>
         ))}
       </div>
       <div className="edge-table-wrap">
-        <h3>Text equivalent: every observed edge</h3>
-        <div className="responsive-table" role="region" aria-label="System and data movement edges" tabIndex={0}>
+        <h3>Recorded system connections</h3>
+        <div className="responsive-table" role="region" aria-label="System and data movement records" tabIndex={0}>
           <table>
-            <thead><tr><th>Event</th><th>From</th><th>Operation</th><th>To</th><th>Boundary</th><th>Known data / quantity</th><th>Evidence</th></tr></thead>
+            <thead><tr><th>Event</th><th>From</th><th>Operation</th><th>To</th><th>Boundary</th><th>Data and quantity</th><th>Evidence</th></tr></thead>
             <tbody>
               {edges.map((edge) => (
                 <tr key={edge.eventId}>
@@ -1354,7 +1351,7 @@ function SystemMap(props: { receipt: ReceiptResult; onOpen: OpenEvidence }) {
                   <td>{edge.to}</td>
                   <td><span className={`boundary-text boundary-text-${edge.boundary}`}>{edge.boundary}</span></td>
                   <td>{edge.detail}</td>
-                  <td><button type="button" onClick={(event) => props.onOpen(event, `Movement for ${edge.eventId}`, [edge.eventId])}>Open ↗</button></td>
+                  <td><button type="button" onClick={(event) => props.onOpen(event, `System connection for ${edge.eventId}`, [edge.eventId])}>Open ↗</button></td>
                 </tr>
               ))}
             </tbody>
@@ -1377,7 +1374,7 @@ function FindingCard(props: { finding: Finding; onOpen: OpenEvidence }) {
       <h3>{finding.label}</h3>
       <p>{finding.description}</p>
       <dl>
-        <div><dt>Policy path</dt><dd>{finding.policyPath ?? "Not applicable"}</dd></div>
+        <div><dt>Policy field</dt><dd>{finding.policyPath ?? "Not applicable"}</dd></div>
         <div><dt>Event IDs</dt><dd>{finding.eventIds.join(", ") || "No event citation"}</dd></div>
       </dl>
       <button type="button" onClick={(event) => props.onOpen(event, finding.label, finding.eventIds, [finding.findingId])}>
@@ -1391,14 +1388,14 @@ function IntegrityStrip({ receipt }: { receipt: ReceiptResult }) {
   const integrity = receipt.integrity;
   const items: Array<[string, string]> = [
     ["SHA-256", integrity.sha256],
-    ["Exact bytes", integrity.byteLength.toLocaleString()],
+    ["Source bytes", integrity.byteLength.toLocaleString()],
     ["Input format", integrity.inputFormat],
     ["Adapter", `${integrity.adapterName} ${integrity.adapterVersion}`],
     ["Authority schema", integrity.authoritySchemaVersion],
     ["Policy", integrity.policyId],
     ["Canonical schema", integrity.canonicalEventSchemaVersion],
     ["Receipt schema", integrity.receiptSchemaVersion],
-    ["Generated", integrity.generatedAt],
+    ["Generated at", integrity.generatedAt],
     ["Copy source", integrity.generationSource],
     ...(integrity.generationSource === "granite"
       ? [
@@ -1451,14 +1448,14 @@ function EvidenceDrawer({
       >
         <header>
           <div>
-            <p className="section-number">Evidence drawer</p>
+            <p className="section-number">Evidence</p>
             <h2 id="evidence-title">{request.title}</h2>
           </div>
-          <button ref={closeButtonRef} type="button" onClick={onClose} aria-label="Close evidence drawer">Close ×</button>
+          <button ref={closeButtonRef} type="button" onClick={onClose} aria-label="Close evidence drawer">Close</button>
         </header>
         <div className="drawer-source-note">
-          <strong>{synthetic ? "Synthetic sample evidence" : "User-provided evidence"}</strong>
-          <span>Canonical record first · exact retained raw object second</span>
+          <strong>{synthetic ? "Synthetic fixture" : "Uploaded trace"}</strong>
+          <span>The normalized event and retained source object are shown from this browser session.</span>
         </div>
         <div className="drawer-content">
           {citedFindings.length > 0 ? (
@@ -1473,7 +1470,7 @@ function EvidenceDrawer({
               ))}
             </section>
           ) : null}
-          {citedEvents.length === 0 ? <p>No resolvable event citation was supplied for this claim.</p> : citedEvents.map((event) => {
+          {citedEvents.length === 0 ? <p>This statement does not contain a resolvable event citation.</p> : citedEvents.map((event) => {
             const rawObject = resolveRawPointer(build.retainedSource.rawDocument, event.rawPointer);
             return (
               <section className="evidence-pair" key={event.eventId} aria-labelledby={`canonical-${event.eventId}`}>
@@ -1483,11 +1480,11 @@ function EvidenceDrawer({
                 </div>
                 <pre tabIndex={0}>{JSON.stringify(event, null, 2)}</pre>
                 <div className="evidence-record-heading raw-heading">
-                  <div><span>Retained raw object</span><h3>{event.sourceEventId ?? "Source ID unknown"}</h3></div>
+                  <div><span>Retained source event</span><h3>{event.sourceEventId ?? "Source ID not supplied"}</h3></div>
                   <code>{event.rawPointer}</code>
                 </div>
                 {rawObject === undefined ? (
-                  <p className="raw-missing">Raw object could not be resolved from the retained pointer.</p>
+                  <p className="raw-missing">The retained pointer did not resolve to a source object.</p>
                 ) : (
                   <pre tabIndex={0}>{JSON.stringify(rawObject, null, 2)}</pre>
                 )}

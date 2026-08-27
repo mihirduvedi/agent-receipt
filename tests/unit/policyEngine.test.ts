@@ -318,7 +318,7 @@ describe("AR-RETRY-001 — retry after ambiguous completion", () => {
     const { findings } = runPolicyEngine({ events: [attempt1, attempt2], accounting: [], authority: auth, traceCompletionStatus: "succeeded" });
     const f = findings.find(f => f.ruleId === "AR-RETRY-001");
     expect(f!.severity).toBe("medium");
-    expect(f!.description).toContain("possible duplicate side effect");
+    expect(f!.description).toContain("A repeated side effect is possible");
     expect(f!.description).not.toContain("duplicate artifact created");
   });
 

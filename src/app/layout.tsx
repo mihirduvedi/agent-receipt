@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Agent Receipt",
-  description: "Evidence-linked authority receipts for AI-agent runs.",
+  description: "Review a completed AI-agent run against the authority it was given, with evidence behind every finding.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

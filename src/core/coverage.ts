@@ -123,7 +123,7 @@ export function computeCoverage(input: ComputeCoverageInput): CoverageSummary {
 
 export function formatCoverageSummary(coverage: CoverageSummary): string {
   return (
-    `${coverage.accountedRawEvents} of ${coverage.rawEvents} raw events accounted for; ` +
+    `${coverage.accountedRawEvents} of ${coverage.rawEvents} raw events accounted for: ` +
     `${coverage.mapped} mapped, ${coverage.metadataOnly} metadata-only, ` +
     `${coverage.unparsed} unparsed.`
   );

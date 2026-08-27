@@ -116,7 +116,7 @@ export async function buildReceipt(
   if (exactBytes.byteLength > MAX_TRACE_BYTES) {
     return failure(
       "input_too_large",
-      `Trace input exceeds the ${MAX_TRACE_BYTES}-byte (2 MiB) limit.`,
+      `This trace is larger than the 2 MiB limit (${MAX_TRACE_BYTES} bytes).`,
       retainedSource,
     );
   }
@@ -151,7 +151,7 @@ export async function buildReceipt(
   } catch {
     return failure(
       "invalid_utf8",
-      "Trace input must be valid UTF-8.",
+      "Use UTF-8 JSON for the trace.",
       retainedSource,
     );
   }
@@ -174,7 +174,7 @@ export async function buildReceipt(
   ) {
     return failure(
       "unsupported_format",
-      `Unsupported trace format. Expected ${NATIVE_TRACE_SCHEMA_VERSION}.`,
+      `This schema is not supported. Agent Receipt currently accepts ${NATIVE_TRACE_SCHEMA_VERSION}.`,
       retainedSource,
     );
   }
@@ -183,7 +183,7 @@ export async function buildReceipt(
   if (!traceResult.success) {
     return failure(
       "invalid_trace",
-      "Trace validation failed.",
+      "Some trace fields are invalid. Review the fields listed below.",
       retainedSource,
       zodIssues(traceResult.error.issues),
     );
@@ -208,7 +208,7 @@ export async function buildReceipt(
       "invalid_trace",
       "At least one native event is required for evidence-cited receipt copy.",
       retainedSource,
-      [{ path: "events", message: "Expected at least one event" }],
+      [{ path: "events", message: "Add at least one event so every receipt note can cite evidence." }],
     );
   }
 
@@ -539,7 +539,7 @@ function formatJsonError(error: unknown, sourceText: string): string {
   const message = error instanceof Error ? error.message : "";
   const lineColumn = message.match(/line\s+(\d+)\s+column\s+(\d+)/i);
   if (lineColumn) {
-    return `Trace input is not valid JSON at line ${lineColumn[1]}, column ${lineColumn[2]}.`;
+    return `The trace is not valid JSON near line ${lineColumn[1]}, column ${lineColumn[2]}.`;
   }
 
   const positionMatch = message.match(/position\s+(\d+)/i);
@@ -549,10 +549,10 @@ function formatJsonError(error: unknown, sourceText: string): string {
     const line = prefix.split("\n").length;
     const lastNewline = prefix.lastIndexOf("\n");
     const column = position - lastNewline;
-    return `Trace input is not valid JSON at line ${line}, column ${column}.`;
+    return `The trace is not valid JSON near line ${line}, column ${column}.`;
   }
 
-  return "Trace input is not valid JSON.";
+  return "The trace is not valid JSON. Check the syntax and try again.";
 }
 
 export type { ReviewDisposition };

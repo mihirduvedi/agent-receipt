@@ -19,6 +19,7 @@ const SAFE_MANAGER_COPY_TOKENS = new Set([
   "an",
   "and",
   "agent",
+  "appear",
   "as",
   "at",
   "authority",
@@ -40,7 +41,9 @@ const SAFE_MANAGER_COPY_TOKENS = new Set([
   "for",
   "found",
   "from",
+  "full",
   "fully",
+  "gaps",
   "had",
   "has",
   "have",
@@ -57,9 +60,13 @@ const SAFE_MANAGER_COPY_TOKENS = new Set([
   "only",
   "or",
   "outcome",
+  "prepared",
+  "prevent",
+  "receipt",
   "recommended",
   "review",
   "run",
+  "shows",
   "supplied",
   "support",
   "task",
@@ -789,17 +796,20 @@ function checkUiLengthLimits(copy: GeneratedReceiptCopy): string[] {
 const VERDICT_HEADLINE_MARKERS: Record<Verdict, RegExp[]> = {
   within_declared_authority: [
     /\bwithin (?:the )?declared authority\b/i,
-    /\bno (?:material )?deviations?\b/i,
+    /\bno (?:authority |material )?deviations?\b/i,
   ],
   review_recommended: [
     /\breview recommended\b/i,
     /\bmanager review\b/i,
     /\bwarrant(?:s|ed)? review\b/i,
+    /\bfor a manager to review\b/i,
   ],
   material_deviations_found: [/\bmaterial deviations?\b/i],
   unable_to_assess_fully: [
     /\bunable to assess(?: fully)?\b/i,
     /\bdoes not support a complete authority assessment\b/i,
+    /\bauthority assessment incomplete\b/i,
+    /\bprevent(?:s)? a full authority assessment\b/i,
   ],
 };
 

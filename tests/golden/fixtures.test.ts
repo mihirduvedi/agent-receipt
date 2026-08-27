@@ -131,7 +131,7 @@ describe("Golden test — Fixture B: Overreaching run", () => {
     });
     const retryFindings = findings.filter((f: Finding) => f.ruleId === "AR-RETRY-001");
     expect(retryFindings.length).toBeGreaterThan(0);
-    expect(retryFindings.every((f: Finding) => f.description.includes("possible duplicate side effect"))).toBe(true);
+    expect(retryFindings.every((f: Finding) => f.description.includes("A repeated side effect is possible"))).toBe(true);
     expect(retryFindings.every((f: Finding) => !f.description.includes("duplicate artifact created"))).toBe(true);
   });
 

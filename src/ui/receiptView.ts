@@ -103,7 +103,7 @@ export function validateTraceBytes(
     return {
       ok: false,
       code: "input_too_large",
-      message: `Trace input exceeds the ${maxBytes}-byte (2 MiB) limit.`,
+      message: `This trace is larger than the 2 MiB limit (${maxBytes} bytes).`,
     };
   }
 
@@ -114,7 +114,7 @@ export function validateTraceBytes(
     return {
       ok: false,
       code: "invalid_utf8",
-      message: "Trace input must be valid UTF-8 JSON.",
+      message: "Use UTF-8 JSON for the trace.",
     };
   }
 
@@ -139,7 +139,7 @@ export function validateTraceBytes(
       ok: false,
       code: "unsupported_format",
       message:
-        "Unsupported trace format. Expected agent-receipt.native-trace.v1 JSON.",
+        "This schema is not supported. Agent Receipt currently accepts agent-receipt.native-trace.v1.",
     };
   }
 
@@ -148,7 +148,7 @@ export function validateTraceBytes(
     return {
       ok: false,
       code: "invalid_trace",
-      message: "Trace validation failed. Correct the named fields and try again.",
+      message: "Some trace fields are invalid. Review the fields listed below.",
       issues: trace.error.issues.map((issue) => ({
         path: issue.path.length > 0 ? issue.path.join(".") : "trace",
         message: issue.message,
@@ -270,7 +270,7 @@ export function buildSystemEdges(events: CanonicalEvent[]): SystemEdge[] {
     const from = event.sourceSystem ?? event.actorId;
     const to =
       event.destinationSystem ??
-      (event.sourceSystem ? event.actorId : "unknown destination");
+      (event.sourceSystem ? event.actorId : "Destination not supplied");
     return {
       eventId: event.eventId,
       from,
@@ -280,10 +280,10 @@ export function buildSystemEdges(events: CanonicalEvent[]): SystemEdge[] {
       detail: [
         event.dataCategories.length > 0
           ? event.dataCategories.join(", ")
-          : "data category unknown",
+          : "Data category not supplied",
         event.quantity
           ? `${event.quantity.value} ${event.quantity.unit}`
-          : "quantity unknown",
+          : "Quantity not supplied",
       ].join(" · "),
     };
   });
@@ -387,7 +387,7 @@ export function buildHumanActionSummary(
   for (const system of receipt.authority.permittedSystems) {
     if (!referencedSystems.has(system.systemId)) {
       noObservedActivity.push({
-        text: `No supplied event referenced the declared ${humanizeSlug(system.systemId)} system.`,
+        text: `The declared ${humanizeSlug(system.systemId)} system does not appear in any supplied event.`,
         eventIds: allEventIds,
       });
     }
@@ -395,7 +395,7 @@ export function buildHumanActionSummary(
   for (const category of receipt.authority.prohibitedDataCategories) {
     if (!referencedDataCategories.has(category)) {
       noObservedActivity.push({
-        text: `No supplied event named the restricted data category ${humanizeSlug(category)}.`,
+        text: `The restricted data category ${humanizeSlug(category)} does not appear in any supplied event.`,
         eventIds: allEventIds,
       });
     }
@@ -408,13 +408,13 @@ export function buildHumanActionSummary(
     )
   ) {
     noObservedActivity.push({
-      text: "No supplied event named an external destination.",
+      text: "No supplied event names an external destination.",
       eventIds: allEventIds,
     });
   }
   if (noObservedActivity.length === 0) {
     noObservedActivity.push({
-      text: "Nothing in the declared system and restricted-data list can be safely marked untouched from this trace.",
+      text: "Every declared system and restricted data category appears in the trace, and at least one external destination is named.",
       eventIds: allEventIds,
     });
   }
@@ -458,27 +458,27 @@ function humanizeEvent(event: CanonicalEvent): string {
   const location = system
     ? `${locationPreposition(event.operation, Boolean(event.destinationSystem))} ${humanizeSlug(system)}`
     : "at an unspecified system";
-  const quantity = event.quantity
-    ? `${event.quantity.value.toLocaleString("en-US")} ${event.quantity.unit}`
-    : "quantity not supplied";
-  const target = `${resource} ${location} (${quantity})`;
   const attempt = event.attempt === undefined ? "" : `Attempt ${event.attempt}: `;
-  const data =
+  const quantitySentence = event.quantity
+    ? `Quantity: ${event.quantity.value.toLocaleString("en-US")} ${event.quantity.unit}.`
+    : "Quantity was not supplied.";
+  const dataSentence =
     event.dataCategories.length > 0
-      ? ` Named data: ${formatHumanList(event.dataCategories.map(humanizeSlug))}.`
-      : " No data category was supplied.";
+      ? `Named data: ${formatHumanList(event.dataCategories.map(humanizeSlug))}.`
+      : "Data category was not supplied.";
+  const details = `${quantitySentence} ${dataSentence}`;
 
   switch (event.status) {
     case "succeeded":
-      return `${attempt}${capitalize(operation.past)} ${target}.${data}`;
+      return `${attempt}${capitalize(operation.past)} ${resource} ${location}. ${details}`;
     case "failed":
-      return `${attempt}Tried to ${operation.base} ${target}, but the trace records failure.${data}`;
+      return `${attempt}Tried to ${operation.base} ${resource} ${location}. The trace records a failed result. ${details}`;
     case "cancelled":
-      return `${attempt}Started to ${operation.base} ${target}, then the action was cancelled.${data}`;
+      return `${attempt}Started to ${operation.base} ${resource} ${location}. The trace records that the action was cancelled. ${details}`;
     case "started":
-      return `${attempt}Started to ${operation.base} ${target}; the trace does not record a completed result.${data}`;
+      return `${attempt}Started to ${operation.base} ${resource} ${location}. The trace has no completed result for this event. ${details}`;
     case "unknown":
-      return `${attempt}Tried to ${operation.base} ${target}; the trace leaves the result unknown.${data}`;
+      return `${attempt}Tried to ${operation.base} ${resource} ${location}. The result is unknown in the trace. ${details}`;
   }
 }
 
@@ -539,12 +539,12 @@ function formatJsonLocation(error: unknown, sourceText: string): string {
   const rawMessage = error instanceof Error ? error.message : "";
   const positionMatch = /position\s+(\d+)/i.exec(rawMessage);
   if (!positionMatch) {
-    return "Trace input is not valid JSON. Check the JSON syntax and try again.";
+    return "The trace is not valid JSON. Check the syntax and try again.";
   }
   const position = Number(positionMatch[1]);
   const before = sourceText.slice(0, position);
   const line = before.split("\n").length;
   const lineStart = before.lastIndexOf("\n");
   const column = position - lineStart;
-  return `Trace input is not valid JSON near line ${line}, column ${column}.`;
+  return `The trace is not valid JSON near line ${line}, column ${column}.`;
 }

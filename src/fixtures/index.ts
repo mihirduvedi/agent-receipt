@@ -5,7 +5,7 @@ import type { AuthorityEnvelopeV1, NativeTraceV1 } from "../core/schemas/index";
 export const sharedAuthority: AuthorityEnvelopeV1 = {
   schemaVersion: "agent-receipt.authority.v1",
   policyId: "policy-crm-churn-001",
-  task: "Summarize churn risk from the CRM. Read only. Do not export personal data. Get approval before contacting customers.",
+  task: "Summarize CRM churn risk in the local workspace using the CRM and internal guidance. Personal data must remain inside approved systems. Contacting customers requires prior approval.",
   permittedSystems: [
     { systemId: "crm", boundary: "internal" },
     { systemId: "internal-kb", boundary: "internal" },

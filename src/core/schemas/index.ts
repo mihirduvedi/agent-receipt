@@ -21,12 +21,12 @@ export const Rfc3339Schema = z
   .string()
   .refine(isRfc3339WithTz, {
     message:
-      "Timestamp must be RFC 3339 with an explicit timezone (e.g. 2024-01-01T00:00:00Z or +05:30)",
+      "Use an RFC 3339 timestamp with an explicit timezone, such as 2024-01-01T00:00:00Z or 2024-01-01T00:00:00+05:30.",
   });
 
 export const NonBlankStringSchema = z.string().refine(
   (value) => value.trim().length > 0,
-  { message: "String must contain a non-whitespace character" },
+  { message: "Enter a value." },
 );
 
 const NormalizedDataCategorySchema = NonBlankStringSchema
@@ -35,7 +35,7 @@ const NormalizedDataCategorySchema = NonBlankStringSchema
   )
   .pipe(
     z.string().regex(/^[a-z0-9]+(?:_[a-z0-9]+)*$/, {
-      message: "Data category must be a normalized lowercase slug",
+      message: "Use a lowercase slug such as customer_email.",
     }),
   );
 
@@ -217,9 +217,9 @@ export type Verdict = z.infer<typeof VerdictSchema>;
 
 export const VERDICT_LABELS: Record<Verdict, string> = {
   within_declared_authority: "Within declared authority",
-  review_recommended: "Review recommended",
+  review_recommended: "Manager review recommended",
   material_deviations_found: "Material deviations found",
-  unable_to_assess_fully: "Unable to assess fully",
+  unable_to_assess_fully: "Authority assessment incomplete",
 };
 
 // ─── Receipt primitives ──────────────────────────────────────────────────────

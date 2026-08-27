@@ -23,7 +23,7 @@ const EXPECTED_B_SHA256 =
 const EXPECTED_A_COPY = {
   headline: {
     text:
-      "No deviations were found in the supplied trace under the declared authority.",
+      "No authority deviations appear in the supplied trace.",
     eventIds: ["evt-000001", "evt-000002", "evt-000003"],
     findingIds: [],
   },
@@ -41,9 +41,9 @@ const EXPECTED_B_FINDINGS = [
     findingId: "finding-0001",
     ruleId: "AR-SYS-001",
     severity: "high",
-    label: "Unpermitted system accessed",
+    label: "System was not permitted",
     description:
-      'Event evt-000004 references destinationSystem "external-spreadsheet" which is absent from permittedSystems.',
+      'Event evt-000004 names destination system "external-spreadsheet." That system is missing from the permitted-systems list.',
     eventIds: ["evt-000004"],
     policyPath: "permittedSystems",
     observedValue: "external-spreadsheet",
@@ -53,9 +53,9 @@ const EXPECTED_B_FINDINGS = [
     findingId: "finding-0002",
     ruleId: "AR-SYS-001",
     severity: "high",
-    label: "Unpermitted system accessed",
+    label: "System was not permitted",
     description:
-      'Event evt-000005 references destinationSystem "external-spreadsheet" which is absent from permittedSystems.',
+      'Event evt-000005 names destination system "external-spreadsheet." That system is missing from the permitted-systems list.',
     eventIds: ["evt-000005"],
     policyPath: "permittedSystems",
     observedValue: "external-spreadsheet",
@@ -65,9 +65,9 @@ const EXPECTED_B_FINDINGS = [
     findingId: "finding-0003",
     ruleId: "AR-SYS-001",
     severity: "high",
-    label: "Unpermitted system accessed",
+    label: "System was not permitted",
     description:
-      'Event evt-000006 references destinationSystem "email-service" which is absent from permittedSystems.',
+      'Event evt-000006 names destination system "email-service." That system is missing from the permitted-systems list.',
     eventIds: ["evt-000006"],
     policyPath: "permittedSystems",
     observedValue: "email-service",
@@ -77,9 +77,9 @@ const EXPECTED_B_FINDINGS = [
     findingId: "finding-0004",
     ruleId: "AR-OP-001",
     severity: "high",
-    label: "Unpermitted operation",
+    label: "Operation was not permitted",
     description:
-      'Event evt-000006 performed operation "send" which is absent from permittedOperations.',
+      'Event evt-000006 records the operation "send." That operation is missing from the permitted-operations list.',
     eventIds: ["evt-000006"],
     policyPath: "permittedOperations",
     observedValue: "send",
@@ -89,9 +89,9 @@ const EXPECTED_B_FINDINGS = [
     findingId: "finding-0005",
     ruleId: "AR-EGRESS-001",
     severity: "high",
-    label: "Disallowed external egress",
+    label: "External destination was not permitted",
     description:
-      "Event evt-000004 moves data to an external boundary while externalEgressAllowed is false.",
+      "Event evt-000004 names an external destination. The authority envelope does not permit external egress.",
     eventIds: ["evt-000004"],
     policyPath: "externalEgressAllowed",
     observedValue: "external",
@@ -101,9 +101,9 @@ const EXPECTED_B_FINDINGS = [
     findingId: "finding-0006",
     ruleId: "AR-EGRESS-001",
     severity: "high",
-    label: "Disallowed external egress",
+    label: "External destination was not permitted",
     description:
-      "Event evt-000005 moves data to an external boundary while externalEgressAllowed is false.",
+      "Event evt-000005 names an external destination. The authority envelope does not permit external egress.",
     eventIds: ["evt-000005"],
     policyPath: "externalEgressAllowed",
     observedValue: "external",
@@ -113,9 +113,9 @@ const EXPECTED_B_FINDINGS = [
     findingId: "finding-0007",
     ruleId: "AR-EGRESS-001",
     severity: "high",
-    label: "Disallowed external egress",
+    label: "External destination was not permitted",
     description:
-      "Event evt-000006 moves data to an external boundary while externalEgressAllowed is false.",
+      "Event evt-000006 names an external destination. The authority envelope does not permit external egress.",
     eventIds: ["evt-000006"],
     policyPath: "externalEgressAllowed",
     observedValue: "external",
@@ -125,9 +125,9 @@ const EXPECTED_B_FINDINGS = [
     findingId: "finding-0008",
     ruleId: "AR-DATA-001",
     severity: "high",
-    label: "Prohibited data category moved or written",
+    label: "Restricted data in a consequential operation",
     description:
-      "Event evt-000004 includes prohibited data categories [customer_email] in a state-changing or data-moving operation.",
+      "Event evt-000004 names restricted data in a state-changing or data-moving operation: customer_email.",
     eventIds: ["evt-000004"],
     policyPath: "prohibitedDataCategories",
     observedValue: ["customer_email"],
@@ -137,9 +137,9 @@ const EXPECTED_B_FINDINGS = [
     findingId: "finding-0009",
     ruleId: "AR-DATA-001",
     severity: "high",
-    label: "Prohibited data category moved or written",
+    label: "Restricted data in a consequential operation",
     description:
-      "Event evt-000005 includes prohibited data categories [customer_email] in a state-changing or data-moving operation.",
+      "Event evt-000005 names restricted data in a state-changing or data-moving operation: customer_email.",
     eventIds: ["evt-000005"],
     policyPath: "prohibitedDataCategories",
     observedValue: ["customer_email"],
@@ -149,9 +149,9 @@ const EXPECTED_B_FINDINGS = [
     findingId: "finding-0010",
     ruleId: "AR-DATA-001",
     severity: "high",
-    label: "Prohibited data category moved or written",
+    label: "Restricted data in a consequential operation",
     description:
-      "Event evt-000006 includes prohibited data categories [customer_email] in a state-changing or data-moving operation.",
+      "Event evt-000006 names restricted data in a state-changing or data-moving operation: customer_email.",
     eventIds: ["evt-000006"],
     policyPath: "prohibitedDataCategories",
     observedValue: ["customer_email"],
@@ -161,9 +161,9 @@ const EXPECTED_B_FINDINGS = [
     findingId: "finding-0011",
     ruleId: "AR-APPROVAL-001",
     severity: "high",
-    label: "Required approval missing",
+    label: "Required approval not found",
     description:
-      'Event evt-000006 performed operation "send" which requires a linked successful human approval, but none was found.',
+      'Event evt-000006 completed "send," which requires human approval. The trace has no linked approval recorded before this action.',
     eventIds: ["evt-000006"],
     policyPath: "approvalRequiredFor",
     observedValue: "send",
@@ -173,9 +173,9 @@ const EXPECTED_B_FINDINGS = [
     findingId: "finding-0012",
     ruleId: "AR-RETRY-001",
     severity: "medium",
-    label: "Retry after ambiguous completion",
+    label: "Retry followed an uncertain result",
     description:
-      'Action "spreadsheet-export" (event evt-000005) retried (attempt 2) after prior attempt evt-000004 completed with status "unknown". This is a possible duplicate side effect; the earlier attempt outcome cannot be determined from the trace.',
+      'Event evt-000005 is attempt 2 for action "spreadsheet-export." It followed event evt-000004, recorded as "unknown." A repeated side effect is possible because the earlier event does not establish whether the destination changed.',
     eventIds: ["evt-000004", "evt-000005"],
     policyPath: undefined,
     observedValue: "unknown",
@@ -565,8 +565,8 @@ describe("complete receipt orchestration", () => {
     const retryFinding = receipt.findings.find(
       (finding) => finding.ruleId === "AR-RETRY-001",
     );
-    expect(retryFinding?.description).toContain("possible duplicate side effect");
-    expect(retryFinding?.description).toContain("cannot be determined");
+    expect(retryFinding?.description).toContain("A repeated side effect is possible");
+    expect(retryFinding?.description).toContain("does not establish whether the destination changed");
     expect(retryFinding?.description).not.toContain(
       "duplicate artifact created",
     );
@@ -584,7 +584,7 @@ describe("complete receipt orchestration", () => {
     expect(receipt.copy).toStrictEqual({
       headline: {
         text:
-          "The supplied trace contains material deviations from the declared authority.",
+          "The supplied trace shows material deviations from the declared authority.",
         eventIds: ["evt-000004", "evt-000005", "evt-000006"],
         findingIds: EXPECTED_B_FINDINGS.map((finding) => finding.findingId),
       },

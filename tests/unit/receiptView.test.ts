@@ -144,10 +144,10 @@ describe("receipt UI view helpers", () => {
       "evt-000003",
     ]);
     expect(summary.actions[0].text).toBe(
-      "Read churn risk record from crm (250 records). Named data: churn score and account ID.",
+      "Read churn risk record from crm. Quantity: 250 records. Named data: churn score and account ID.",
     );
-    expect(summary.actions[1].text).toContain("No data category was supplied.");
-    expect(summary.actions[2].text).toContain("quantity not supplied");
+    expect(summary.actions[1].text).toContain("Data category was not supplied.");
+    expect(summary.actions[2].text).toContain("Quantity was not supplied.");
     expect(summary.systems.map((system) => system.systemId)).toEqual([
       "crm",
       "internal-kb",
@@ -162,8 +162,8 @@ describe("receipt UI view helpers", () => {
       eventIds: ["evt-000001"],
     });
     expect(summary.noObservedActivity.map((item) => item.text)).toEqual([
-      "No supplied event named the restricted data category customer email.",
-      "No supplied event named an external destination.",
+      "The restricted data category customer email does not appear in any supplied event.",
+      "No supplied event names an external destination.",
     ]);
     expect(summary.noObservedActivity[0].eventIds).toEqual(
       result.receipt.events.map((event) => event.eventId),
@@ -183,13 +183,13 @@ describe("receipt UI view helpers", () => {
     expect(summary.actions[3]).toMatchObject({
       eventId: "evt-000004",
       status: "unknown",
-      text: "Attempt 1: Tried to create spreadsheet in external spreadsheet (120 records); the trace leaves the result unknown. Named data: customer email.",
+      text: "Attempt 1: Tried to create spreadsheet in external spreadsheet. The result is unknown in the trace. Quantity: 120 records. Named data: customer email.",
     });
     expect(summary.actions[4].text).toBe(
-      "Attempt 2: Created spreadsheet in external spreadsheet (120 records). Named data: customer email.",
+      "Attempt 2: Created spreadsheet in external spreadsheet. Quantity: 120 records. Named data: customer email.",
     );
     expect(summary.actions[5].text).toBe(
-      "Sent customer message to email service (20 messages). Named data: customer email.",
+      "Sent customer message to email service. Quantity: 20 messages. Named data: customer email.",
     );
     expect(summary.systems.map((system) => system.systemId)).toEqual([
       "crm",
@@ -200,7 +200,7 @@ describe("receipt UI view helpers", () => {
     ]);
     expect(summary.noObservedActivity).toHaveLength(1);
     expect(summary.noObservedActivity[0].text).toBe(
-      "Nothing in the declared system and restricted-data list can be safely marked untouched from this trace.",
+      "Every declared system and restricted data category appears in the trace, and at least one external destination is named.",
     );
   });
 

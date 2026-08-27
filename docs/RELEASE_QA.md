@@ -10,7 +10,9 @@ This ledger separates automated evidence from browser, manual-accessibility, liv
 
 | Check | Latest result | What it supports |
 |---|---|---|
-| `npm run verify` | Passed: lint with zero warnings, strict TypeScript, 11 test files and 280 tests, production build | Current repository compiles and the tested deterministic contracts pass |
+| `npm run verify` | Passed: lint with zero warnings, strict TypeScript, 12 test files and 287 tests, production build, release audit | Current repository compiles and the tested deterministic and release-safety contracts pass |
+| GitHub Actions `CI` | Passed for commit `f3897aa9a6aed63c9a54965a0f7860dd1240387f`: clean checkout, Node.js 24, dependency install, and `npm run verify` | Hosted verification matches the pushed release candidate |
+| `npm run release:audit` | Passed: 56 staged source text files, 147 production-build text files, 474 dependency entries, 0 app-owned media assets, 8 exact build-root references in Next.js required-server metadata | Repeatable high-signal secret, personal-path/email, dependency-license, and app-asset-attribution checks; the deployed artifact must still be scanned separately |
 | Strict UI static scan | Passed: 0 errors, 0 warnings | Source-level UI heuristics only; not rendered or assistive-technology proof |
 | `git diff --check` | Passed | No whitespace-error patch defects |
 
@@ -49,7 +51,7 @@ These checks should be repeated against the deployed commit before submission.
 ## Open release gates
 
 - [ ] Run `npm ci` and `npm run verify` from a clean clone or clean Codespace.
-- [ ] Verify current GitHub Actions on the exact release commit.
+- [x] Verify current GitHub Actions on the exact release commit.
 - [ ] Configure and test live watsonx.ai credentials and an available Granite model; confirm fallback after a forced live failure.
 - [x] Run a browser zoom/text-enlargement-equivalent pass on the core journey.
 - [x] Test long task, system, and agent names at 390 px and 1280 px, plus the 640 px enlargement-equivalent width.

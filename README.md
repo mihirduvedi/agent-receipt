@@ -85,7 +85,7 @@ Run the complete local gate:
 npm run verify
 ```
 
-The latest local snapshot passes lint with zero warnings, strict TypeScript, 280 tests across 11 files, and a production build. Strict UI static analysis reports zero errors and zero warnings. Rendered checks cover both synthetic fixture flows, evidence focus/close/restore behavior, explicit unknown outcomes, a complete text alternative for system movement, and 390 px, 1280 px, and 1440 px layouts without document-level overflow or browser-console errors.
+The latest local snapshot passes lint with zero warnings, strict TypeScript, 287 tests across 12 files, a production build, and the deterministic release audit. The audit checks tracked source and production-build text for high-signal secrets, personal paths, and personal email addresses; verifies dependency license metadata; and requires attribution for app-owned media. Strict UI static analysis reports zero errors and zero warnings. Rendered checks cover both synthetic fixture flows, evidence focus/close/restore behavior, explicit unknown outcomes, a complete text alternative for system movement, and 390 px, 1280 px, and 1440 px layouts without document-level overflow or browser-console errors.
 
 These are local results, not proof of live Granite, deployed, signed-out, screen-reader, or cross-browser behavior. See the evidence and remaining gates in [docs/RELEASE_QA.md](docs/RELEASE_QA.md).
 

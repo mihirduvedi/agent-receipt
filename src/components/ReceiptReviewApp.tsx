@@ -32,11 +32,13 @@ import {
   authorityToDraft,
   blankAuthorityDraft,
   buildHumanActionSummary,
+  buildManagerIncidentBrief,
+  buildRecoveryPlan,
   buildSystemEdges,
   exactFixtureBytes,
+  formatTraceSourceLabel,
   groupSystemsByBoundary,
   resolveRawPointer,
-  sortFindingsByAttention,
   summarizeReceipt,
   validateAuthorityDraft,
   validateTraceBytes,
@@ -44,6 +46,9 @@ import {
 import type {
   AuthorityDraft,
   HumanActionSummary,
+  IncidentBrief,
+  RecoveryAction,
+  TraceSourceKind,
 } from "../ui/receiptView";
 
 type Step = "intake" | "authority" | "receipt";
@@ -51,7 +56,7 @@ type Step = "intake" | "authority" | "receipt";
 type TraceSource = {
   bytes: Uint8Array;
   label: string;
-  synthetic: boolean;
+  kind: TraceSourceKind;
 };
 
 type SuccessfulBuild = Extract<BuildReceiptResult, { ok: true }>;
@@ -188,7 +193,7 @@ export function ReceiptReviewApp() {
   function beginWithSource(
     bytes: Uint8Array,
     label: string,
-    synthetic: boolean,
+    kind: TraceSourceKind,
     useSampleAuthority: boolean,
   ) {
     const validation = validateTraceBytes(bytes, MAX_TRACE_BYTES);
@@ -202,7 +207,7 @@ export function ReceiptReviewApp() {
     setIntakeError(null);
     setBuildError(null);
     setExportStatus("");
-    setSource({ bytes: Uint8Array.from(bytes), label, synthetic });
+    setSource({ bytes: Uint8Array.from(bytes), label, kind });
     setAuthorityDraft(
       useSampleAuthority ? authorityToDraft(sharedAuthority) : blankAuthorityDraft(),
     );
@@ -215,7 +220,7 @@ export function ReceiptReviewApp() {
     beginWithSource(
       exactFixtureBytes(trace),
       kind === "expected" ? "Expected run" : "Overreaching run",
-      true,
+      "synthetic",
       true,
     );
   }
@@ -239,18 +244,18 @@ export function ReceiptReviewApp() {
       return;
     }
     const bytes = new Uint8Array(await file.arrayBuffer());
-    beginWithSource(bytes, file.name, false, false);
+    beginWithSource(bytes, file.name, "upload", false);
   }
 
   function usePastedTrace() {
     if (pasteValue.trim().length === 0) {
-      setIntakeError({ message: "Paste one Native Trace v1 JSON object first." });
+      setIntakeError({ message: "Paste one Native Trace v1 or supported OTLP/JSON object first." });
       return;
     }
     beginWithSource(
       new TextEncoder().encode(pasteValue),
       "Pasted trace",
-      false,
+      "paste",
       false,
     );
   }
@@ -332,7 +337,7 @@ export function ReceiptReviewApp() {
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
-      setExportStatus("Receipt downloaded. The file passed schema validation and excludes the uploaded source.");
+      setExportStatus("Receipt downloaded. The file passed schema validation and excludes the source trace.");
     } catch {
       setExportStatus("Export stopped because the receipt failed validation.");
     }
@@ -427,7 +432,7 @@ export function ReceiptReviewApp() {
         <EvidenceDrawer
           request={evidence}
           build={result}
-          synthetic={source?.synthetic ?? false}
+          sourceKind={source?.kind ?? "upload"}
           closeButtonRef={closeButtonRef}
           onClose={closeEvidence}
         />
@@ -468,8 +473,9 @@ function IntakeStep({
         <div className="trust-note">
           <span aria-hidden="true">01</span>
           <p>
-            Your uploaded trace stays in this browser session. The Granite route receives the
-            event and finding facts needed to write the receipt, with sensitive fields removed.
+            Your source trace stays in this browser session. The server route recomputes the
+            findings and sends Granite only the minimized, redacted facts needed to draft the
+            receipt.
           </p>
         </div>
       </section>
@@ -480,7 +486,7 @@ function IntakeStep({
             <p className="section-number">Step 01</p>
             <h2 id="choose-trace-title">Choose a trace</h2>
           </div>
-          <p>Agent Receipt Native Trace v1 JSON · 2 MiB max</p>
+          <p>Native Trace v1 or supported OTLP/JSON · 2 MiB max</p>
         </div>
 
         {error ? <ErrorSummary error={error} /> : null}
@@ -531,7 +537,7 @@ function IntakeStep({
               placeholder={'{\n  "schemaVersion": "agent-receipt.native-trace.v1"\n}' }
             />
             <div className="field-action-row">
-              <p id="trace-json-help">Paste one UTF-8 JSON object. JSONL files and remote URLs are not supported.</p>
+              <p id="trace-json-help">Paste one UTF-8 JSON object. Native Trace v1 and the documented OTLP resourceSpans shape are supported; JSONL and remote URLs are not.</p>
               <button className="secondary-button" type="button" onClick={onUsePaste}>
                 Use pasted trace
               </button>
@@ -602,8 +608,8 @@ function AuthorityStep(props: AuthorityStepProps) {
         </p>
         <dl className="source-facts">
           <div><dt>Trace</dt><dd>{props.source.label}</dd></div>
-          <div><dt>Input</dt><dd>{props.source.synthetic ? "Synthetic fixture" : "Uploaded or pasted trace"}</dd></div>
-          <div><dt>File size</dt><dd>{props.source.bytes.byteLength.toLocaleString()}</dd></div>
+          <div><dt>Input</dt><dd>{formatTraceSourceLabel(props.source.kind)}</dd></div>
+          <div><dt>File size</dt><dd>{props.source.bytes.byteLength.toLocaleString()} bytes</dd></div>
         </dl>
       </aside>
 
@@ -847,7 +853,8 @@ function ReceiptStep(props: {
   const { receipt } = props.build;
   const metrics = summarizeReceipt(receipt);
   const humanSummary = buildHumanActionSummary(receipt);
-  const attention = sortFindingsByAttention(receipt.findings, receipt.events);
+  const incidents = buildManagerIncidentBrief(receipt);
+  const recoveryPlan = buildRecoveryPlan(receipt, incidents);
   const findingsByEvent = new Map<string, Finding[]>();
   for (const finding of receipt.findings) {
     for (const eventId of finding.eventIds) {
@@ -860,6 +867,8 @@ function ReceiptStep(props: {
       <nav className="receipt-nav" aria-label="Receipt sections">
         <span>In this receipt</span>
         <a href="#overview">Overview</a>
+        <a href="#brief">Incident brief</a>
+        <a href="#recovery">Recovery plan</a>
         <a href="#human-summary">Trace summary</a>
         <a href="#activity">Timeline</a>
         <a href="#movement">Systems and data</a>
@@ -880,7 +889,7 @@ function ReceiptStep(props: {
         <div className="verdict-copy">
           <p className="source-line">
             <span>{receipt.integrity.generationSource === "granite" ? "Granite explanation" : "Deterministic template"}</span>
-            <span>{props.source.synthetic ? "Synthetic sample" : "Uploaded trace"}</span>
+            <span>{formatTraceSourceLabel(props.source.kind)}</span>
           </p>
           <h1 id="verdict-title">{receipt.verdictLabel}</h1>
           <p className="verdict-qualifier">{receipt.verdictQualifier}</p>
@@ -894,7 +903,7 @@ function ReceiptStep(props: {
         </div>
         <div className="verdict-attention">
           <span className="attention-count">{receipt.findings.length.toString().padStart(2, "0")}</span>
-          <p>{receipt.findings.length} {receipt.findings.length === 1 ? "finding" : "findings"} to review</p>
+          <p>{receipt.findings.length === 0 ? "No findings to review" : receipt.findings.length === 1 ? "Finding to review" : "Findings to review"}</p>
           <a href="#deviations">Go to findings ↓</a>
         </div>
       </section>
@@ -934,37 +943,13 @@ function ReceiptStep(props: {
         ))}
       </section>
 
-      <section className="attention-section" aria-labelledby="attention-title">
-        <div className="section-heading">
-          <div>
-            <p className="section-number">Review queue</p>
-            <h2 id="attention-title">Findings to review</h2>
-          </div>
-          <p>Highest severity first. Ties follow event order.</p>
-        </div>
-        {attention.length === 0 ? (
-          <div className="clean-state">
-            <span aria-hidden="true">✓</span>
-            <div>
-              <strong>No findings in this trace.</strong>
-              <p>The recorded events fit the declared authority. Check the evidence you need, then record your decision.</p>
-            </div>
-          </div>
-        ) : (
-          <ol className="attention-list">
-            {attention.map((finding) => (
-              <li key={finding.findingId}>
-                <span className={`severity severity-${finding.severity}`}>{finding.severity}</span>
-                <div><strong>{finding.label}</strong><p>{finding.description}</p></div>
-                <button
-                  type="button"
-                  onClick={(event) => props.onOpenEvidence(event, finding.label, finding.eventIds, [finding.findingId])}
-                >Evidence ↗</button>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+      <IncidentBriefPanel incidents={incidents} onOpen={props.onOpenEvidence} />
+
+      <RecoveryPlanPanel
+        incidents={incidents}
+        actions={recoveryPlan}
+        onOpen={props.onOpenEvidence}
+      />
 
       <HumanActionSummaryPanel
         summary={humanSummary}
@@ -1086,7 +1071,7 @@ function ReceiptStep(props: {
           ))}
         </fieldset>
         <div className="export-panel">
-          <p>The JSON export contains the authority, canonical events, findings, receipt notes, coverage, integrity record, and your decision. The uploaded source stays in this browser session.</p>
+          <p>The JSON export contains the authority, canonical events, findings, receipt notes, coverage, integrity record, and your decision. The source trace stays in this browser session.</p>
           <button className="primary-button" type="button" onClick={props.onDownload}>Download receipt JSON</button>
           <p className="export-status" aria-live="polite">{props.exportStatus}</p>
         </div>
@@ -1114,6 +1099,136 @@ function EvidenceClaim(props: {
         Evidence <span aria-hidden="true">↗</span>
       </button>
     </div>
+  );
+}
+
+function IncidentBriefPanel(props: {
+  incidents: IncidentBrief[];
+  onOpen: OpenEvidence;
+}) {
+  const findingCount = props.incidents.reduce(
+    (total, incident) => total + incident.findingCount,
+    0,
+  );
+
+  return (
+    <section id="brief" className="attention-section incident-brief" aria-labelledby="incident-brief-title">
+      <div className="section-heading">
+        <div>
+          <p className="section-number">Manager incident brief</p>
+          <h2 id="incident-brief-title">
+            {props.incidents.length === 0
+              ? "No incidents to triage"
+              : `${props.incidents.length} ${props.incidents.length === 1 ? "incident" : "incidents"} behind ${findingCount} ${findingCount === 1 ? "finding" : "findings"}`}
+          </h2>
+        </div>
+        <p>Grouped deterministically by cited events and shared action keys. Every finding remains below.</p>
+      </div>
+      {props.incidents.length === 0 ? (
+        <div className="clean-state">
+          <span aria-hidden="true">✓</span>
+          <div>
+            <strong>No findings in this trace.</strong>
+            <p>The recorded events fit the declared authority. Check the evidence you need, then record your decision.</p>
+          </div>
+        </div>
+      ) : (
+        <ol className="incident-list">
+          {props.incidents.map((incident) => (
+            <li key={incident.incidentId}>
+              <article className="incident-card">
+                <div className="incident-card-heading">
+                  <div>
+                    <span className={`severity severity-${incident.severity}`}>{incident.severity}</span>
+                    <code>{incident.incidentId}</code>
+                  </div>
+                  <span>{incident.findingCount} {incident.findingCount === 1 ? "finding" : "findings"}</span>
+                </div>
+                <h3>{incident.title}</h3>
+                <p>{incident.summary}</p>
+                <dl>
+                  <div><dt>Events</dt><dd>{incident.eventIds.join(", ") || "No event citation"}</dd></div>
+                  <div><dt>Systems</dt><dd>{incident.systems.length > 0 ? formatPlainList(incident.systems.map(formatIdentifier)) : "Not supplied"}</dd></div>
+                  <div><dt>Named data</dt><dd>{incident.dataCategories.length > 0 ? formatPlainList(incident.dataCategories.map(formatIdentifier)) : "Not supplied"}</dd></div>
+                </dl>
+                <button
+                  type="button"
+                  onClick={(event) => props.onOpen(
+                    event,
+                    incident.title,
+                    incident.eventIds,
+                    incident.findingIds,
+                  )}
+                >Open incident evidence ↗</button>
+              </article>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+}
+
+function RecoveryPlanPanel(props: {
+  incidents: IncidentBrief[];
+  actions: RecoveryAction[];
+  onOpen: OpenEvidence;
+}) {
+  return (
+    <section id="recovery" className="recovery-section" aria-labelledby="recovery-title">
+      <div className="recovery-heading">
+        <div>
+          <p className="section-number">Human-approved recovery plan</p>
+          <h2 id="recovery-title">Plan the repair. Keep execution accountable.</h2>
+        </div>
+        <p>
+          These are deterministic, evidence-linked proposals. Agent Receipt has not accessed
+          the named systems, executed a fix, or verified recovery.
+        </p>
+      </div>
+      {props.actions.length === 0 ? (
+        <p className="recovery-empty">No corrective actions are proposed because this receipt contains no findings.</p>
+      ) : (
+        <ol className="recovery-list">
+          {props.actions.map((action, index) => {
+            const incident = props.incidents.find(
+              (candidate) => candidate.incidentId === action.incidentId,
+            );
+            return (
+              <li key={action.actionId}>
+                <article>
+                  <div className="recovery-action-meta">
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <span>Proposed · not executed</span>
+                    <code>{action.incidentId}</code>
+                  </div>
+                  <h3>{action.title}</h3>
+                  <p>{action.description}</p>
+                  <dl>
+                    <div><dt>Authority required</dt><dd>{action.authorityRequired}</dd></div>
+                    <div><dt>Reversibility</dt><dd>{action.reversibility}</dd></div>
+                  </dl>
+                  <button
+                    type="button"
+                    onClick={(event) => props.onOpen(
+                      event,
+                      `${action.title}${incident ? ` — ${incident.title}` : ""}`,
+                      action.eventIds,
+                      action.findingIds,
+                    )}
+                  >Review supporting evidence ↗</button>
+                </article>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+      <p className="recovery-boundary">
+        Why planning only: safe remediation needs current system state, authenticated authority,
+        platform-specific rollback, and human approval. Automatic changes would exceed this
+        post-run review MVP and could destroy evidence or compound the original mistake.
+      </p>
+    </section>
   );
 }
 
@@ -1416,13 +1531,13 @@ function IntegrityStrip({ receipt }: { receipt: ReceiptResult }) {
 function EvidenceDrawer({
   request,
   build,
-  synthetic,
+  sourceKind,
   closeButtonRef,
   onClose,
 }: {
   request: EvidenceRequest;
   build: SuccessfulBuild;
-  synthetic: boolean;
+  sourceKind: TraceSourceKind;
   closeButtonRef: React.RefObject<HTMLButtonElement | null>;
   onClose: () => void;
 }) {
@@ -1454,7 +1569,7 @@ function EvidenceDrawer({
           <button ref={closeButtonRef} type="button" onClick={onClose} aria-label="Close evidence drawer">Close</button>
         </header>
         <div className="drawer-source-note">
-          <strong>{synthetic ? "Synthetic fixture" : "Uploaded trace"}</strong>
+          <strong>{formatTraceSourceLabel(sourceKind)}</strong>
           <span>The normalized event and retained source object are shown from this browser session.</span>
         </div>
         <div className="drawer-content">

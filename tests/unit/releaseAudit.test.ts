@@ -1,8 +1,14 @@
+import { execFileSync } from "node:child_process";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
   auditAssetLicenses,
   auditPackageLicenses,
+  runReleaseAudit,
   scanTextForReleaseFindings,
 } from "@/release/audit";
 
@@ -128,5 +134,34 @@ describe("release audit", () => {
       ],
       unlicensedAssets: ["src/app/icon.png"],
     });
+  });
+
+  it("scans release-scoped untracked files before they are staged", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "agent-receipt-audit-"));
+    execFileSync("git", ["init", "-q"], { cwd: root });
+    await mkdir(path.join(root, "src"), { recursive: true });
+    await mkdir(path.join(root, ".next", "server"), { recursive: true });
+    await writeFile(
+      path.join(root, "package-lock.json"),
+      JSON.stringify({ packages: { "": { license: "UNLICENSED" } } }),
+    );
+    await writeFile(path.join(root, "README.md"), "# Test candidate\n");
+    await writeFile(
+      path.join(root, "src", "untracked-secret.ts"),
+      ["WATSONX_API_KEY", "live-untracked-secret"].join("="),
+    );
+    await writeFile(
+      path.join(root, ".next", "server", "app.js"),
+      "export const built = true;\n",
+    );
+
+    const report = await runReleaseAudit(root);
+
+    expect(report.findings).toContainEqual({
+      code: "REL-SECRET-001",
+      file: "src/untracked-secret.ts",
+      detail: "A credential environment variable has a populated value.",
+    });
+    expect(report.sourceFilesScanned).toBe(3);
   });
 });

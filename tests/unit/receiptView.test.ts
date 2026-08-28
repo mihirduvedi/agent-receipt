@@ -2,13 +2,21 @@ import { describe, expect, it } from "vitest";
 
 import { buildReceipt, MAX_TRACE_BYTES } from "../../src/core/receipt.js";
 import type { Finding } from "../../src/core/schemas/index.js";
-import { fixtureA, fixtureB, sharedAuthority } from "../../src/fixtures/index.js";
+import {
+  fixtureA,
+  fixtureB,
+  otlpGenAiFixture,
+  sharedAuthority,
+} from "../../src/fixtures/index.js";
 import {
   authorityToDraft,
   blankAuthorityDraft,
   buildHumanActionSummary,
+  buildManagerIncidentBrief,
+  buildRecoveryPlan,
   buildSystemEdges,
   exactFixtureBytes,
+  formatTraceSourceLabel,
   groupSystemsByBoundary,
   resolveRawPointer,
   sortFindingsByAttention,
@@ -18,6 +26,12 @@ import {
 } from "../../src/ui/receiptView.js";
 
 describe("receipt UI view helpers", () => {
+  it("keeps synthetic, uploaded, and pasted source provenance distinct", () => {
+    expect(formatTraceSourceLabel("synthetic")).toBe("Synthetic fixture");
+    expect(formatTraceSourceLabel("upload")).toBe("Uploaded trace");
+    expect(formatTraceSourceLabel("paste")).toBe("Pasted trace");
+  });
+
   it("encodes committed samples with exact reproducible bytes", () => {
     const expected = exactFixtureBytes(fixtureA);
     expect(new TextDecoder().decode(expected)).toBe(
@@ -29,7 +43,7 @@ describe("receipt UI view helpers", () => {
 
   it("validates intake without changing bytes or echoing invalid JSON content", () => {
     const valid = validateTraceBytes(exactFixtureBytes(fixtureA), MAX_TRACE_BYTES);
-    expect(valid).toEqual({ ok: true, trace: fixtureA });
+    expect(valid).toEqual({ ok: true, format: "native", trace: fixtureA });
 
     const secret = "secret-input-value-should-not-appear";
     const invalid = validateTraceBytes(
@@ -57,6 +71,23 @@ describe("receipt UI view helpers", () => {
     );
     expect(unsupported.ok).toBe(false);
     if (!unsupported.ok) expect(unsupported.code).toBe("unsupported_format");
+  });
+
+  it("accepts only the documented OTLP/JSON resourceSpans shape", () => {
+    const accepted = validateTraceBytes(
+      new TextEncoder().encode(JSON.stringify(otlpGenAiFixture)),
+      MAX_TRACE_BYTES,
+    );
+    expect(accepted).toEqual({ ok: true, format: "otlp" });
+
+    const malformed = validateTraceBytes(
+      new TextEncoder().encode(JSON.stringify({ resourceSpans: [{}] })),
+      MAX_TRACE_BYTES,
+    );
+    expect(malformed.ok).toBe(false);
+    if (malformed.ok) return;
+    expect(malformed.code).toBe("invalid_trace");
+    expect(malformed.message).toContain("supported resourceSpans shape");
   });
 
   it("maps authority drafts through the authoritative Zod boundary", () => {
@@ -202,6 +233,76 @@ describe("receipt UI view helpers", () => {
     expect(summary.noObservedActivity[0].text).toBe(
       "Every declared system and restricted data category appears in the trace, and at least one external destination is named.",
     );
+  });
+
+  it("groups rule findings into two deterministic manager incidents", async () => {
+    const result = await buildReceipt({
+      rawBytes: exactFixtureBytes(fixtureB),
+      authority: sharedAuthority,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const incidents = buildManagerIncidentBrief(result.receipt);
+    expect(incidents).toHaveLength(2);
+    expect(incidents[0]).toMatchObject({
+      incidentId: "incident-001",
+      title: "External spreadsheet creation retried after an unknown result",
+      severity: "high",
+      eventIds: ["evt-000004", "evt-000005"],
+      findingCount: 7,
+      statuses: ["unknown", "succeeded"],
+      systems: ["external-spreadsheet"],
+      dataCategories: ["customer_email"],
+    });
+    expect(incidents[0].findingIds).toHaveLength(7);
+    expect(incidents[0].summary).toContain("7 deterministic findings");
+    expect(incidents[1]).toMatchObject({
+      incidentId: "incident-002",
+      title: "20 customer messages sent to email service",
+      severity: "high",
+      eventIds: ["evt-000006"],
+      findingCount: 5,
+    });
+    expect(
+      incidents.flatMap((incident) => incident.findingIds).sort(),
+    ).toEqual(result.receipt.findings.map((finding) => finding.findingId).sort());
+  });
+
+  it("builds cited recovery proposals without claiming execution", async () => {
+    const result = await buildReceipt({
+      rawBytes: exactFixtureBytes(fixtureB),
+      authority: sharedAuthority,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const incidents = buildManagerIncidentBrief(result.receipt);
+    const actions = buildRecoveryPlan(result.receipt, incidents);
+    expect(actions).toHaveLength(6);
+    expect(actions.every((action) => action.status === "proposed")).toBe(true);
+    expect(actions.every((action) => action.eventIds.length > 0)).toBe(true);
+    expect(actions.every((action) => action.findingIds.length > 0)).toBe(true);
+    expect(actions.map((action) => action.title)).toEqual([
+      "Resolve the ambiguous destination state",
+      "Review access and contain the external copy",
+      "Correct the authority controls before another run",
+      "Preserve and verify the destination evidence",
+      "Review delivery scope and available containment",
+      "Correct the authority controls before another run",
+    ]);
+    expect(actions.map((action) => action.description).join(" ")).toContain(
+      "Agent Receipt does not execute",
+    );
+
+    const expected = await buildReceipt({
+      rawBytes: exactFixtureBytes(fixtureA),
+      authority: sharedAuthority,
+    });
+    expect(expected.ok).toBe(true);
+    if (!expected.ok) return;
+    expect(buildManagerIncidentBrief(expected.receipt)).toEqual([]);
+    expect(buildRecoveryPlan(expected.receipt)).toEqual([]);
   });
 
   it("orders attention items by severity and then event sequence", () => {

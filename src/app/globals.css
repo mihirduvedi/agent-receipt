@@ -505,6 +505,8 @@ textarea::placeholder {
 .event-evidence-button,
 .evidence-claim button,
 .attention-list button,
+.incident-card button,
+.recovery-list button,
 .finding-card button,
 .responsive-table button {
   min-height: 44px;
@@ -1186,6 +1188,8 @@ fieldset.form-section > p,
 }
 
 .attention-list button,
+.incident-card button,
+.recovery-list button,
 .finding-card button,
 .responsive-table button {
   padding: 8px 10px;
@@ -1194,10 +1198,243 @@ fieldset.form-section > p,
 }
 
 .attention-list button:hover,
+.incident-card button:hover,
+.recovery-list button:hover,
 .finding-card button:hover,
 .responsive-table button:hover {
   background: var(--ink);
   color: var(--paper);
+}
+
+.incident-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.incident-list > li {
+  min-width: 0;
+}
+
+.incident-card {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  padding: 26px;
+  border: 1px solid var(--ink);
+  background: var(--raised);
+  box-shadow: inset 6px 0 0 var(--red);
+}
+
+.incident-card-heading,
+.recovery-action-meta {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.incident-card-heading {
+  justify-content: space-between;
+}
+
+.incident-card-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.incident-card h3 {
+  max-width: 24ch;
+  margin: 26px 0 12px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.75rem, 2.8vw, 2.6rem);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.incident-card > p {
+  color: var(--muted);
+}
+
+.incident-card dl,
+.recovery-list dl {
+  display: grid;
+  gap: 10px;
+  margin: auto 0 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.incident-card dl > div,
+.recovery-list dl > div {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  gap: 14px;
+}
+
+.incident-card dt,
+.recovery-list dt {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.incident-card dd,
+.recovery-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+}
+
+.incident-card button,
+.recovery-list button {
+  width: fit-content;
+  padding: 9px 11px;
+  border: 1px solid currentColor;
+  background: transparent;
+}
+
+.incident-card button:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.recovery-section {
+  padding: clamp(38px, 6vw, 82px);
+  border-bottom: 1px solid var(--ink);
+  background: #262c29;
+  color: var(--paper);
+}
+
+.recovery-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(300px, 0.55fr);
+  gap: 48px;
+  align-items: end;
+  margin-bottom: 36px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #646b67;
+}
+
+.recovery-heading .section-number {
+  color: var(--signal);
+}
+
+.recovery-heading h2 {
+  max-width: 16ch;
+  margin-bottom: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.4rem, 5vw, 4.8rem);
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+}
+
+.recovery-heading > p,
+.recovery-boundary {
+  color: #c8cfca;
+}
+
+.recovery-heading > p {
+  margin-bottom: 0;
+}
+
+.recovery-list {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid #646b67;
+  list-style: none;
+}
+
+.recovery-list > li {
+  border-bottom: 1px solid #646b67;
+}
+
+.recovery-list article {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.45fr) minmax(0, 1.05fr) minmax(280px, 0.65fr);
+  gap: 26px;
+  align-items: start;
+  padding: 24px 0;
+}
+
+.recovery-action-meta {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.recovery-action-meta > span:first-child {
+  color: var(--signal);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.8rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.recovery-action-meta > span:nth-child(2) {
+  padding: 5px 7px;
+  border: 1px solid #929a94;
+  color: var(--paper);
+  text-transform: uppercase;
+}
+
+.recovery-list h3 {
+  margin-bottom: 10px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.65rem;
+  font-weight: 400;
+}
+
+.recovery-list article > p {
+  grid-column: 2;
+  margin-bottom: 0;
+  color: #c8cfca;
+}
+
+.recovery-list dl {
+  grid-row: 1 / span 2;
+  grid-column: 3;
+  margin: 0;
+  border-color: #646b67;
+}
+
+.recovery-list dt,
+.recovery-action-meta {
+  color: #aeb6b0;
+}
+
+.recovery-list button {
+  grid-column: 2;
+  color: var(--paper);
+}
+
+.recovery-list button:hover {
+  border-color: var(--signal);
+  background: var(--signal);
+  color: var(--signal-dark);
+}
+
+.recovery-boundary {
+  max-width: 92ch;
+  margin: 30px 0 0;
+  padding-left: 18px;
+  border-left: 5px solid var(--signal);
+  font-size: 0.82rem;
+}
+
+.recovery-empty {
+  padding: 22px;
+  border: 1px solid #646b67;
+  color: #c8cfca;
 }
 
 .human-summary-qualifier {
@@ -2209,6 +2446,8 @@ tr:last-child td {
   .event-evidence-button:hover,
   .evidence-claim button:hover,
   .attention-list button:hover,
+  .incident-card button:hover,
+  .recovery-list button:hover,
   .finding-card button:hover,
   .responsive-table button:hover {
     transition-duration: 120ms;
@@ -2340,6 +2579,25 @@ tr:last-child td {
 
   .task-outcome {
     grid-template-columns: 1fr;
+  }
+
+  .incident-list,
+  .recovery-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .recovery-heading {
+    gap: 24px;
+    align-items: start;
+  }
+
+  .recovery-list article {
+    grid-template-columns: 155px minmax(0, 1fr);
+  }
+
+  .recovery-list dl {
+    grid-row: auto;
+    grid-column: 2;
   }
 
   .task-outcome > div:first-child {
@@ -2535,6 +2793,47 @@ tr:last-child td {
   .attention-section,
   .receipt-section {
     padding: 30px 20px;
+  }
+
+  .incident-card {
+    padding: 22px 18px;
+  }
+
+  .incident-card-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .incident-card dl > div,
+  .recovery-list dl > div {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .recovery-section {
+    padding: 38px 20px;
+  }
+
+  .recovery-list article {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .recovery-list article > p,
+  .recovery-list dl,
+  .recovery-list button {
+    grid-row: auto;
+    grid-column: 1;
+  }
+
+  .recovery-action-meta {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .recovery-action-meta code {
+    grid-column: 2;
   }
 
   .human-summary-qualifier {

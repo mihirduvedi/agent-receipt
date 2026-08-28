@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { deterministicFallback } from "./deterministicFallback";
 import type { GraniteFactBundle } from "./factBundle";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -36,41 +35,57 @@ export type GraniteCaller = (
 // ─── Response schemas ─────────────────────────────────────────────────────────
 
 const IamResponseSchema = z
-  .object({ access_token: z.string().min(1) })
+  .object({
+    access_token: z.string().min(1),
+    expires_in: z.number().int().positive().optional(),
+    expiration: z.number().int().positive().optional(),
+  })
   .passthrough();
 
-const WatsonxResponseSchema = z
+const WatsonxChatResponseSchema = z
   .object({
-    results: z
-      .array(z.object({ generated_text: z.string() }))
+    choices: z
+      .array(
+        z
+          .object({
+            message: z
+              .object({ content: z.string().min(1) })
+              .passthrough(),
+          })
+          .passthrough(),
+      )
       .min(1),
   })
   .passthrough();
 
 // ─── Prompt builder ───────────────────────────────────────────────────────────
 
+const SYSTEM_PROMPT =
+  "You prioritize already-verified policy findings for an AI operations manager. " +
+  "You do not write claims, infer missing facts, change verdicts, or execute actions. " +
+  "Return JSON only.";
+
 const OUTPUT_CONTRACT = `Return exactly one JSON object with this shape:
-{
-  "headline": { "text": "...", "eventIds": ["evt-..."], "findingIds": ["finding-..."] },
-  "outcome": { "text": "... Based on the supplied trace and authority envelope.", "eventIds": ["evt-..."] },
-  "notableActions": [
-    { "text": "...", "eventIds": ["evt-..."], "findingIds": ["finding-..."] }
-  ],
-  "limitations": [
-    { "text": "...", "eventIds": ["evt-..."] }
-  ]
-}
-Do not add keys. Copy the deterministic fallback headline for verdictCode exactly into headline.text and copy verdictQualifier exactly into outcome.text. For notableActions, select and reorder zero or more bundle findings, but copy each as "label: description" with that finding's exact eventIds and findingId; do not paraphrase it. Keep limitation text and eventIds in exactly the same order and count as the bundle limitations. Use domain identifiers exactly as written in cited evidence. Every headline, outcome, and notable action needs a valid evidence citation.`;
+{"notableFindingIds":["finding-..."]}
+Do not add keys. Select at most five IDs from the supplied findings. Use each ID at most once. Put the most decision-relevant findings first. If there are no findings, return an empty array.`;
 
 function buildPrompt(
   bundle: GraniteFactBundle,
   repairErrors?: string[],
 ): string {
-  const bundleJson = JSON.stringify(bundle);
-  const requiredHeadline = deterministicFallback(bundle).headline.text;
-  const projectionRequirements =
-    `Required headline.text: ${JSON.stringify(requiredHeadline)}\n` +
-    `Required outcome.text: ${JSON.stringify(bundle.verdictQualifier)}\n`;
+  const selectionFacts = {
+    verdictCode: bundle.verdictCode,
+    task: bundle.task,
+    findings: bundle.findings.map((finding) => ({
+      findingId: finding.findingId,
+      severity: finding.severity,
+      ruleId: finding.ruleId,
+      label: finding.label,
+      description: finding.description,
+      eventIds: finding.eventIds,
+    })),
+  };
+  const bundleJson = JSON.stringify(selectionFacts);
 
   if (repairErrors && repairErrors.length > 0) {
     return (
@@ -78,19 +93,15 @@ function buildPrompt(
       repairErrors.map((e) => `- ${e}`).join("\n") +
       "\n\nPlease produce a corrected response.\n" +
       OUTPUT_CONTRACT +
-      "\n" +
-      projectionRequirements +
-      "The fact bundle is:\n" +
+      "\nThe verified finding projection is:\n" +
       bundleJson
     );
   }
 
   return (
-    "Generate receipt copy JSON for an AI operations manager.\n" +
+    "Prioritize the verified findings for an AI operations manager.\n" +
     OUTPUT_CONTRACT +
-    "\n" +
-    projectionRequirements +
-    "The fact bundle is:\n" +
+    "\nThe verified finding projection is:\n" +
     bundleJson
   );
 }
@@ -112,10 +123,26 @@ function forwardAbort(
   return () => source.removeEventListener("abort", abort);
 }
 
+type IamToken = {
+  accessToken: string;
+  expiresAtMs: number;
+};
+
+type CachedIamToken = IamToken & {
+  apiKey: string;
+};
+
+let cachedIamToken: CachedIamToken | undefined;
+
+/** Test-only reset so isolated mocked credential cases cannot share a token. */
+export function _resetGraniteTokenCacheForTests(): void {
+  cachedIamToken = undefined;
+}
+
 async function exchangeIamToken(
   apiKey: string,
   signal?: AbortSignal,
-): Promise<string | null> {
+): Promise<IamToken | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 4000);
   const stopForwardingAbort = forwardAbort(signal, controller);
@@ -149,13 +176,38 @@ async function exchangeIamToken(
     const parsed = IamResponseSchema.safeParse(json);
     if (!parsed.success) return null;
 
-    return parsed.data.access_token;
+    const now = Date.now();
+    const expiresAtMs = parsed.data.expiration
+      ? parsed.data.expiration * 1000
+      : now + (parsed.data.expires_in ?? 3600) * 1000;
+    return {
+      accessToken: parsed.data.access_token,
+      expiresAtMs,
+    };
   } catch {
     return null;
   } finally {
     clearTimeout(timer);
     stopForwardingAbort();
   }
+}
+
+async function getIamToken(
+  apiKey: string,
+  signal?: AbortSignal,
+): Promise<string | null> {
+  const minimumRemainingLifetimeMs = 60_000;
+  if (
+    cachedIamToken?.apiKey === apiKey &&
+    cachedIamToken.expiresAtMs - Date.now() > minimumRemainingLifetimeMs
+  ) {
+    return cachedIamToken.accessToken;
+  }
+
+  const token = await exchangeIamToken(apiKey, signal);
+  if (!token) return null;
+  cachedIamToken = { apiKey, ...token };
+  return token.accessToken;
 }
 
 // ─── Main client ──────────────────────────────────────────────────────────────
@@ -171,6 +223,17 @@ export async function callGranite(
     .parse(process.env["GRANITE_MODE"]);
 
   if (mode !== "live") {
+    return { ok: false, reason: "missing_credentials" };
+  }
+
+  const publicLiveEnabled = z
+    .enum(["true", "false"])
+    .catch("false")
+    .parse(process.env["GRANITE_ALLOW_PUBLIC_LIVE"]);
+  if (
+    process.env["VERCEL_ENV"] === "production" &&
+    publicLiveEnabled !== "true"
+  ) {
     return { ok: false, reason: "missing_credentials" };
   }
 
@@ -195,7 +258,7 @@ export async function callGranite(
   } = configResult.data;
 
   // Step 3: IAM token exchange
-  const accessToken = await exchangeIamToken(WATSONX_API_KEY, options?.signal);
+  const accessToken = await getIamToken(WATSONX_API_KEY, options?.signal);
   if (!accessToken) {
     return { ok: false, reason: "iam_error" };
   }
@@ -205,15 +268,16 @@ export async function callGranite(
   const requestBody = {
     model_id: WATSONX_MODEL_ID,
     project_id: WATSONX_PROJECT_ID,
-    input: prompt,
-    parameters: {
-      decoding_method: "greedy",
-      temperature: 0,
-      max_new_tokens: 1024,
-    },
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: prompt },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0,
+    max_completion_tokens: 256,
   };
 
-  const apiVersion = "2024-03-14";
+  const apiVersion = "2025-10-25";
   const baseUrl = WATSONX_URL.replace(/\/+$/, "");
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 4000);
@@ -221,11 +285,12 @@ export async function callGranite(
 
   try {
     const response = await fetch(
-      `${baseUrl}/ml/v1/text/generation?version=${apiVersion}`,
+      `${baseUrl}/ml/v1/text/chat?version=${apiVersion}`,
       {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
+          Accept: "application/json",
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
@@ -235,6 +300,9 @@ export async function callGranite(
     );
 
     if (!response.ok) {
+      if (response.status === 401 && cachedIamToken?.accessToken === accessToken) {
+        cachedIamToken = undefined;
+      }
       return { ok: false, reason: "http_error" };
     }
 
@@ -245,12 +313,12 @@ export async function callGranite(
       return { ok: false, reason: "http_error" };
     }
 
-    const parsed = WatsonxResponseSchema.safeParse(json);
+    const parsed = WatsonxChatResponseSchema.safeParse(json);
     if (!parsed.success) {
       return { ok: false, reason: "http_error" };
     }
 
-    const text = parsed.data.results[0].generated_text;
+    const text = parsed.data.choices[0].message.content;
     return { ok: true, text, modelId: WATSONX_MODEL_ID, apiVersion };
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {

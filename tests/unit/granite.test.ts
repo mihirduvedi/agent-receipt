@@ -19,7 +19,10 @@ import {
 } from "../../src/ai/factBundle.js";
 import { validateClaims } from "../../src/ai/validateClaims.js";
 import { deterministicFallback } from "../../src/ai/deterministicFallback.js";
-import { callGranite } from "../../src/ai/graniteClient.js";
+import {
+  _resetGraniteTokenCacheForTests,
+  callGranite,
+} from "../../src/ai/graniteClient.js";
 import {
   GeneratedReceiptCopySchema,
   type CanonicalEvent,
@@ -105,6 +108,7 @@ let bundleA: GraniteFactBundle;
 let bundleB: GraniteFactBundle;
 
 beforeEach(() => {
+  _resetGraniteTokenCacheForTests();
   _resetFindingCounter();
   const adapterA = adaptNativeTrace(fixtureA);
   const engineA = runPolicyEngine({
@@ -1267,12 +1271,27 @@ describe("Group E — callGranite (mocked fetch)", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("keeps accidental production live mode disabled without explicit opt-in", async () => {
+    vi.stubEnv("GRANITE_MODE", "live");
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("WATSONX_API_KEY", "test-key");
+    vi.stubEnv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com");
+    vi.stubEnv("WATSONX_PROJECT_ID", "proj-123");
+    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-4-h-small");
+
+    expect(await callGranite(makeSimpleBundle())).toEqual({
+      ok: false,
+      reason: "missing_credentials",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("GRANITE_MODE=live, WATSONX_URL is HTTP not HTTPS → missing_credentials, fetch never called", async () => {
     vi.stubEnv("GRANITE_MODE", "live");
     vi.stubEnv("WATSONX_API_KEY", "test-key");
     vi.stubEnv("WATSONX_URL", "http://us-south.ml.cloud.ibm.com");
     vi.stubEnv("WATSONX_PROJECT_ID", "proj-123");
-    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-3-8b-instruct");
+    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-4-h-small");
     const result = await callGranite(makeSimpleBundle());
     expect(result).toEqual({ ok: false, reason: "missing_credentials" });
     expect(fetchMock).not.toHaveBeenCalled();
@@ -1283,7 +1302,7 @@ describe("Group E — callGranite (mocked fetch)", () => {
     vi.stubEnv("WATSONX_API_KEY", "test-key");
     vi.stubEnv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com");
     vi.stubEnv("WATSONX_PROJECT_ID", "proj-123");
-    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-3-8b-instruct");
+    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-4-h-small");
 
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ error: "internal" }), { status: 500 }),
@@ -1299,7 +1318,7 @@ describe("Group E — callGranite (mocked fetch)", () => {
     vi.stubEnv("WATSONX_API_KEY", "test-key");
     vi.stubEnv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com");
     vi.stubEnv("WATSONX_PROJECT_ID", "proj-123");
-    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-3-8b-instruct");
+    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-4-h-small");
 
     fetchMock.mockResolvedValueOnce(
       new Response("not json{{{", { status: 200 }),
@@ -1314,7 +1333,7 @@ describe("Group E — callGranite (mocked fetch)", () => {
     vi.stubEnv("WATSONX_API_KEY", "test-key");
     vi.stubEnv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com");
     vi.stubEnv("WATSONX_PROJECT_ID", "proj-123");
-    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-3-8b-instruct");
+    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-4-h-small");
 
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ token_type: "Bearer" }), { status: 200 }),
@@ -1329,7 +1348,7 @@ describe("Group E — callGranite (mocked fetch)", () => {
     vi.stubEnv("WATSONX_API_KEY", "test-key");
     vi.stubEnv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com");
     vi.stubEnv("WATSONX_PROJECT_ID", "proj-123");
-    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-3-8b-instruct");
+    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-4-h-small");
 
     fetchMock
       .mockResolvedValueOnce(
@@ -1348,7 +1367,7 @@ describe("Group E — callGranite (mocked fetch)", () => {
     vi.stubEnv("WATSONX_API_KEY", "test-key");
     vi.stubEnv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com/");
     vi.stubEnv("WATSONX_PROJECT_ID", "proj-123");
-    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-3-8b-instruct");
+    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-4-h-small");
 
     fetchMock
       .mockResolvedValueOnce(
@@ -1356,7 +1375,16 @@ describe("Group E — callGranite (mocked fetch)", () => {
       )
       .mockResolvedValueOnce(
         new Response(
-          JSON.stringify({ results: [{ generated_text: '{"headline": "test"}' }] }),
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  role: "assistant",
+                  content: '{"headline": "test"}',
+                },
+              },
+            ],
+          }),
           { status: 200 },
         ),
       );
@@ -1366,24 +1394,35 @@ describe("Group E — callGranite (mocked fetch)", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.text).toBe('{"headline": "test"}');
-      expect(result.modelId).toBe("ibm/granite-3-8b-instruct");
-      expect(result.apiVersion).toBe("2024-03-14");
+      expect(result.modelId).toBe("ibm/granite-4-h-small");
+      expect(result.apiVersion).toBe("2025-10-25");
     }
     const watsonxCall = fetchMock.mock.calls[1];
     expect(watsonxCall[0]).toBe(
-      "https://us-south.ml.cloud.ibm.com/ml/v1/text/generation?version=2024-03-14",
+      "https://us-south.ml.cloud.ibm.com/ml/v1/text/chat?version=2025-10-25",
     );
-    const body = JSON.parse(watsonxCall[1].body as string) as { input: string };
-    expect(body.input).toContain('"headline"');
-    expect(body.input).toContain('"notableActions"');
-    expect(body.input).toContain('"limitations"');
-    expect(body.input).toContain("Do not add keys");
-    expect(body.input).toContain(
-      `Required headline.text: ${JSON.stringify(deterministicFallback(bundle).headline.text)}`,
-    );
-    expect(body.input).toContain(
-      `Required outcome.text: ${JSON.stringify(bundle.verdictQualifier)}`,
-    );
+    const body = JSON.parse(watsonxCall[1].body as string) as {
+      model_id: string;
+      project_id: string;
+      messages: Array<{ role: string; content: string }>;
+      response_format: { type: string };
+      temperature: number;
+      max_completion_tokens: number;
+    };
+    expect(body.model_id).toBe("ibm/granite-4-h-small");
+    expect(body.project_id).toBe("proj-123");
+    expect(body.temperature).toBe(0);
+    expect(body.max_completion_tokens).toBe(256);
+    expect(body.response_format).toEqual({ type: "json_object" });
+    expect(body.messages).toHaveLength(2);
+    expect(body.messages[0]?.role).toBe("system");
+    expect(body.messages[0]?.content).toContain("do not write claims");
+    expect(body.messages[1]?.role).toBe("user");
+    const prompt = body.messages[1]?.content ?? "";
+    expect(prompt).toContain('"notableFindingIds"');
+    expect(prompt).toContain("Do not add keys");
+    expect(prompt).toContain('"verdictCode":"within_declared_authority"');
+    expect(prompt).not.toContain('"events"');
   });
 
   it("repair call (with repairErrors) → prompt contains error strings; IAM fetched once per callGranite invocation", async () => {
@@ -1391,7 +1430,7 @@ describe("Group E — callGranite (mocked fetch)", () => {
     vi.stubEnv("WATSONX_API_KEY", "test-key");
     vi.stubEnv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com");
     vi.stubEnv("WATSONX_PROJECT_ID", "proj-123");
-    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-3-8b-instruct");
+    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-4-h-small");
 
     fetchMock
       .mockResolvedValueOnce(
@@ -1399,7 +1438,16 @@ describe("Group E — callGranite (mocked fetch)", () => {
       )
       .mockResolvedValueOnce(
         new Response(
-          JSON.stringify({ results: [{ generated_text: '{"repaired": true}' }] }),
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  role: "assistant",
+                  content: '{"repaired": true}',
+                },
+              },
+            ],
+          }),
           { status: 200 },
         ),
       );
@@ -1411,11 +1459,72 @@ describe("Group E — callGranite (mocked fetch)", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     // Verify error strings appear in the watsonx call body
     const watsonxCall = fetchMock.mock.calls[1];
-    const body = JSON.parse(watsonxCall[1].body as string) as { input: string };
-    expect(body.input).toContain("missing citation on outcome");
-    expect(body.input).toContain("unknown eventId xyz");
-    expect(body.input).toContain('"headline"');
-    expect(body.input).toContain("same order and count");
+    const body = JSON.parse(watsonxCall[1].body as string) as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    const prompt = body.messages[1]?.content ?? "";
+    expect(prompt).toContain("missing citation on outcome");
+    expect(prompt).toContain("unknown eventId xyz");
+    expect(prompt).toContain('"notableFindingIds"');
+    expect(prompt).toContain("Use each ID at most once");
+  });
+
+  it("reuses an unexpired IAM token across initial and repair invocations", async () => {
+    vi.stubEnv("GRANITE_MODE", "live");
+    vi.stubEnv("WATSONX_API_KEY", "test-key");
+    vi.stubEnv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com");
+    vi.stubEnv("WATSONX_PROJECT_ID", "proj-123");
+    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-4-h-small");
+
+    const chatResponse = () =>
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: '{"notableFindingIds":[]}' } }],
+        }),
+        { status: 200 },
+      );
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ access_token: "iam-token-abc", expires_in: 3600 }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(chatResponse())
+      .mockResolvedValueOnce(chatResponse());
+
+    const bundle = makeSimpleBundle();
+    expect((await callGranite(bundle)).ok).toBe(true);
+    expect((await callGranite(bundle, { repairErrors: ["test repair"] })).ok).toBe(true);
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      "https://iam.cloud.ibm.com/identity/token",
+    );
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain("/ml/v1/text/chat");
+    expect(String(fetchMock.mock.calls[2]?.[0])).toContain("/ml/v1/text/chat");
+  });
+
+  it("rejects the retired text-generation response shape", async () => {
+    vi.stubEnv("GRANITE_MODE", "live");
+    vi.stubEnv("WATSONX_API_KEY", "test-key");
+    vi.stubEnv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com");
+    vi.stubEnv("WATSONX_PROJECT_ID", "proj-123");
+    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-4-h-small");
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ access_token: "iam-token-abc" }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ results: [{ generated_text: "legacy response" }] }),
+          { status: 200 },
+        ),
+      );
+
+    const result = await callGranite(makeSimpleBundle());
+    expect(result).toEqual({ ok: false, reason: "http_error" });
   });
 
   it("IAM AbortController fires (4 s timeout) → iam_error", async () => {
@@ -1423,7 +1532,7 @@ describe("Group E — callGranite (mocked fetch)", () => {
     vi.stubEnv("WATSONX_API_KEY", "test-key");
     vi.stubEnv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com");
     vi.stubEnv("WATSONX_PROJECT_ID", "proj-123");
-    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-3-8b-instruct");
+    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-4-h-small");
 
     fetchMock.mockImplementationOnce((_url: string, init: RequestInit) => {
       return new Promise((_resolve, reject) => {
@@ -1450,7 +1559,7 @@ describe("Group E — callGranite (mocked fetch)", () => {
     vi.stubEnv("WATSONX_API_KEY", "test-key");
     vi.stubEnv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com");
     vi.stubEnv("WATSONX_PROJECT_ID", "proj-123");
-    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-3-8b-instruct");
+    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-4-h-small");
 
     fetchMock
       .mockResolvedValueOnce(
@@ -1480,7 +1589,7 @@ describe("Group E — callGranite (mocked fetch)", () => {
     vi.stubEnv("WATSONX_API_KEY", "test-key");
     vi.stubEnv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com");
     vi.stubEnv("WATSONX_PROJECT_ID", "proj-123");
-    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-3-8b-instruct");
+    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-4-h-small");
 
     fetchMock
       .mockResolvedValueOnce(
@@ -1509,7 +1618,10 @@ vi.mock("../../src/ai/graniteClient.js", async (importOriginal) => {
 });
 
 import { callGranite as callGraniteMock } from "../../src/ai/graniteClient.js";
-import { POST } from "../../src/app/api/receipt-copy/route.js";
+import {
+  MAX_RECEIPT_COPY_REQUEST_BYTES,
+  POST,
+} from "../../src/app/api/receipt-copy/route.js";
 
 // Helper to build a valid route request body from a fixture
 function makeRouteBody(trace: typeof fixtureA, traceStatus: string) {
@@ -1587,8 +1699,8 @@ describe("Group F — POST /api/receipt-copy (mocked callGranite)", () => {
     mockedCallGranite.mockResolvedValue({
       ok: true,
       text: validText,
-      modelId: "ibm/granite-3-8b-instruct",
-      apiVersion: "2024-03-14",
+      modelId: "ibm/granite-4-h-small",
+      apiVersion: "2025-10-25",
     });
 
     _resetFindingCounter();
@@ -1629,14 +1741,14 @@ describe("Group F — POST /api/receipt-copy (mocked callGranite)", () => {
       .mockResolvedValueOnce({
         ok: true,
         text: '{"invalid": true}', // schema failure
-        modelId: "ibm/granite-3-8b-instruct",
-        apiVersion: "2024-03-14",
+        modelId: "ibm/granite-4-h-small",
+        apiVersion: "2025-10-25",
       })
       .mockResolvedValueOnce({
         ok: true,
         text: validText,
-        modelId: "ibm/granite-3-8b-instruct",
-        apiVersion: "2024-03-14",
+        modelId: "ibm/granite-4-h-small",
+        apiVersion: "2025-10-25",
       });
 
     _resetFindingCounter();
@@ -1653,14 +1765,14 @@ describe("Group F — POST /api/receipt-copy (mocked callGranite)", () => {
       .mockResolvedValueOnce({
         ok: true,
         text: '{"bad": "response"}',
-        modelId: "ibm/granite-3-8b-instruct",
-        apiVersion: "2024-03-14",
+        modelId: "ibm/granite-4-h-small",
+        apiVersion: "2025-10-25",
       })
       .mockResolvedValueOnce({
         ok: true,
         text: '{"also": "bad"}',
-        modelId: "ibm/granite-3-8b-instruct",
-        apiVersion: "2024-03-14",
+        modelId: "ibm/granite-4-h-small",
+        apiVersion: "2025-10-25",
       });
 
     _resetFindingCounter();
@@ -1742,6 +1854,27 @@ describe("Group F — POST /api/receipt-copy (mocked callGranite)", () => {
     });
     const res = await POST(req);
     expect(res.status).toBe(400);
+  });
+
+  it("non-JSON content type is rejected before parsing", async () => {
+    const req = new Request("http://localhost/api/receipt-copy", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(makeRouteBody(fixtureA, fixtureA.status)),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(415);
+  });
+
+  it("oversized request body is rejected before Granite work", async () => {
+    const req = new Request("http://localhost/api/receipt-copy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: "x".repeat(MAX_RECEIPT_COPY_REQUEST_BYTES) }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(413);
+    expect(mockedCallGranite).not.toHaveBeenCalled();
   });
 
   it("traceCompletionStatus outside allowed enum → 400", async () => {
@@ -1857,8 +1990,8 @@ describe("Group F — POST /api/receipt-copy (mocked callGranite)", () => {
     mockedCallGranite.mockResolvedValue({
       ok: true,
       text: validText,
-      modelId: "ibm/granite-3-8b-instruct",
-      apiVersion: "2024-03-14",
+      modelId: "ibm/granite-4-h-small",
+      apiVersion: "2025-10-25",
     });
 
     _resetFindingCounter();

@@ -3,6 +3,7 @@ import {
   CanonicalOperationSchema,
   NativeTraceV1Schema,
 } from "../core/schemas/index";
+import { OtlpExportTraceServiceRequestSchema } from "../adapters/otlpGenAi";
 import type {
   AuthorityEnvelopeV1,
   CanonicalEvent,
@@ -13,6 +14,19 @@ import type {
 } from "../core/schemas/index";
 
 export const ALL_OPERATIONS = CanonicalOperationSchema.options;
+
+export type TraceSourceKind = "synthetic" | "upload" | "paste";
+
+export function formatTraceSourceLabel(kind: TraceSourceKind): string {
+  switch (kind) {
+    case "synthetic":
+      return "Synthetic fixture";
+    case "upload":
+      return "Uploaded trace";
+    case "paste":
+      return "Pasted trace";
+  }
+}
 
 export type AuthorityDraft = {
   policyId: string;
@@ -29,7 +43,8 @@ export type AuthorityDraft = {
 };
 
 export type IntakeValidation =
-  | { ok: true; trace: NativeTraceV1 }
+  | { ok: true; format: "native"; trace: NativeTraceV1 }
+  | { ok: true; format: "otlp" }
   | {
       ok: false;
       code: "input_too_large" | "invalid_utf8" | "invalid_json" | "unsupported_format" | "invalid_trace";
@@ -91,6 +106,31 @@ export type HumanActionSummary = {
   }>;
 };
 
+export type IncidentBrief = {
+  incidentId: string;
+  title: string;
+  summary: string;
+  severity: Finding["severity"];
+  eventIds: string[];
+  findingIds: string[];
+  findingCount: number;
+  statuses: CanonicalEvent["status"][];
+  systems: string[];
+  dataCategories: string[];
+};
+
+export type RecoveryAction = {
+  actionId: string;
+  incidentId: string;
+  title: string;
+  description: string;
+  eventIds: string[];
+  findingIds: string[];
+  authorityRequired: string;
+  reversibility: string;
+  status: "proposed";
+};
+
 export function exactFixtureBytes(trace: NativeTraceV1): Uint8Array {
   return new TextEncoder().encode(`${JSON.stringify(trace, null, 2)}\n`);
 }
@@ -129,9 +169,32 @@ export function validateTraceBytes(
     };
   }
 
+  if (typeof rawDocument !== "object" || rawDocument === null) {
+    return {
+      ok: false,
+      code: "unsupported_format",
+      message:
+        "This schema is not supported. Use Native Trace v1 or the documented OTLP/JSON resourceSpans shape.",
+    };
+  }
+
+  if ("resourceSpans" in rawDocument) {
+    const otlp = OtlpExportTraceServiceRequestSchema.safeParse(rawDocument);
+    if (!otlp.success) {
+      return {
+        ok: false,
+        code: "invalid_trace",
+        message: "The OTLP/JSON export does not match the supported resourceSpans shape.",
+        issues: otlp.error.issues.map((issue) => ({
+          path: issue.path.length > 0 ? issue.path.join(".") : "trace",
+          message: issue.message,
+        })),
+      };
+    }
+    return { ok: true, format: "otlp" };
+  }
+
   if (
-    typeof rawDocument !== "object" ||
-    rawDocument === null ||
     !("schemaVersion" in rawDocument) ||
     rawDocument.schemaVersion !== "agent-receipt.native-trace.v1"
   ) {
@@ -139,7 +202,7 @@ export function validateTraceBytes(
       ok: false,
       code: "unsupported_format",
       message:
-        "This schema is not supported. Agent Receipt currently accepts agent-receipt.native-trace.v1.",
+        "This schema is not supported. Use Native Trace v1 or the documented OTLP/JSON resourceSpans shape.",
     };
   }
 
@@ -156,7 +219,7 @@ export function validateTraceBytes(
     };
   }
 
-  return { ok: true, trace: trace.data };
+  return { ok: true, format: "native", trace: trace.data };
 }
 
 export function authorityToDraft(
@@ -263,6 +326,232 @@ export function sortFindingsByAttention(
     );
     return leftSequence - rightSequence;
   });
+}
+
+/**
+ * Collapse rule-level findings into manager-sized incidents without hiding any
+ * evidence. Findings are connected only by explicit event citations or a
+ * shared trace actionKey; the model is never involved in this grouping.
+ */
+export function buildManagerIncidentBrief(
+  receipt: ReceiptResult,
+): IncidentBrief[] {
+  if (receipt.findings.length === 0) return [];
+
+  const eventsById = new Map(
+    receipt.events.map((event) => [event.eventId, event]),
+  );
+  const parent = new Map(receipt.events.map((event) => [event.eventId, event.eventId]));
+
+  const findRoot = (eventId: string): string => {
+    const directParent = parent.get(eventId) ?? eventId;
+    if (directParent === eventId) return eventId;
+    const root = findRoot(directParent);
+    parent.set(eventId, root);
+    return root;
+  };
+  const connect = (left: string, right: string): void => {
+    const leftRoot = findRoot(left);
+    const rightRoot = findRoot(right);
+    if (leftRoot !== rightRoot) parent.set(rightRoot, leftRoot);
+  };
+
+  for (const finding of receipt.findings) {
+    const [first, ...rest] = finding.eventIds.filter((id) => eventsById.has(id));
+    if (!first) continue;
+    for (const eventId of rest) connect(first, eventId);
+  }
+
+  const eventsByActionKey = new Map<string, CanonicalEvent[]>();
+  for (const event of receipt.events) {
+    if (!event.actionKey) continue;
+    const group = eventsByActionKey.get(event.actionKey) ?? [];
+    group.push(event);
+    eventsByActionKey.set(event.actionKey, group);
+  }
+  for (const events of eventsByActionKey.values()) {
+    const [first, ...rest] = events;
+    if (!first) continue;
+    for (const event of rest) connect(first.eventId, event.eventId);
+  }
+
+  const findingsByRoot = new Map<string, Finding[]>();
+  const uncitedFindings: Finding[] = [];
+  for (const finding of receipt.findings) {
+    const firstEventId = finding.eventIds.find((id) => eventsById.has(id));
+    if (!firstEventId) {
+      uncitedFindings.push(finding);
+      continue;
+    }
+    const root = findRoot(firstEventId);
+    findingsByRoot.set(root, [...(findingsByRoot.get(root) ?? []), finding]);
+  }
+
+  const components = [...findingsByRoot.values()];
+  if (uncitedFindings.length > 0) components.push(uncitedFindings);
+
+  const severityRank = { high: 0, medium: 1, low: 2 } as const;
+  const incidents = components.map((findings) => {
+    const findingIds = findings.map((finding) => finding.findingId);
+    const eventIds = [...new Set(findings.flatMap((finding) => finding.eventIds))]
+      .filter((eventId) => eventsById.has(eventId))
+      .sort(
+        (left, right) =>
+          (eventsById.get(left)?.sequence ?? Infinity) -
+          (eventsById.get(right)?.sequence ?? Infinity),
+      );
+    const events = eventIds
+      .map((eventId) => eventsById.get(eventId))
+      .filter((event): event is CanonicalEvent => event !== undefined);
+    const severity = [...findings]
+      .sort(
+        (left, right) =>
+          severityRank[left.severity] - severityRank[right.severity],
+      )[0]?.severity ?? "low";
+    const systems = uniqueStrings(
+      events.flatMap((event) =>
+        [event.sourceSystem, event.destinationSystem].filter(
+          (system): system is string => system !== undefined,
+        ),
+      ),
+    );
+    const dataCategories = uniqueStrings(
+      events.flatMap((event) => event.dataCategories),
+    );
+
+    return {
+      incidentId: "",
+      title: buildIncidentTitle(events),
+      summary: buildIncidentSummary(events, findings.length),
+      severity,
+      eventIds,
+      findingIds,
+      findingCount: findings.length,
+      statuses: uniqueValues(events.map((event) => event.status)),
+      systems,
+      dataCategories,
+    } satisfies IncidentBrief;
+  });
+
+  return incidents
+    .sort((left, right) => {
+      const severity = severityRank[left.severity] - severityRank[right.severity];
+      if (severity !== 0) return severity;
+      const leftSequence = eventsById.get(left.eventIds[0] ?? "")?.sequence ?? Infinity;
+      const rightSequence = eventsById.get(right.eventIds[0] ?? "")?.sequence ?? Infinity;
+      return leftSequence - rightSequence;
+    })
+    .map((incident, index) => ({
+      ...incident,
+      incidentId: `incident-${String(index + 1).padStart(3, "0")}`,
+    }));
+}
+
+/**
+ * Produce review-only recovery actions. These are deterministic, cited plans;
+ * they do not call external systems or claim that remediation occurred.
+ */
+export function buildRecoveryPlan(
+  receipt: ReceiptResult,
+  incidents = buildManagerIncidentBrief(receipt),
+): RecoveryAction[] {
+  const findingsById = new Map(
+    receipt.findings.map((finding) => [finding.findingId, finding]),
+  );
+  const eventsById = new Map(
+    receipt.events.map((event) => [event.eventId, event]),
+  );
+  const actions: RecoveryAction[] = [];
+
+  const addAction = (
+    incident: IncidentBrief,
+    key: string,
+    details: Omit<RecoveryAction, "actionId" | "incidentId" | "eventIds" | "findingIds" | "status">,
+    findingIds = incident.findingIds,
+  ): void => {
+    actions.push({
+      actionId: `${incident.incidentId}-${key}`,
+      incidentId: incident.incidentId,
+      ...details,
+      eventIds: incident.eventIds,
+      findingIds,
+      status: "proposed",
+    });
+  };
+
+  for (const incident of incidents) {
+    const findings = incident.findingIds
+      .map((findingId) => findingsById.get(findingId))
+      .filter((finding): finding is Finding => finding !== undefined);
+    const ruleIds = new Set(findings.map((finding) => finding.ruleId));
+    const events = incident.eventIds
+      .map((eventId) => eventsById.get(eventId))
+      .filter((event): event is CanonicalEvent => event !== undefined);
+    const destination = humanizeSlug(
+      events.find((event) => event.destinationSystem)?.destinationSystem ??
+        events.find((event) => event.sourceSystem)?.sourceSystem ??
+        "named system",
+    );
+
+    if (
+      ruleIds.has("AR-RETRY-001") ||
+      events.some((event) => ["unknown", "started", "failed"].includes(event.status))
+    ) {
+      addAction(incident, "verify-state", {
+        title: "Resolve the ambiguous destination state",
+        description: `Inspect ${destination} audit history for every cited attempt before changing or deleting anything. Determine whether more than one side effect occurred and preserve that evidence with the incident record.`,
+        authorityRequired: `A human reviewer with read access to ${destination} audit history`,
+        reversibility: "Read-only verification; preserve evidence before later containment",
+      });
+    } else {
+      addAction(incident, "preserve-evidence", {
+        title: "Preserve and verify the destination evidence",
+        description: `Confirm the cited event state in ${destination}, record the affected scope, and retain the relevant logs before taking a corrective action.`,
+        authorityRequired: `A human reviewer with read access to ${destination}`,
+        reversibility: "Read-only verification",
+      });
+    }
+
+    if (ruleIds.has("AR-DATA-001") || ruleIds.has("AR-EGRESS-001")) {
+      const includesSend = events.some((event) => event.operation === "send");
+      addAction(incident, "contain", {
+        title: includesSend
+          ? "Review delivery scope and available containment"
+          : "Review access and contain the external copy",
+        description: includesSend
+          ? `Use ${destination} delivery logs to identify the actual recipient scope. If policy and platform controls permit, an authorized responder can apply recall, access, or follow-up procedures; Agent Receipt does not execute them.`
+          : `Review sharing, retention, and access in ${destination}. If the exposure is confirmed, an authorized responder can revoke access or remove the copy after preserving required evidence; Agent Receipt does not execute that action.`,
+        authorityRequired: "Data owner or incident-response approval",
+        reversibility: includesSend
+          ? "Delivery may be irreversible; document any platform limits"
+          : "Potentially destructive; preserve evidence and confirm rollback first",
+      }, findings.filter((finding) => ["AR-DATA-001", "AR-EGRESS-001"].includes(finding.ruleId)).map((finding) => finding.findingId));
+    }
+
+    if (
+      ["AR-SYS-001", "AR-OP-001", "AR-APPROVAL-001", "AR-APPROVAL-002"].some(
+        (ruleId) => ruleIds.has(ruleId),
+      )
+    ) {
+      addAction(incident, "prevent-repeat", {
+        title: "Correct the authority controls before another run",
+        description: "Keep the recorded receipt unchanged. Update the agent or workflow so it cannot repeat the cited system, operation, or approval deviation, then run a new trace through Agent Receipt. Do not retroactively widen the authority envelope to make this run appear clean.",
+        authorityRequired: "Workflow owner approval and a new declared authority envelope",
+        reversibility: "Configuration change; retain the prior policy and receipt for comparison",
+      }, findings.filter((finding) => ["AR-SYS-001", "AR-OP-001", "AR-APPROVAL-001", "AR-APPROVAL-002"].includes(finding.ruleId)).map((finding) => finding.findingId));
+    }
+
+    if (ruleIds.has("AR-TRACE-001")) {
+      addAction(incident, "close-evidence-gap", {
+        title: "Close the evidence gap before accepting the run",
+        description: "Obtain the missing trace field or source record when it can be collected lawfully. If it cannot be recovered, keep the limitation visible and base the disposition on the incomplete evidence boundary.",
+        authorityRequired: "Reviewer or trace-system owner",
+        reversibility: "Evidence collection only; never rewrite the original trace bytes",
+      }, findings.filter((finding) => finding.ruleId === "AR-TRACE-001").map((finding) => finding.findingId));
+    }
+  }
+
+  return actions;
 }
 
 export function buildSystemEdges(events: CanonicalEvent[]): SystemEdge[] {
@@ -435,13 +724,32 @@ export function resolveRawPointer(
   rawDocument: unknown,
   rawPointer: string,
 ): unknown {
-  const match = /^events\[(\d+)]$/.exec(rawPointer);
-  if (!match || typeof rawDocument !== "object" || rawDocument === null) {
+  if (typeof rawDocument !== "object" || rawDocument === null) {
     return undefined;
   }
-  const rawEvents = (rawDocument as { events?: unknown }).events;
-  if (!Array.isArray(rawEvents)) return undefined;
-  return rawEvents[Number(match[1])];
+  const nativeMatch = /^events\[(\d+)]$/.exec(rawPointer);
+  if (nativeMatch) {
+    const rawEvents = (rawDocument as { events?: unknown }).events;
+    if (!Array.isArray(rawEvents)) return undefined;
+    return rawEvents[Number(nativeMatch[1])];
+  }
+
+  const otlpMatch =
+    /^resourceSpans\[(\d+)]\.scopeSpans\[(\d+)]\.spans\[(\d+)]$/.exec(
+      rawPointer,
+    );
+  if (!otlpMatch) return undefined;
+  const resourceSpans = (rawDocument as { resourceSpans?: unknown }).resourceSpans;
+  if (!Array.isArray(resourceSpans)) return undefined;
+  const resource = resourceSpans[Number(otlpMatch[1])];
+  if (typeof resource !== "object" || resource === null) return undefined;
+  const scopeSpans = (resource as { scopeSpans?: unknown }).scopeSpans;
+  if (!Array.isArray(scopeSpans)) return undefined;
+  const scope = scopeSpans[Number(otlpMatch[2])];
+  if (typeof scope !== "object" || scope === null) return undefined;
+  const spans = (scope as { spans?: unknown }).spans;
+  if (!Array.isArray(spans)) return undefined;
+  return spans[Number(otlpMatch[3])];
 }
 
 function splitDataCategories(value: string): string[] {
@@ -480,6 +788,70 @@ function humanizeEvent(event: CanonicalEvent): string {
     case "unknown":
       return `${attempt}Tried to ${operation.base} ${resource} ${location}. The result is unknown in the trace. ${details}`;
   }
+}
+
+function buildIncidentTitle(events: CanonicalEvent[]): string {
+  if (events.length === 0) return "Evidence coverage requires review";
+
+  const sorted = [...events].sort((left, right) => left.sequence - right.sequence);
+  const first = sorted[0];
+  const last = sorted.at(-1);
+  if (!first || !last) return "Cited agent activity requires review";
+
+  const isRetry =
+    sorted.length > 1 &&
+    first.actionKey !== undefined &&
+    sorted.every((event) => event.actionKey === first.actionKey);
+  if (isRetry) {
+    const destination = humanizeSlug(
+      last.destinationSystem ?? last.sourceSystem ?? last.resourceType ?? "action",
+    );
+    const noun: Partial<Record<CanonicalOperation, string>> = {
+      create: "creation",
+      update: "update",
+      delete: "deletion",
+      send: "delivery",
+      execute: "execution",
+    };
+    const article = first.status === "unknown" ? "an" : "a";
+    return `${capitalize(destination)} ${noun[last.operation] ?? "action"} retried after ${article} ${first.status} result`;
+  }
+
+  const destination = humanizeSlug(
+    last.destinationSystem ?? last.sourceSystem ?? "unspecified system",
+  );
+  const resource = humanizeSlug(last.resourceType ?? "action");
+  const quantity = last.quantity?.value.toLocaleString("en-US");
+  const quantifiedResource = quantity
+    ? `${quantity} ${pluralize(resource, last.quantity?.value ?? 1)}`
+    : resource;
+  const verb = actionVerb(last.operation).past;
+  const preposition = locationPreposition(
+    last.operation,
+    last.destinationSystem !== undefined,
+  );
+  return `${capitalize(quantifiedResource)} ${verb} ${preposition} ${destination}`;
+}
+
+function buildIncidentSummary(
+  events: CanonicalEvent[],
+  findingCount: number,
+): string {
+  if (events.length === 0) {
+    return `${findingCount} deterministic ${findingCount === 1 ? "finding requires" : "findings require"} review, but no canonical event citation is available.`;
+  }
+
+  const statuses = uniqueValues(events.map((event) => event.status));
+  const dataCategories = uniqueStrings(
+    events.flatMap((event) => event.dataCategories).map(humanizeSlug),
+  );
+  const eventPhrase = `${events.length} cited ${events.length === 1 ? "event" : "events"}`;
+  const statusPhrase = `recorded ${formatHumanList(statuses.map(humanizeSlug))} ${statuses.length === 1 ? "status" : "statuses"}`;
+  const dataPhrase =
+    dataCategories.length === 0
+      ? "No data category was supplied for these events."
+      : `Named data: ${formatHumanList(dataCategories)}.`;
+  return `${eventPhrase} with ${statusPhrase}. ${dataPhrase} This incident carries ${findingCount} deterministic ${findingCount === 1 ? "finding" : "findings"}.`;
 }
 
 function actionVerb(operation: CanonicalOperation): {
@@ -529,6 +901,22 @@ function formatHumanList(items: string[]): string {
 
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function pluralize(value: string, count: number): string {
+  if (count === 1 || value.endsWith("s")) return value;
+  if (value.endsWith("y") && !/[aeiou]y$/i.test(value)) {
+    return `${value.slice(0, -1)}ies`;
+  }
+  return `${value}s`;
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values)];
+}
+
+function uniqueValues<T>(values: T[]): T[] {
+  return [...new Set(values)];
 }
 
 function pushUnique<T>(items: T[], value: T): void {

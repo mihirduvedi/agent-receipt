@@ -86,6 +86,27 @@ const FRAMEWORK_BUILD_METADATA = new Set([
 
 const SOURCE_SCAN_IGNORES = new Set([".git", ".next", "coverage", "node_modules", "out"]);
 const BUILD_SCAN_IGNORES = new Set(["cache", "dev"]);
+const RELEASE_SOURCE_PATHS = [
+  ".bob",
+  ".devcontainer",
+  ".env.example",
+  ".github",
+  "AGENTS.md",
+  "LICENSE",
+  "README.md",
+  "docs",
+  "eslint.config.mjs",
+  "next.config.ts",
+  "package-lock.json",
+  "package.json",
+  "public",
+  "scripts",
+  "src",
+  "tests",
+  "tsconfig.json",
+  "vitest.config.ts",
+  "work",
+] as const;
 
 function countOccurrences(text: string, needle: string): number {
   if (needle.length === 0) {
@@ -258,7 +279,15 @@ async function walkFiles(
 
 async function sourcePaths(root: string): Promise<string[]> {
   try {
-    const output = execFileSync("git", ["ls-files", "-z"], {
+    const output = execFileSync("git", [
+      "ls-files",
+      "-z",
+      "--cached",
+      "--others",
+      "--exclude-standard",
+      "--",
+      ...RELEASE_SOURCE_PATHS,
+    ], {
       cwd: root,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],

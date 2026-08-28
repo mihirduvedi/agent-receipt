@@ -6,7 +6,7 @@
 
 Version 1.0 - August 27, 2026
 
-Project snapshot: repository `main` at `057305d167b3501a2454ab9b24ecd3b199f7a6f3`, plus the separately verified Vercel deployment described in this guide.
+Project snapshot: repository `main` at `8f5b99ff1e9a524f7a2a38e1f4e8c00e07f37878`, plus the locally verified working candidate and separately verified Vercel deployment described in this guide.
 
 > Agent Receipt gives accountable humans an evidence-linked receipt for what an AI agent did relative to what it was allowed to do.
 
@@ -31,7 +31,7 @@ You do not need to read every appendix in order. The main narrative tells the wh
 
 **Manually or externally verified** means a human or external service was used. That evidence is useful, but it is not the same as a unit test.
 
-**Not yet verified** means the architecture may support something, but this project has not demonstrated it live. The most important example is live watsonx.ai Granite generation.
+**Not yet verified** means the architecture may support something, but this project has not demonstrated it in that environment. The most important current example is live watsonx.ai Granite generation in the public Vercel deployment; local live generation has been verified separately.
 
 ---
 
@@ -128,7 +128,7 @@ The product has three visible steps.
 
 ### Step 1: Choose a trace
 
-The reviewer can select one of two synthetic samples, upload one JSON file, or paste one JSON object. The limit is 2 MiB. The app accepts only the versioned Native Trace v1 format.
+The reviewer can select one of two synthetic samples, upload one JSON file, or paste one JSON object. The limit is 2 MiB. The app accepts the versioned Native Trace v1 format and one narrow documented OTLP/JSON GenAI export shape.
 
 ![Agent Receipt trace intake](screenshots/agent-receipt-trace-intake.jpg)
 
@@ -156,13 +156,15 @@ The system never infers authority from the agent's behavior. If the agent contac
 The receipt presents:
 
 1. overview and verdict;
-2. plain-language action summary;
-3. chronological activity;
-4. systems and data movement;
-5. deviations and evidence coverage;
-6. cited explanatory copy;
-7. integrity record;
-8. human disposition and JSON export.
+2. incident brief grouped from related deterministic findings;
+3. cited recovery proposals for human approval;
+4. plain-language action summary;
+5. chronological activity;
+6. systems and data movement;
+7. deviations and evidence coverage;
+8. cited explanatory copy;
+9. integrity record;
+10. human disposition and JSON export.
 
 The manager can open any important statement into its canonical event and the exact retained raw object.
 
@@ -263,7 +265,7 @@ Every raw event must receive one accounting record with one of three statuses:
 - `metadata-only`: recognized but not represented as an action;
 - `unparsed`: could not be safely interpreted.
 
-In the current Native Trace v1 adapter, valid unique events map one-to-one. Duplicate source event IDs are rejected as material and unparsed. Receipt-wide invariants verify the relationships in both directions:
+In the Native Trace v1 adapter, valid unique events map one-to-one. The narrow OTLP adapter may map an action span, retain an unrelated span as metadata-only, or mark a material span unparsed when required semantics are absent. Receipt-wide invariants verify the relationships in both directions:
 
 - every accounting pointer is unique;
 - every canonical event is referenced by exactly one accounting record;
@@ -314,7 +316,7 @@ This is not an emergency blank screen. It is a complete supported path with the 
 | Adapter | Deterministic TypeScript | Normalize and account for events |
 | Policy engine | Deterministic TypeScript | Produce findings and verdict |
 | Fact bundle | Deterministic TypeScript | Minimize and redact facts for the model |
-| Granite | Optional external model | Select structured copy from constrained projections |
+| Granite | Optional external model | Select up to five valid finding IDs from constrained projections |
 | Claim validator | Deterministic TypeScript | Reject unsupported generated output |
 | Fallback | Deterministic TypeScript | Produce always-available cited copy |
 | Reviewer | Human | Record accept, investigate, reject, or unreviewed |
@@ -390,18 +392,22 @@ receipt/
 |- docs/
 |  |- PRD.md                      product source of truth
 |  |- IBM_BOB_WORKFLOW.md         Bob-primary workflow
+|  |- BOB_BUILD_STORY.md          public Bob implementation evidence
+|  |- EVALUATION.md               reproducible synthetic evaluation
+|  |- OTLP_GENAI_ADAPTER.md       supported external trace contract
 |  |- AI_ASSISTANCE_LOG.md        honest tool provenance
 |  |- RELEASE_QA.md               evidence and open gates
 |  |- ASSET_LICENSES.md           screenshot declarations
-|  `- screenshots/                seven synthetic product captures
+|  `- screenshots/                nine synthetic product captures
 |- scripts/release-audit.mjs      release-audit command entry point
 |- src/
-|  |- adapters/nativeTrace.ts     native trace -> canonical evidence
+|  |- adapters/                   native + narrow OTLP canonicalization
 |  |- ai/                         minimization, Granite, validation, fallback
 |  |- app/                        Next page, layout, CSS, API route
 |  |- components/                 complete interactive review UI
 |  |- core/                       schemas, policy, coverage, receipt
 |  |- fixtures/                   expected and overreaching traces
+|  |- evaluation/                 executable judge-facing corpus
 |  |- release/                    privacy/license/media release audit
 |  `- ui/                         pure presentation derivations
 `- tests/
@@ -417,10 +423,10 @@ EXACT TRACE BYTES
   |
   | snapshot + SHA-256 before decoding
   v
-UTF-8 + JSON + Native Trace v1 validation
+UTF-8 + JSON + supported input validation
   |
   v
-NATIVE ADAPTER
+VERSIONED NATIVE OR NARROW OTLP ADAPTER
   |- canonical events
   |- one accounting record per raw event
   `- parse warnings
@@ -445,7 +451,7 @@ COVERAGE                 AUTHORITY ENVELOPE
                                      SERVER RECOMPUTES POLICY
                                                |
                                                v
-                                      GRANITE + ONE REPAIR
+                            GRANITE FINDING SELECTION + ONE REPAIR
                                                |
                                                v
                                       STRICT CLAIM VALIDATION
@@ -576,7 +582,7 @@ The pipeline then:
 4. decodes UTF-8 with `fatal: true`;
 5. parses JSON;
 6. checks the top-level schema version;
-7. validates the full Native Trace v1 object.
+7. selects and validates exactly one supported input shape: Native Trace v1 or the documented OTLP/JSON GenAI export.
 
 The browser-safe digest lives in `portableDigest.ts`. A Node-only equivalent in `integrity.ts` supports isolated tests and server contexts.
 
@@ -613,9 +619,15 @@ The original native ID is preserved separately as `sourceEventId`. This gives th
 
 The adapter can mark duplicate source IDs as material and unparsed, but `buildReceipt` rejects duplicate native IDs earlier. This gives user-facing intake a clear failure and prevents ambiguous evidence links.
 
+### Narrow OTLP/JSON GenAI adaptation
+
+`src/adapters/otlpGenAi.ts` accepts one OTLP `ExportTraceServiceRequest` JSON shape with `resourceSpans[].scopeSpans[].spans[]`. It requires one trace ID and unique span IDs. Standard GenAI inference operation names map conservatively to non-state-changing `execute` events. Tool or application action spans require explicit `agent.receipt.operation` and `agent.receipt.state_change` attributes; the adapter does not guess authority semantics from span names or prompt text.
+
+Every raw span is mapped, metadata-only, or unparsed. A material action-like span without enough explicit semantics is unparsed and forces an incomplete assessment. The exact profile and limitations are documented in `docs/OTLP_GENAI_ADAPTER.md`.
+
 ## 15. Coverage and event accounting
 
-`computeCoverage` receives the raw event count from the validated source trace rather than trusting adapter output. This prevents an adapter from dropping an event and then reporting a conveniently smaller total.
+`computeCoverage` receives the raw record count from the validated source document rather than trusting adapter output. This prevents an adapter from dropping an event or span and then reporting a conveniently smaller total.
 
 The summary contains:
 
@@ -763,10 +775,10 @@ In live mode:
 
 1. Parse `GRANITE_MODE`.
 2. Validate all live configuration, including an HTTPS service URL.
-3. Exchange the server-only IBM Cloud API key for an IAM access token.
-4. Call the watsonx.ai text-generation endpoint with greedy decoding, temperature 0, and a bounded token count.
-5. Parse the returned text as JSON.
-6. Validate its schema and every claim.
+3. Exchange the server-only IBM Cloud API key for an IAM access token, then reuse that token until its reported expiry with a safety margin.
+4. Call the Dallas watsonx.ai Chat endpoint `/ml/v1/text/chat?version=2025-10-25` with `ibm/granite-4-h-small`, temperature 0, JSON-object response mode, and a 256-token completion ceiling.
+5. Parse `choices[0].message.content` as JSON.
+6. Validate a unique list of no more than five known finding IDs.
 7. If invalid, make one repair call containing only the validation errors and original fact bundle.
 8. If repair fails, use fallback.
 
@@ -774,7 +786,13 @@ The receipt-copy service has one total eight-second deadline across initial and 
 
 ### Why the validator is unusually strict
 
-The validator checks:
+The current production boundary is smaller than an open-ended copy generator. Granite returns only:
+
+```json
+{ "notableFindingIds": ["finding-000001"] }
+```
+
+The application validates those IDs and deterministically renders the exact headline, outcome, notable-action sentences, limitations, and citations. The full claim validator remains a final invariant over the assembled copy. It checks:
 
 - required citations;
 - event IDs exist;
@@ -790,7 +808,9 @@ The validator checks:
 - headline and outcome exactly match deterministic projections;
 - notable actions are exact, nonduplicated deterministic finding projections.
 
-This last rule is important. Granite cannot currently write an open-ended paraphrase. It can return only the canonical headline and outcome, then choose and order exact finding projections. That greatly narrows the hallucination surface.
+Granite cannot write an open-ended paraphrase. It can only select known findings; every displayed sentence is rendered from deterministic projections. That greatly narrows the hallucination surface.
+
+The server route also rejects non-JSON content types and request bodies above 512 KiB. In a public production deployment, live mode requires both `GRANITE_MODE=live` and the separate `GRANITE_ALLOW_PUBLIC_LIVE=true` opt-in. This prevents credentials alone from unexpectedly enabling external model calls.
 
 ### Deterministic fallback
 
@@ -806,7 +826,9 @@ The fallback validates itself before use.
 
 ### Current live status
 
-The public deployment currently runs in deterministic fallback mode. The application route is deployed and the public page is reachable, but no live watsonx.ai credential was configured in the verified deployment snapshot. Mocked Granite success, repair, timeout, error, and rejection paths are heavily tested. A real accepted Granite response and a deliberately forced live failure remain unverified.
+The public deployment verified at commit `057305d` ran in deterministic fallback mode. The application route was deployed and the public page was reachable, but no live watsonx.ai credential was configured in that snapshot.
+
+Local live-service verification was completed on August 27, 2026. IAM authentication and the Dallas watsonx.ai Chat API succeeded with `ibm/granite-4-h-small`. An earlier open-ended-copy boundary accepted the expected fixture but safely rejected unsupported overreaching-fixture paraphrases. The current compact finding-selection boundary was then reverified through both full browser journeys: both fixtures produced accepted `granite` provenance while all displayed sentences remained deterministic. Separate invalid-key and explicit-fallback processes completed with `deterministic_fallback` and no model metadata. This proves the bounded local success and failure paths; it does not prove live Granite is configured in Vercel.
 
 ## 18. Receipt orchestration
 
@@ -820,7 +842,7 @@ serializeReceipt(receipt)
 
 ### `buildReceipt`
 
-The function is defensive at each step:
+The function is defensive at each step and dispatches only after the exact bytes have been snapshotted, hashed, decoded, and parsed. Supported native and OTLP formats converge on the same canonical-event, accounting, policy, coverage, and receipt contracts.
 
 1. Snapshot bytes.
 2. Enforce size.
@@ -902,7 +924,8 @@ The final view contains:
 - verdict register and source labels;
 - requested task and observed outcome;
 - seven manager metrics;
-- attention queue ordered by severity then sequence;
+- incident brief grouped only by cited event overlap or a shared explicit action key;
+- proposed recovery plan with human authority and reversibility labels;
 - human action summary;
 - chronological timeline;
 - systems and movement map plus full text table;
@@ -921,6 +944,10 @@ The summary has three parts:
 1. systems and named data;
 2. qualified no-observed-activity statements;
 3. exactly one sentence for every canonical action.
+
+![Agent Receipt incident brief](screenshots/agent-receipt-incident-brief.jpg)
+
+![Agent Receipt human-approved recovery plan](screenshots/agent-receipt-recovery-plan.jpg)
 
 ![Agent Receipt action summary](screenshots/agent-receipt-action-summary.jpg)
 
@@ -949,6 +976,14 @@ The summary compares declared systems and restricted categories against all supp
 - no supplied event named an external destination.
 
 If none of those statements is supportable, it says that nothing in those declared lists can safely be called untouched from this trace.
+
+### Incident brief and recovery planning
+
+The detailed finding list remains authoritative, but a manager should not have to interpret twelve separate rule hits as twelve unrelated real-world problems. `buildManagerIncidentBrief` groups findings only when they cite the same event or share an explicit `actionKey`. On the overreaching fixture, the deterministic result is two incidents: an external spreadsheet creation retried after an unknown outcome, and a 20-message external customer-email send.
+
+`buildRecoveryPlan` then proposes six cited follow-up actions. Each proposal states who must approve it and whether it is reversible. These are plans, not tools: the product never re-accesses a system, changes credentials, deletes data, sends a correction, or rolls back an action.
+
+Automatic remediation is outside the MVP because a completed uploaded trace does not prove current external state, credential availability, rollback behavior, evidence-preservation requirements, or the manager's authority to execute. A production executor would need fresh connectors, read-before-write state checks, dry runs, explicit approval, idempotency, rollback, and a separate audit trail.
 
 ## 21. Evidence navigation
 
@@ -1030,7 +1065,7 @@ The project separates evidence layers because each answers a different question.
 
 ## 25. Automated test suite
 
-The verified source snapshot contains 287 tests across 12 files.
+The current source snapshot contains 307 tests across 14 files.
 
 ### Test families
 
@@ -1038,7 +1073,7 @@ The verified source snapshot contains 287 tests across 12 files.
 
 **Integrity tests** verify SHA-256 format, repeatability, byte sensitivity, and known hash values.
 
-**Adapter tests** cover mapping, IDs, ordering, unknown defaults, duplicate IDs, accounting, and schema version rejection.
+**Adapter tests** cover native and OTLP mapping, IDs, ordering, unknown defaults, duplicate IDs, metadata-only and unparsed accounting, multi-trace rejection, and schema version rejection.
 
 **Hardening tests** cover RFC 3339 calendar validity, timezone offsets, sub-millisecond ordering, integrity metadata, unknown volume quantities, overflow-safe totals, approval linkage, and approval ordering.
 
@@ -1065,6 +1100,8 @@ They include adversarial claims about unsupported systems, operations, people, b
 
 **Release-audit tests** cover secret patterns, personal paths, dependency license metadata, media attribution, and the narrow Next build-root allowance.
 
+**Evaluation tests** run three declared synthetic cases and adversarial checks for verdicts, seeded rules, raw-record accounting, known digests, deterministic replay, citations, invalid Granite selections, and material OTLP parsing gaps. `docs/EVALUATION.md` records the exact method and its limitations.
+
 ## 26. The complete local gate
 
 `npm run verify` runs:
@@ -1081,8 +1118,8 @@ At the documented release snapshot it passed with:
 
 - ESLint: zero warnings;
 - strict TypeScript: passed;
-- 12 test files: passed;
-- 287 tests: passed;
+- 14 test files: passed;
+- 307 tests: passed;
 - Next production build: passed;
 - release audit: passed.
 
@@ -1105,10 +1142,10 @@ Next.js includes the build root inside specific required-server metadata files. 
 
 At the release snapshot it checked:
 
-- 58 source text files;
+- 62 release-scoped source text files, including untracked candidate files;
 - 147 production-build text files;
 - 474 dependency package entries;
-- 7 app-owned media assets;
+- 9 app-owned media assets;
 - 8 allowlisted Next build-root metadata references.
 
 This is a high-signal guard, not a proof that no secret, personal datum, vulnerability, or licensing issue exists.
@@ -1209,8 +1246,9 @@ Codex and associated design/QA skills contributed:
 - responsive/accessibility-adjacent QA;
 - release audit;
 - README, screenshots, license, deployment, and this guide.
+- later incident/recovery presentation, Granite reliability hardening, the narrow OTLP adapter, and the reproducible evaluation.
 
-The point of the log is not to invent a percentage. It is to show material prompts, artifacts, human review, and executed verification without attributing one tool's work to another.
+The point of the log is not to invent a percentage. It is to show material prompts, artifacts, human review, and executed verification without attributing one tool's work to another. `docs/BOB_BUILD_STORY.md` points judges to the two large Bob-authored foundation commits and the bounded workflow that produced them.
 
 ## 31. License and asset status
 
@@ -1222,7 +1260,7 @@ Important qualifications:
 - The license is not legal advice.
 - It has not been reviewed by qualified counsel.
 - Third-party packages retain their own licenses.
-- The seven project screenshots are declared as project-owned synthetic captures in `docs/ASSET_LICENSES.md`.
+- The nine project screenshots are declared as project-owned synthetic captures in `docs/ASSET_LICENSES.md`.
 
 ---
 
@@ -1249,7 +1287,7 @@ Open `http://localhost:3000`.
 
 1. Choose Expected run.
 2. Read the preset authority.
-3. Select Analyze against authority.
+3. Select Build receipt.
 4. Confirm the clean verdict, 3/3 coverage, and fallback source.
 5. Open one evidence control.
 6. Start a new review.
@@ -1331,15 +1369,15 @@ Set these names locally:
 GRANITE_MODE=live
 WATSONX_API_KEY=<local secret>
 WATSONX_PROJECT_ID=<project ID>
-WATSONX_URL=https://<region>.ml.cloud.ibm.com
-WATSONX_MODEL_ID=<currently available compatible Granite instruct model>
+WATSONX_URL=https://us-south.ml.cloud.ibm.com
+WATSONX_MODEL_ID=ibm/granite-4-h-small
 ```
 
 Never use a `NEXT_PUBLIC_` prefix. Never paste values into chat, issues, screenshots, source, logs, or this guide.
 
-Start a fresh dev server so Next.js reloads the environment. Run both fixtures. A successfully accepted model response shows `generationSource: granite` plus model and API metadata. Fallback still means the review path succeeded safely; it means the live response was unavailable or rejected.
+Start a fresh dev server so Next.js reloads the environment. The server calls `/ml/v1/text/chat?version=2025-10-25` and reads `choices[0].message.content`. Run both fixtures. A successfully accepted model response shows `generationSource: granite` plus model and API metadata. Fallback still means the review path succeeded safely; it means the live response was unavailable or rejected.
 
-After one successful live run, deliberately use a nonexistent model ID temporarily and verify that the same receipt completes with deterministic fallback. Restore the valid ID immediately.
+After one successful live run, start a separate local process with a deliberately invalid process-only API key override and verify that the same receipt completes with deterministic fallback. Do not overwrite the real `.env.local`, and restore the normal process immediately.
 
 Finally run:
 
@@ -1414,7 +1452,7 @@ Checklist:
 - never infer boundaries, categories, quantities, approvals, or outcomes;
 - add adapter, accounting, policy interaction, golden, and integration tests.
 
-An OpenTelemetry adapter is a reasonable future direction, but universal OTLP compatibility is explicitly outside the MVP. A narrow documented shape should come first.
+The first narrow OpenTelemetry JSON profile now exists in `src/adapters/otlpGenAi.ts`. It demonstrates this checklist for one documented GenAI/action span shape. Universal OTLP compatibility, protobuf ingestion, collector operation, logs, metrics, arbitrary semantic conventions, and inferred action meaning remain explicitly outside the MVP.
 
 ## 38. How to add another model provider
 
@@ -1481,14 +1519,13 @@ Remaining risks include:
 
 ## 41. What remains before the hackathon release is fully complete
 
-At the guide snapshot, the P0 implementation, local gate, exact-release CI, screenshots, license, Vercel deployment, and fallback journeys were complete.
+At the guide snapshot, the P0 implementation, prior local gate, local Granite success and forced-failure checks, exact-release CI, screenshots, license, Vercel deployment, and fallback journeys were complete. The current local candidate also includes incident grouping, human-approved recovery proposals, Granite selection hardening, the narrow OTLP adapter, and the automated evaluation corpus.
 
 Open release work included:
 
-- verify live watsonx.ai Granite success;
-- force and verify one live failure;
+- decide whether to configure encrypted live watsonx.ai credentials in Vercel, then verify that deployment if approved;
 - complete a real screen-reader spot check;
-- update stale README, release QA, and assistance-log deployment statements;
+- commit and push the current candidate only after fresh explicit approvals, then verify the resulting deployment;
 - scan the exact public repository after visibility change;
 - obtain explicit approval before making the repository public;
 - recheck challenge rules, eligibility, learning requirements, and deadline;
@@ -1502,14 +1539,14 @@ These are release and external-state gates. They do not erase the completed dete
 
 The safest order is:
 
-1. finish live provider and submission evidence;
+1. finish public-deployment and submission evidence;
 2. strengthen accessible verification;
 3. update documentation to match deployed state;
-4. add one carefully scoped external trace adapter;
-5. add signed capture or provenance only with a real threat model;
-6. consider persistence, accounts, and team workflows;
-7. consider production integrations;
-8. add comparative model evaluation only after the deterministic contract remains stable.
+4. validate the narrow OTLP adapter against larger, consented external fixtures;
+5. prototype a separate recovery executor only with read-before-write checks, dry runs, explicit approval, rollback, idempotency, and its own evidence trail;
+6. add signed capture or provenance only with a real threat model;
+7. consider persistence, accounts, and team workflows;
+8. consider production integrations and comparative model evaluation only after the deterministic contract remains stable.
 
 Avoid widening immediately into enforcement, universal observability, compliance certification, or generalized policy authoring. Those are different products with different safety and legal burdens.
 
@@ -1712,7 +1749,7 @@ Granite demonstrates a bounded IBM-native explanation layer and future flexibili
 
 ## Is the public deployment using live Granite?
 
-Not in the verified snapshot. It uses deterministic fallback.
+Not in the verified `057305d` snapshot. That deployment used deterministic fallback. Local IAM and Chat API success are verified separately, but live Granite has not been configured or verified in Vercel.
 
 ## Does a clean receipt prove the agent behaved perfectly?
 
@@ -1726,13 +1763,21 @@ Because an uploaded trace cannot prove the absence of activity outside itself. "
 
 Rules represent independent concerns. An external write might involve an unpermitted system, unpermitted operation, disallowed egress, and prohibited data at the same time.
 
+## Can Agent Receipt fix an agent's mistakes?
+
+It can propose cited recovery steps for a human to review. It does not execute them. Safe execution would require current system state, credentials, rollback and idempotency contracts, explicit authority, and a separate audit trail that an uploaded post-run trace cannot provide.
+
+## Does it accept OpenTelemetry traces?
+
+It accepts one narrow documented OTLP/JSON `resourceSpans` profile for GenAI inference and explicitly attributed action spans. It is not a universal OTLP collector.
+
 ## Why is incomplete evidence the highest-priority verdict?
 
 Because a material evidence gap prevents a complete assessment. Existing findings still remain visible.
 
 ## Are the screenshots real customer data?
 
-No. All seven use the committed synthetic overreaching fixture.
+No. All nine use the committed synthetic overreaching fixture.
 
 ## Is the project open source?
 
@@ -1751,7 +1796,7 @@ It is a bounded hackathon MVP. Production use would require authentication, pers
 | What is the product? | `docs/PRD.md` |
 | What may agents change? | `AGENTS.md`, `.bob/rules/00-agent-receipt.md` |
 | What data is valid? | `src/core/schemas/index.ts` |
-| How are events normalized? | `src/adapters/nativeTrace.ts` |
+| How are events normalized? | `src/adapters/nativeTrace.ts`, `src/adapters/otlpGenAi.ts` |
 | How is coverage enforced? | `src/core/coverage.ts` |
 | How are findings/verdict computed? | `src/core/policyEngine.ts` |
 | How is a receipt assembled/exported? | `src/core/receipt.ts` |
@@ -1761,6 +1806,8 @@ It is a bounded hackathon MVP. Production use would require authentication, pers
 | What does the API route trust? | `src/app/api/receipt-copy/route.ts` |
 | How does the UI behave? | `src/components/ReceiptReviewApp.tsx` |
 | How is manager copy derived? | `src/ui/receiptView.ts` |
+| How is the automated evaluation reproduced? | `src/evaluation/hackathonEvaluation.ts`, `docs/EVALUATION.md` |
+| Where is public IBM Bob evidence? | `docs/BOB_BUILD_STORY.md`, commits `1fa6679` and `560b5b9` |
 | What do the samples contain? | `src/fixtures/index.ts` |
 | What does release scanning do? | `src/release/audit.ts` |
 | What is verified and still open? | `docs/RELEASE_QA.md` plus the deployed handoff snapshot |
@@ -1784,7 +1831,7 @@ This guide was cross-checked against the complete tracked repository, including 
 
 - Current repository behavior is supported by local source inspection and the exact verification commands reported in this guide.
 - Exact-release CI and deployment journey details come from the verified deployed-project handoff and repository QA artifacts.
-- Live Granite, real screen-reader use, public-repository conversion, public video, and final submission were not verified as complete in this guide pass.
+- Local live Granite success for both fixtures under the compact selection boundary, prior rejected-claim fallback, explicit fallback mode, and invalid-credential fallback were verified on August 27, 2026. The current local candidate has not been pushed or deployed. Live Granite in the public deployment, real screen-reader use, public-repository conversion, public video, and final submission were not verified as complete in this guide pass.
 - Challenge and provider details can change; recheck official pages before release action.
 
 ---

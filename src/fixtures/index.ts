@@ -1,4 +1,5 @@
 import type { AuthorityEnvelopeV1, NativeTraceV1 } from "../core/schemas/index";
+import type { OtlpExportTraceServiceRequest } from "../adapters/otlpGenAi";
 
 // ─── Shared authority ─────────────────────────────────────────────────────────
 
@@ -164,4 +165,101 @@ export const fixtureB: NativeTraceV1 = {
       status: "succeeded",
     },
   ],
+};
+
+// ─── Fixture C: Narrow OTLP/JSON GenAI export ────────────────────────────────
+
+/**
+ * One exact OTLP ExportTraceServiceRequest JSON shape. It intentionally mixes
+ * two mapped GenAI/action spans with one unrelated metadata-only HTTP span so
+ * the adapter's complete accounting contract stays visible.
+ */
+export const otlpGenAiFixture: OtlpExportTraceServiceRequest = {
+  resourceSpans: [
+    {
+      resource: {
+        attributes: [
+          { key: "service.name", value: { stringValue: "crm-summary-agent" } },
+        ],
+      },
+      scopeSpans: [
+        {
+          scope: { name: "agent-receipt-demo", version: "1.0.0" },
+          spans: [
+            {
+              traceId: "5B8EFFF798038103D269B633813FC60C",
+              spanId: "EEE19B7EC3C1B171",
+              name: "chat granite-4-h-small",
+              kind: 3,
+              startTimeUnixNano: "1722502860000000000",
+              endTimeUnixNano: "1722502861000000000",
+              attributes: [
+                { key: "gen_ai.operation.name", value: { stringValue: "chat" } },
+                { key: "gen_ai.provider.name", value: { stringValue: "ibm" } },
+                { key: "gen_ai.request.model", value: { stringValue: "granite-4-h-small" } },
+                { key: "server.address", value: { stringValue: "us-south.ml.cloud.ibm.com" } },
+                { key: "agent.receipt.destination.boundary", value: { stringValue: "internal" } },
+              ],
+              status: { code: 1 },
+            },
+            {
+              traceId: "5B8EFFF798038103D269B633813FC60C",
+              spanId: "EEE19B7EC3C1B172",
+              parentSpanId: "EEE19B7EC3C1B171",
+              name: "execute_tool write_file",
+              kind: 1,
+              startTimeUnixNano: "1722502862000000000",
+              endTimeUnixNano: "1722502863000000000",
+              attributes: [
+                { key: "gen_ai.operation.name", value: { stringValue: "execute_tool" } },
+                { key: "gen_ai.tool.name", value: { stringValue: "write_file" } },
+                { key: "agent.receipt.operation", value: { stringValue: "create" } },
+                { key: "agent.receipt.state_change", value: { boolValue: true } },
+                { key: "agent.receipt.destination.system", value: { stringValue: "local-workspace" } },
+                { key: "agent.receipt.destination.boundary", value: { stringValue: "local" } },
+                { key: "agent.receipt.resource.type", value: { stringValue: "summary-file" } },
+                {
+                  key: "agent.receipt.data.categories",
+                  value: {
+                    arrayValue: {
+                      values: [{ stringValue: "churn_score" }],
+                    },
+                  },
+                },
+                { key: "agent.receipt.quantity.value", value: { intValue: "1" } },
+                { key: "agent.receipt.quantity.unit", value: { stringValue: "files" } },
+              ],
+              status: { code: 1 },
+            },
+            {
+              traceId: "5B8EFFF798038103D269B633813FC60C",
+              spanId: "EEE19B7EC3C1B173",
+              name: "HTTP GET",
+              kind: 3,
+              startTimeUnixNano: "1722502864000000000",
+              endTimeUnixNano: "1722502865000000000",
+              attributes: [
+                { key: "http.request.method", value: { stringValue: "GET" } },
+              ],
+              status: { code: 1 },
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+export const otlpDemoAuthority: AuthorityEnvelopeV1 = {
+  schemaVersion: "agent-receipt.authority.v1",
+  policyId: "policy-otlp-demo-001",
+  task: "Run one model inference and write the resulting summary to the local workspace.",
+  permittedSystems: [
+    { systemId: "us-south.ml.cloud.ibm.com", boundary: "internal" },
+    { systemId: "local-workspace", boundary: "local" },
+  ],
+  permittedOperations: ["execute", "create"],
+  prohibitedDataCategories: ["customer_email"],
+  externalEgressAllowed: false,
+  approvalRequiredFor: [],
 };

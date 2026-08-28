@@ -95,7 +95,7 @@ describe("generateReceiptCopy", () => {
       ok: true,
       text: validGraniteText(bundle),
       modelId: "ibm/test-granite",
-      apiVersion: "2024-03-14",
+      apiVersion: "2025-10-25",
     });
 
     const result = await generateReceiptCopy(bundle, { callGranite: caller });
@@ -104,10 +104,68 @@ describe("generateReceiptCopy", () => {
     expect(result).toMatchObject({
       generationSource: "granite",
       modelId: "ibm/test-granite",
-      modelApiVersion: "2024-03-14",
+      modelApiVersion: "2025-10-25",
     });
     expect(caller).toHaveBeenCalledTimes(1);
     expect(caller.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("renders a compact Granite finding selection into exact deterministic copy", async () => {
+    const bundle = makeMaterialDeviationBundle();
+    const selectedIds = [
+      bundle.findings.at(-1)?.findingId,
+      bundle.findings[0]?.findingId,
+    ].filter((findingId): findingId is string => findingId !== undefined);
+    const caller = vi.fn<GraniteCaller>().mockResolvedValue({
+      ok: true,
+      text: JSON.stringify({ notableFindingIds: selectedIds }),
+      modelId: "ibm/test-granite",
+      apiVersion: "2025-10-25",
+    });
+
+    const result = await generateReceiptCopy(bundle, { callGranite: caller });
+
+    expect(result.generationSource).toBe("granite");
+    expect(result.copy.notableActions.map((action) => action.findingIds[0])).toEqual(
+      selectedIds,
+    );
+    const fallbackByFindingId = new Map(
+      deterministicFallback(bundle).notableActions.map((action) => [
+        action.findingIds[0],
+        action,
+      ]),
+    );
+    expect(result.copy.notableActions).toEqual(
+      selectedIds.map((findingId) => fallbackByFindingId.get(findingId)),
+    );
+  });
+
+  it("repairs an unknown compact selection ID without accepting a generated claim", async () => {
+    const bundle = makeMaterialDeviationBundle();
+    const selectedId = bundle.findings[0]?.findingId;
+    expect(selectedId).toBeDefined();
+    const caller = vi
+      .fn<GraniteCaller>()
+      .mockResolvedValueOnce({
+        ok: true,
+        text: JSON.stringify({ notableFindingIds: ["finding-invented"] }),
+        modelId: "ibm/test-granite",
+        apiVersion: "2025-10-25",
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: JSON.stringify({ notableFindingIds: [selectedId] }),
+        modelId: "ibm/test-granite",
+        apiVersion: "2025-10-25",
+      });
+
+    const result = await generateReceiptCopy(bundle, { callGranite: caller });
+
+    expect(result.generationSource).toBe("granite");
+    expect(result.copy.notableActions[0]?.findingIds).toEqual([selectedId]);
+    expect(caller.mock.calls[1]?.[1]?.repairErrors).toContain(
+      'Unknown notable finding ID "finding-invented"',
+    );
   });
 
   it("passes validation errors to one repair call and accepts valid repair", async () => {
@@ -118,13 +176,13 @@ describe("generateReceiptCopy", () => {
         ok: true,
         text: '{"invalid":true}',
         modelId: "ibm/test-granite",
-        apiVersion: "2024-03-14",
+        apiVersion: "2025-10-25",
       })
       .mockResolvedValueOnce({
         ok: true,
         text: validGraniteText(bundle),
         modelId: "ibm/test-granite",
-        apiVersion: "2024-03-14",
+        apiVersion: "2025-10-25",
       });
 
     const result = await generateReceiptCopy(bundle, { callGranite: caller });
@@ -142,7 +200,7 @@ describe("generateReceiptCopy", () => {
       ok: true,
       text: "not-json",
       modelId: "ibm/test-granite",
-      apiVersion: "2024-03-14",
+      apiVersion: "2025-10-25",
     });
 
     const result = await generateReceiptCopy(bundle, { callGranite: caller });
@@ -160,7 +218,7 @@ describe("generateReceiptCopy", () => {
       ok: true,
       text: JSON.stringify(invalidCopy),
       modelId: "ibm/test-granite",
-      apiVersion: "2024-03-14",
+      apiVersion: "2025-10-25",
     });
 
     const result = await generateReceiptCopy(bundle, { callGranite: caller });
@@ -181,7 +239,7 @@ describe("generateReceiptCopy", () => {
       ok: true,
       text: JSON.stringify(invalidCopy),
       modelId: "ibm/test-granite",
-      apiVersion: "2024-03-14",
+      apiVersion: "2025-10-25",
     });
 
     const result = await generateReceiptCopy(bundle, { callGranite: caller });
@@ -201,7 +259,7 @@ describe("generateReceiptCopy", () => {
       ok: true,
       text: JSON.stringify(invalidCopy),
       modelId: "ibm/test-granite",
-      apiVersion: "2024-03-14",
+      apiVersion: "2025-10-25",
     });
 
     const result = await generateReceiptCopy(bundle, { callGranite: caller });
@@ -223,7 +281,7 @@ describe("generateReceiptCopy", () => {
       ok: true,
       text: JSON.stringify(invalidCopy),
       modelId: "ibm/test-granite",
-      apiVersion: "2024-03-14",
+      apiVersion: "2025-10-25",
     });
 
     const result = await generateReceiptCopy(bundle, { callGranite: caller });
@@ -242,7 +300,7 @@ describe("generateReceiptCopy", () => {
       ok: true,
       text: JSON.stringify(invalidCopy),
       modelId: "ibm/test-granite",
-      apiVersion: "2024-03-14",
+      apiVersion: "2025-10-25",
     });
 
     const result = await generateReceiptCopy(bundle, { callGranite: caller });
@@ -261,7 +319,7 @@ describe("generateReceiptCopy", () => {
       ok: true,
       text: JSON.stringify(invalidCopy),
       modelId: "ibm/test-granite",
-      apiVersion: "2024-03-14",
+      apiVersion: "2025-10-25",
     });
 
     const result = await generateReceiptCopy(bundle, { callGranite: caller });
@@ -279,7 +337,7 @@ describe("generateReceiptCopy", () => {
       ok: true,
       text: JSON.stringify(invalidCopy),
       modelId: "ibm/test-granite",
-      apiVersion: "2024-03-14",
+      apiVersion: "2025-10-25",
     });
 
     const result = await generateReceiptCopy(bundle, { callGranite: caller });
@@ -301,7 +359,7 @@ describe("generateReceiptCopy", () => {
       ok: true,
       text: JSON.stringify(invalidCopy),
       modelId: "ibm/test-granite",
-      apiVersion: "2024-03-14",
+      apiVersion: "2025-10-25",
     });
 
     const result = await generateReceiptCopy(bundle, { callGranite: caller });
@@ -335,7 +393,7 @@ describe("generateReceiptCopy", () => {
       ok: true,
       text: JSON.stringify(invalidCopy),
       modelId: "ibm/test-granite",
-      apiVersion: "2024-03-14",
+      apiVersion: "2025-10-25",
     });
 
     const result = await generateReceiptCopy(bundle, { callGranite: caller });
@@ -418,7 +476,7 @@ describe("generateReceiptCopy", () => {
                 ok: true,
                 text: "not-json",
                 modelId: "ibm/test-granite",
-                apiVersion: "2024-03-14",
+                apiVersion: "2025-10-25",
               }),
             7_000,
           );

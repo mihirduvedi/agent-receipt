@@ -1,4 +1,8 @@
 import { adaptNativeTrace, NATIVE_ADAPTER_NAME } from "../adapters/nativeTrace";
+import {
+  adaptOtlpGenAiTrace,
+  OtlpExportTraceServiceRequestSchema,
+} from "../adapters/otlpGenAi";
 import { buildFactBundle } from "../ai/factBundle";
 import { deterministicFallback } from "../ai/deterministicFallback";
 import { validateClaims } from "../ai/validateClaims";
@@ -27,6 +31,7 @@ import type {
   ReceiptCopyGenerationResult,
   ReceiptCopyRequest,
   ReceiptResult,
+  ReceiptRun,
   ReviewDisposition,
 } from "./schemas/index";
 
@@ -87,7 +92,6 @@ export type BuildReceiptResult =
       retainedSource: RetainedReceiptSource & {
         sha256: string;
         rawDocument: unknown;
-        trace: NativeTraceV1;
       };
     }
   | {
@@ -168,47 +172,100 @@ export async function buildReceipt(
     );
   }
 
-  if (
-    !isRecord(rawDocument) ||
-    rawDocument["schemaVersion"] !== NATIVE_TRACE_SCHEMA_VERSION
-  ) {
+  if (!isRecord(rawDocument)) {
     return failure(
       "unsupported_format",
-      `This schema is not supported. Agent Receipt currently accepts ${NATIVE_TRACE_SCHEMA_VERSION}.`,
+      `This schema is not supported. Agent Receipt accepts ${NATIVE_TRACE_SCHEMA_VERSION} and one documented OTLP/JSON resourceSpans shape.`,
       retainedSource,
     );
   }
 
-  const traceResult = NativeTraceV1Schema.safeParse(rawDocument);
-  if (!traceResult.success) {
-    return failure(
-      "invalid_trace",
-      "Some trace fields are invalid. Review the fields listed below.",
-      retainedSource,
-      zodIssues(traceResult.error.issues),
-    );
-  }
-  const trace = traceResult.data;
-  retainedSource.trace = trace;
+  let adapter: AdapterResult;
+  let run: ReceiptRun;
+  let rawEventCount: number;
+  let inputSchemaVersion: string;
+  let adapterName: string;
+  let nativeTrace: NativeTraceV1 | undefined;
 
-  const duplicateEventIds = findDuplicates(trace.events.map((event) => event.id));
-  if (duplicateEventIds.length > 0) {
+  if (rawDocument["schemaVersion"] === NATIVE_TRACE_SCHEMA_VERSION) {
+    const traceResult = NativeTraceV1Schema.safeParse(rawDocument);
+    if (!traceResult.success) {
+      return failure(
+        "invalid_trace",
+        "Some trace fields are invalid. Review the fields listed below.",
+        retainedSource,
+        zodIssues(traceResult.error.issues),
+      );
+    }
+    const trace = traceResult.data;
+    nativeTrace = trace;
+    retainedSource.trace = trace;
+
+    const duplicateEventIds = findDuplicates(trace.events.map((event) => event.id));
+    if (duplicateEventIds.length > 0) {
+      return failure(
+        "invalid_trace",
+        "Trace validation failed because native event IDs must be unique.",
+        retainedSource,
+        duplicateEventIds.map((eventId) => ({
+          path: "events",
+          message: `Duplicate native event ID "${eventId}"`,
+        })),
+      );
+    }
+    if (trace.events.length === 0) {
+      return failure(
+        "invalid_trace",
+        "At least one native event is required for evidence-cited receipt copy.",
+        retainedSource,
+        [{ path: "events", message: "Add at least one event so every receipt note can cite evidence." }],
+      );
+    }
+
+    adapter = adaptNativeTrace(trace);
+    run = {
+      traceId: trace.traceId,
+      agent: trace.agent,
+      startedAt: trace.startedAt,
+      ...(trace.completedAt === undefined
+        ? {}
+        : { completedAt: trace.completedAt }),
+      status: trace.status,
+    };
+    rawEventCount = trace.events.length;
+    inputSchemaVersion = trace.schemaVersion;
+    adapterName = NATIVE_ADAPTER_NAME;
+  } else if ("resourceSpans" in rawDocument) {
+    const otlpResult = OtlpExportTraceServiceRequestSchema.safeParse(rawDocument);
+    if (!otlpResult.success) {
+      return failure(
+        "invalid_trace",
+        "The OTLP/JSON export does not match the supported resourceSpans shape.",
+        retainedSource,
+        zodIssues(otlpResult.error.issues),
+      );
+    }
+    try {
+      const adapted = adaptOtlpGenAiTrace(otlpResult.data);
+      adapter = adapted.adapter;
+      run = adapted.run;
+      rawEventCount = adapted.rawSpanCount;
+      inputSchemaVersion = adapted.schemaVersion;
+      adapterName = adapted.adapterName;
+    } catch (error) {
+      return failure(
+        "invalid_trace",
+        error instanceof Error
+          ? error.message
+          : "The OTLP/JSON export could not be adapted.",
+        retainedSource,
+      );
+    }
+  } else {
     return failure(
-      "invalid_trace",
-      "Trace validation failed because native event IDs must be unique.",
+      "unsupported_format",
+      `This schema is not supported. Agent Receipt accepts ${NATIVE_TRACE_SCHEMA_VERSION} and one documented OTLP/JSON resourceSpans shape.`,
       retainedSource,
-      duplicateEventIds.map((eventId) => ({
-        path: "events",
-        message: `Duplicate native event ID "${eventId}"`,
-      })),
-    );
-  }
-  if (trace.events.length === 0) {
-    return failure(
-      "invalid_trace",
-      "At least one native event is required for evidence-cited receipt copy.",
-      retainedSource,
-      [{ path: "events", message: "Add at least one event so every receipt note can cite evidence." }],
     );
   }
 
@@ -231,12 +288,22 @@ export async function buildReceipt(
     );
   }
 
-  let adapter: AdapterResult;
   let coverage: CoverageSummary;
   try {
-    adapter = AdapterResultSchema.parse(adaptNativeTrace(trace));
+    adapter = AdapterResultSchema.parse(adapter);
+    if (adapter.events.length === 0) {
+      return failure(
+        "invalid_trace",
+        "At least one source record must map to a canonical event for evidence-cited receipt copy.",
+        retainedSource,
+        adapter.accounting.map((entry) => ({
+          path: entry.rawPointer,
+          message: entry.reason ?? "Source record did not map to a canonical event.",
+        })),
+      );
+    }
     coverage = computeCoverage({
-      rawEventCount: trace.events.length,
+      rawEventCount,
       events: adapter.events,
       accounting: adapter.accounting,
     });
@@ -252,7 +319,7 @@ export async function buildReceipt(
     events: adapter.events,
     accounting: adapter.accounting,
     authority,
-    traceCompletionStatus: trace.status,
+    traceCompletionStatus: run.status,
   });
   const deterministicEvidence: DeterministicReceiptEvidence = {
     adapter,
@@ -292,11 +359,11 @@ export async function buildReceipt(
   }
 
   const requestResult = ReceiptCopyRequestSchema.safeParse({
-    rawEventCount: trace.events.length,
+    rawEventCount,
     events: adapter.events,
     accounting: adapter.accounting,
     authority,
-    traceCompletionStatus: trace.status,
+    traceCompletionStatus: run.status,
   });
   if (!requestResult.success) {
     return failure(
@@ -332,15 +399,7 @@ export async function buildReceipt(
   }
   const receiptCandidate = {
     schemaVersion: RECEIPT_SCHEMA_VERSION,
-    run: {
-      traceId: trace.traceId,
-      agent: trace.agent,
-      startedAt: trace.startedAt,
-      ...(trace.completedAt === undefined
-        ? {}
-        : { completedAt: trace.completedAt }),
-      status: trace.status,
-    },
+    run,
     authority,
     verdict: policy.verdict,
     verdictLabel: VERDICT_LABELS[policy.verdict],
@@ -356,8 +415,8 @@ export async function buildReceipt(
       sha256,
       byteLength: exactBytes.byteLength,
       inputFormat: adapter.format,
-      schemaVersion: trace.schemaVersion,
-      adapterName: NATIVE_ADAPTER_NAME,
+      schemaVersion: inputSchemaVersion,
+      adapterName,
       adapterVersion: adapter.adapterVersion,
       authoritySchemaVersion: AUTHORITY_SCHEMA_VERSION,
       policyId: authority.policyId,
@@ -391,7 +450,7 @@ export async function buildReceipt(
       bytes: exactBytes,
       sha256,
       rawDocument,
-      trace,
+      ...(nativeTrace ? { trace: nativeTrace } : {}),
     },
   };
 }

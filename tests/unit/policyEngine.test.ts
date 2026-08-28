@@ -51,6 +51,7 @@ describe("AR-SYS-001 — unpermitted system", () => {
     const f = findings.find(f => f.ruleId === "AR-SYS-001");
     expect(f).toBeDefined();
     expect(f!.severity).toBe("medium");
+    expect(f!.description).toContain('source system "unknown-db".');
   });
 
   it("raises high finding for successful state-change to unknown system", () => {
@@ -78,6 +79,7 @@ describe("AR-OP-001 — unpermitted operation", () => {
     const { findings } = runPolicyEngine({ events: [ev], accounting: [], authority: auth, traceCompletionStatus: "succeeded" });
     const f = findings.find(f => f.ruleId === "AR-OP-001");
     expect(f!.severity).toBe("high");
+    expect(f!.description).toContain('operation "delete".');
   });
 
   it("raises medium finding for execute (not permitted, non-high op)", () => {
@@ -237,6 +239,7 @@ describe("AR-APPROVAL-001 — missing approval", () => {
     const { findings } = runPolicyEngine({ events: [ev], accounting: [], authority: auth, traceCompletionStatus: "succeeded" });
     const f = findings.find(f => f.ruleId === "AR-APPROVAL-001");
     expect(f!.severity).toBe("high");
+    expect(f!.description).toContain('completed "send", which requires human approval');
   });
 
   it("does not flag when a prior human approval is explicitly referenced", () => {
@@ -318,6 +321,8 @@ describe("AR-RETRY-001 — retry after ambiguous completion", () => {
     const { findings } = runPolicyEngine({ events: [attempt1, attempt2], accounting: [], authority: auth, traceCompletionStatus: "succeeded" });
     const f = findings.find(f => f.ruleId === "AR-RETRY-001");
     expect(f!.severity).toBe("medium");
+    expect(f!.description).toContain('action "export-001".');
+    expect(f!.description).toContain('recorded as "unknown".');
     expect(f!.description).toContain("A repeated side effect is possible");
     expect(f!.description).not.toContain("duplicate artifact created");
   });
@@ -389,6 +394,14 @@ describe("AR-ERROR-001 — state change after unhandled error", () => {
 // ─── AR-TRACE-001 ─────────────────────────────────────────────────────────────
 
 describe("AR-TRACE-001 — trace integrity", () => {
+  it("keeps the exact unknown operation token inside its quotation marks", () => {
+    const ev = makeEvent({ eventId: "evt-000001", operation: "unknown" });
+    const auth = makeAuthority();
+    const { findings } = runPolicyEngine({ events: [ev], accounting: [], authority: auth, traceCompletionStatus: "succeeded" });
+    const f = findings.find(f => f.ruleId === "AR-TRACE-001");
+    expect(f!.description).toContain('operation as "unknown", leaving');
+  });
+
   it("raises high finding for material unparsed event", () => {
     const ev = makeEvent({ eventId: "evt-000001" });
     const accounting: RawEventAccounting[] = [{
@@ -410,6 +423,7 @@ describe("AR-TRACE-001 — trace integrity", () => {
     const { findings } = runPolicyEngine({ events: [ev], accounting: [], authority: auth, traceCompletionStatus: "unknown" });
     const f = findings.find(f => f.ruleId === "AR-TRACE-001");
     expect(f!.severity).toBe("high");
+    expect(f!.description).toContain('trace status is "unknown".');
   });
 
   it("does not flag when trace has succeeded status", () => {

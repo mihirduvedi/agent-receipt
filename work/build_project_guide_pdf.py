@@ -174,6 +174,8 @@ class GuideDocTemplate(BaseDocTemplate):
         key = f"section-{self._bookmark_id}"
         self.canv.bookmarkPage(key)
         self.canv.addOutlineEntry(text, key, level=level, closed=False)
+        if level == 1 and self.current_section.startswith("Appendix "):
+            return
         self.notify("TOCEntry", (level, text, self.page, key))
 
 
@@ -285,9 +287,9 @@ def make_styles() -> dict[str, ParagraphStyle]:
             parent=base["BodyText"],
             fontName="Georgia",
             fontSize=9.8,
-            leading=14.4,
+            leading=14.0,
             textColor=INK,
-            spaceAfter=7.5,
+            spaceAfter=6.0,
             allowWidows=0,
             allowOrphans=0,
         ),
@@ -327,7 +329,7 @@ def make_styles() -> dict[str, ParagraphStyle]:
             fontSize=20,
             leading=24,
             textColor=INK,
-            spaceBefore=12,
+            spaceBefore=10,
             spaceAfter=8,
             # Not keepWithNext: several H2 sections are immediately followed
             # by a near-full-page table or diagram, and keepWithNext would
@@ -338,14 +340,36 @@ def make_styles() -> dict[str, ParagraphStyle]:
             # all-or-nothing coupling.
             keepWithNext=0,
         ),
+        "ClosingH2": ParagraphStyle(
+            "H2",
+            fontName="Georgia-Bold",
+            fontSize=27,
+            leading=31,
+            textColor=colors.white,
+            backColor=INK,
+            borderPadding=(16, 18, 17, 18),
+            spaceBefore=0,
+            spaceAfter=16,
+            keepWithNext=0,
+        ),
         "H3": ParagraphStyle(
             "H3",
             fontName="Arial-Bold",
             fontSize=11.3,
             leading=14,
             textColor=INK,
-            spaceBefore=9,
-            spaceAfter=5,
+            spaceBefore=8,
+            spaceAfter=4,
+            keepWithNext=1,
+        ),
+        "FAQQuestion": ParagraphStyle(
+            "FAQQuestion",
+            fontName="Georgia-Bold",
+            fontSize=13.5,
+            leading=16.5,
+            textColor=INK,
+            spaceBefore=5,
+            spaceAfter=2,
             keepWithNext=1,
         ),
         "H4": ParagraphStyle(
@@ -361,26 +385,20 @@ def make_styles() -> dict[str, ParagraphStyle]:
         "Bullet": ParagraphStyle(
             "Bullet",
             fontName="Georgia",
-            fontSize=9.5,
-            leading=13.8,
+            fontSize=9.8,
+            leading=13.5,
             textColor=INK,
             leftIndent=2,
-            spaceAfter=2,
+            spaceAfter=1.5,
         ),
         "Callout": ParagraphStyle(
             "Callout",
             fontName="Georgia-Italic",
-            fontSize=10.5,
-            leading=15.2,
+            fontSize=9.8,
+            leading=14.0,
             textColor=colors.white,
-            backColor=INK,
-            borderColor=SIGNAL,
-            borderWidth=0,
-            borderPadding=(11, 13, 11, 13),
-            leftIndent=8,
-            rightIndent=8,
-            spaceBefore=5,
-            spaceAfter=10,
+            spaceBefore=0,
+            spaceAfter=0,
         ),
         "Code": ParagraphStyle(
             "Code",
@@ -404,6 +422,17 @@ def make_styles() -> dict[str, ParagraphStyle]:
             textColor=MUTED,
             spaceBefore=4,
             spaceAfter=10,
+        ),
+        "UtilityNote": ParagraphStyle(
+            "UtilityNote",
+            fontName="Georgia",
+            fontSize=9.2,
+            leading=12.6,
+            textColor=INK,
+            spaceBefore=0,
+            spaceAfter=0,
+            allowWidows=0,
+            allowOrphans=0,
         ),
         "TableHeader": ParagraphStyle(
             "TableHeader",
@@ -546,8 +575,8 @@ def markdown_table(rows: list[list[str]]) -> Table:
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
                 ("LEFTPADDING", (0, 0), (-1, -1), 6),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-                ("TOPPADDING", (0, 0), (-1, -1), 5),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
             ]
         )
     )
@@ -604,14 +633,103 @@ def code_block(code: str) -> Flowable:
                 ("BACKGROUND", (0, 0), (-1, -1), INK),
                 ("LEFTPADDING", (0, 0), (-1, -1), 12),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 12),
-                ("TOPPADDING", (0, 0), (-1, -1), 10),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
             ]
         ),
         hAlign="LEFT",
     )
-    return [table, Spacer(1, 9)]
+    return [table, Spacer(1, 7)]
+
+
+def callout_block(text: str) -> list[Flowable]:
+    """Render a padded callout whose measured height includes its background."""
+    paragraph = Paragraph(inline_markup(text), STYLES["Callout"])
+    table = Table(
+        [[paragraph]],
+        colWidths=[CONTENT_W],
+        style=TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), INK),
+                ("LEFTPADDING", (0, 0), (-1, -1), 13),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 13),
+                ("TOPPADDING", (0, 0), (-1, -1), 11),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 11),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]
+        ),
+        hAlign="LEFT",
+    )
+    return [Spacer(1, 5), table, Spacer(1, 10)]
+
+
+def operational_notes_block(codespaces_text: str, nextjs_text: str) -> list[Flowable]:
+    """Keep the two short end-of-part implementation notes together."""
+    cells = [
+        Paragraph(f"<b>Codespaces.</b> {inline_markup(codespaces_text)}", STYLES["UtilityNote"]),
+        Paragraph(f"<b>Next.js version warning.</b> {inline_markup(nextjs_text)}", STYLES["UtilityNote"]),
+    ]
+    table = Table(
+        [cells],
+        colWidths=[CONTENT_W * 0.62, CONTENT_W * 0.38],
+        style=TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (0, 0), colors.HexColor("#F2F0E8")),
+                ("BACKGROUND", (1, 0), (1, 0), GREEN_SOFT),
+                ("BOX", (0, 0), (-1, -1), 0.55, LINE_STRONG),
+                ("INNERGRID", (0, 0), (-1, -1), 0.55, LINE_STRONG),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("TOPPADDING", (0, 0), (-1, -1), 9),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]
+        ),
+        hAlign="LEFT",
+    )
+    return [Spacer(1, 6), KeepTogether([table]), Spacer(1, 8)]
+
+
+def section_keep_height(lines: list[str], next_index: int, title: str) -> float:
+    """Reserve enough room for a heading and a meaningful section opening."""
+    if title == "Closing perspective":
+        return 390.0
+    if title.startswith("42. Post-hackathon roadmap"):
+        return 300.0
+    if title.startswith("40. Security and privacy review model"):
+        return 180.0
+    if title.startswith("41. What remains before the hackathon release"):
+        return 400.0
+    if title.startswith("34. Testing live Granite safely"):
+        return 210.0
+    if title.startswith("33. Input format by example"):
+        return 500.0
+    if title.startswith("35. Daily development commands"):
+        return 320.0
+    if title.startswith("23. Visual and accessibility system"):
+        return 280.0
+    if title.startswith("18. Receipt orchestration"):
+        return 170.0
+    if title.startswith("5. The two synthetic stories"):
+        return 210.0
+    if title.startswith("7. Trust is divided across layers"):
+        return 400.0
+
+    index = next_index
+    while index < len(lines) and not lines[index].strip():
+        index += 1
+
+    baseline = 104.0
+    if index >= len(lines) or not lines[index].strip().startswith("```"):
+        return baseline
+
+    code_lines = 0
+    index += 1
+    while index < len(lines) and not lines[index].strip().startswith("```"):
+        code_lines += 1
+        index += 1
+    return min(430.0, 60.0 + code_lines * STYLES["Code"].leading)
 
 
 def parse_markdown(lines: list[str]) -> list[Flowable]:
@@ -620,6 +738,7 @@ def parse_markdown(lines: list[str]) -> list[Flowable]:
     # The introductory "How to use" section is a real preface, so every
     # numbered part should begin on a fresh page.
     first_part = False
+    current_part = ""
 
     while index < len(lines):
         line = lines[index].rstrip("\n")
@@ -663,19 +782,56 @@ def parse_markdown(lines: list[str]) -> list[Flowable]:
         if heading:
             level = len(heading.group(1))
             title = heading.group(2)
+            if level == 3 and title == "Codespaces":
+                note_index = index + 1
+                while note_index < len(lines) and not lines[note_index].strip():
+                    note_index += 1
+                codespaces_lines: list[str] = []
+                while note_index < len(lines) and lines[note_index].strip():
+                    codespaces_lines.append(lines[note_index].strip())
+                    note_index += 1
+                while note_index < len(lines) and not lines[note_index].strip():
+                    note_index += 1
+                if note_index >= len(lines) or lines[note_index].strip() != "### Next.js version warning":
+                    raise RuntimeError("Codespaces note is no longer followed by the Next.js version warning")
+                note_index += 1
+                while note_index < len(lines) and not lines[note_index].strip():
+                    note_index += 1
+                nextjs_lines: list[str] = []
+                while note_index < len(lines) and lines[note_index].strip():
+                    nextjs_lines.append(lines[note_index].strip())
+                    note_index += 1
+                story.extend(
+                    operational_notes_block(
+                        " ".join(codespaces_lines),
+                        " ".join(nextjs_lines),
+                    )
+                )
+                index = note_index
+                continue
             if level == 1:
                 if not first_part:
                     story.append(PageBreak())
                 first_part = False
+                current_part = title
                 part_items = part_block(title)
                 # The hidden paragraph carries bookmarks and TOC data.
                 story.append(Paragraph(inline_markup(title), STYLES["PartMarker"]))
                 story.extend(part_items)
             elif level == 2:
-                story.append(CondPageBreak(64))
-                story.append(Paragraph(inline_markup(title), STYLES["H2"]))
+                if current_part.startswith("Appendix D"):
+                    style = STYLES["FAQQuestion"]
+                else:
+                    story.append(CondPageBreak(section_keep_height(lines, index + 1, title)))
+                    style = STYLES["ClosingH2"] if title == "Closing perspective" else STYLES["H2"]
+                story.append(Paragraph(inline_markup(title), style))
+                if title == "Closing perspective":
+                    story.append(Spacer(1, 9))
             elif level == 3:
-                story.append(Paragraph(inline_markup(title), STYLES["H3"]))
+                if title == "Fixture B: Overreaching run":
+                    story.append(CondPageBreak(360))
+                style = STYLES["H4"] if title == "Next.js version warning" else STYLES["H3"]
+                story.append(Paragraph(inline_markup(title), style))
             else:
                 story.append(Paragraph(inline_markup(title), STYLES["H4"]))
             index += 1
@@ -686,7 +842,7 @@ def parse_markdown(lines: list[str]) -> list[Flowable]:
             while index < len(lines) and lines[index].lstrip().startswith(">"):
                 quote_lines.append(lines[index].lstrip()[1:].strip())
                 index += 1
-            story.append(Paragraph(inline_markup(" ".join(quote_lines)), STYLES["Callout"]))
+            story.extend(callout_block(" ".join(quote_lines)))
             continue
 
         if stripped.startswith("|") and stripped.endswith("|"):
@@ -719,7 +875,7 @@ def parse_markdown(lines: list[str]) -> list[Flowable]:
                     bulletFontName="Arial-Bold",
                     bulletFontSize=7,
                     bulletColor=GREEN,
-                    spaceAfter=7,
+                    spaceAfter=6,
                 )
             )
             continue
@@ -743,7 +899,7 @@ def parse_markdown(lines: list[str]) -> list[Flowable]:
                     bulletFontName="Arial-Bold",
                     bulletFontSize=7.6,
                     bulletColor=GREEN,
-                    spaceAfter=7,
+                    spaceAfter=6,
                 )
             )
             continue
@@ -798,18 +954,18 @@ def build() -> None:
         ParagraphStyle(
             "TOCPart",
             fontName="Arial-Bold",
-            fontSize=8.2,
-            leading=12,
+            fontSize=7.8,
+            leading=10.2,
             leftIndent=0,
             firstLineIndent=0,
             textColor=INK,
-            spaceBefore=7,
+            spaceBefore=4.5,
         ),
         ParagraphStyle(
             "TOCChapter",
             fontName="Arial",
-            fontSize=7.5,
-            leading=10.5,
+            fontSize=7.1,
+            leading=9.2,
             leftIndent=14,
             firstLineIndent=0,
             textColor=MUTED,

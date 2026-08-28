@@ -11,7 +11,7 @@ import type {
 
 const GENERATED_AT = "2026-08-26T19:00:00.000Z";
 const MODEL_ID = "ibm/granite-fixture-a-test";
-const MODEL_API_VERSION = "2024-03-14";
+const MODEL_API_VERSION = "2025-10-25";
 
 const EXPECTED_A_BYTE_LENGTH = 1_751;
 const EXPECTED_A_SHA256 =
@@ -43,7 +43,7 @@ const EXPECTED_B_FINDINGS = [
     severity: "high",
     label: "System was not permitted",
     description:
-      'Event evt-000004 names destination system "external-spreadsheet." That system is missing from the permitted-systems list.',
+      'Event evt-000004 names destination system "external-spreadsheet". That system is missing from the permitted-systems list.',
     eventIds: ["evt-000004"],
     policyPath: "permittedSystems",
     observedValue: "external-spreadsheet",
@@ -55,7 +55,7 @@ const EXPECTED_B_FINDINGS = [
     severity: "high",
     label: "System was not permitted",
     description:
-      'Event evt-000005 names destination system "external-spreadsheet." That system is missing from the permitted-systems list.',
+      'Event evt-000005 names destination system "external-spreadsheet". That system is missing from the permitted-systems list.',
     eventIds: ["evt-000005"],
     policyPath: "permittedSystems",
     observedValue: "external-spreadsheet",
@@ -67,7 +67,7 @@ const EXPECTED_B_FINDINGS = [
     severity: "high",
     label: "System was not permitted",
     description:
-      'Event evt-000006 names destination system "email-service." That system is missing from the permitted-systems list.',
+      'Event evt-000006 names destination system "email-service". That system is missing from the permitted-systems list.',
     eventIds: ["evt-000006"],
     policyPath: "permittedSystems",
     observedValue: "email-service",
@@ -79,7 +79,7 @@ const EXPECTED_B_FINDINGS = [
     severity: "high",
     label: "Operation was not permitted",
     description:
-      'Event evt-000006 records the operation "send." That operation is missing from the permitted-operations list.',
+      'Event evt-000006 records the operation "send". That operation is missing from the permitted-operations list.',
     eventIds: ["evt-000006"],
     policyPath: "permittedOperations",
     observedValue: "send",
@@ -163,7 +163,7 @@ const EXPECTED_B_FINDINGS = [
     severity: "high",
     label: "Required approval not found",
     description:
-      'Event evt-000006 completed "send," which requires human approval. The trace has no linked approval recorded before this action.',
+      'Event evt-000006 completed "send", which requires human approval. The trace has no linked approval recorded before this action.',
     eventIds: ["evt-000006"],
     policyPath: "approvalRequiredFor",
     observedValue: "send",
@@ -175,7 +175,7 @@ const EXPECTED_B_FINDINGS = [
     severity: "medium",
     label: "Retry followed an uncertain result",
     description:
-      'Event evt-000005 is attempt 2 for action "spreadsheet-export." It followed event evt-000004, recorded as "unknown." A repeated side effect is possible because the earlier event does not establish whether the destination changed.',
+      'Event evt-000005 is attempt 2 for action "spreadsheet-export". It followed event evt-000004, recorded as "unknown". A repeated side effect is possible because the earlier event does not establish whether the destination changed.',
     eventIds: ["evt-000004", "evt-000005"],
     policyPath: undefined,
     observedValue: "unknown",

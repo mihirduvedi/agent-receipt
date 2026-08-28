@@ -3,6 +3,7 @@ import {
   ReceiptCopyGenerationResultSchema,
   type ReceiptCopyGenerationResult,
 } from "../core/schemas/index";
+import { z } from "zod";
 import { deterministicFallback } from "./deterministicFallback";
 import type { GraniteFactBundle } from "./factBundle";
 import {
@@ -23,18 +24,27 @@ type ParseAttempt =
   | { valid: true; result: ReceiptCopyGenerationResult }
   | { valid: false; errors: string[] };
 
-function parseGeneratedCopy(
+const GraniteSelectionSchema = z
+  .object({
+    notableFindingIds: z.array(z.string().min(1)).max(5),
+  })
+  .strict()
+  .superRefine(({ notableFindingIds }, context) => {
+    if (new Set(notableFindingIds).size !== notableFindingIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["notableFindingIds"],
+        message: "notableFindingIds must not contain duplicates",
+      });
+    }
+  });
+
+function validateGraniteCopy(
+  copy: unknown,
   callResult: GraniteCallSuccess,
   bundle: GraniteFactBundle,
 ): ParseAttempt {
-  let json: unknown;
-  try {
-    json = JSON.parse(callResult.text);
-  } catch {
-    return { valid: false, errors: ["Response is not valid JSON"] };
-  }
-
-  const schemaResult = GeneratedReceiptCopySchema.safeParse(json);
+  const schemaResult = GeneratedReceiptCopySchema.safeParse(copy);
   if (!schemaResult.success) {
     return {
       valid: false,
@@ -61,6 +71,64 @@ function parseGeneratedCopy(
   }
 
   return { valid: true, result: generationResult.data };
+}
+
+function parseGeneratedCopy(
+  callResult: GraniteCallSuccess,
+  bundle: GraniteFactBundle,
+): ParseAttempt {
+  let json: unknown;
+  try {
+    json = JSON.parse(callResult.text);
+  } catch {
+    return { valid: false, errors: ["Response is not valid JSON"] };
+  }
+
+  const selectionResult = GraniteSelectionSchema.safeParse(json);
+  if (selectionResult.success) {
+    const findingsById = new Map(
+      bundle.findings.map((finding) => [finding.findingId, finding]),
+    );
+    const unknownIds = selectionResult.data.notableFindingIds.filter(
+      (findingId) => !findingsById.has(findingId),
+    );
+    if (unknownIds.length > 0) {
+      return {
+        valid: false,
+        errors: unknownIds.map(
+          (findingId) => `Unknown notable finding ID "${findingId}"`,
+        ),
+      };
+    }
+    if (
+      bundle.findings.length > 0 &&
+      selectionResult.data.notableFindingIds.length === 0
+    ) {
+      return {
+        valid: false,
+        errors: ["Select at least one verified finding when findings are present"],
+      };
+    }
+
+    const rendered = deterministicFallback(bundle);
+    const renderedActionsByFindingId = new Map(
+      rendered.notableActions.map((action) => [action.findingIds[0], action]),
+    );
+    rendered.notableActions = selectionResult.data.notableFindingIds.map(
+      (findingId) => {
+        const action = renderedActionsByFindingId.get(findingId);
+        if (!action) {
+          throw new Error("Validated Granite selection could not be resolved");
+        }
+        return action;
+      },
+    );
+    return validateGraniteCopy(rendered, callResult, bundle);
+  }
+
+  // Backward-compatible validation keeps adversarial full-copy tests useful
+  // while the production prompt uses the smaller selection-only contract.
+  return validateGraniteCopy(json, callResult, bundle);
 }
 
 function buildValidatedFallback(

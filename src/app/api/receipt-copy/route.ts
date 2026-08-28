@@ -11,11 +11,38 @@ import { generateReceiptCopy } from "@/ai/generateReceiptCopy";
 
 // ─── Route handler ────────────────────────────────────────────────────────────
 
+export const MAX_RECEIPT_COPY_REQUEST_BYTES = 512 * 1024;
+
 export async function POST(request: Request): Promise<NextResponse> {
+  const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
+  if (!contentType.startsWith("application/json")) {
+    return NextResponse.json(
+      { error: "Content-Type must be application/json" },
+      { status: 415 },
+    );
+  }
+  const declaredLength = Number(request.headers.get("content-length"));
+  if (
+    Number.isFinite(declaredLength) &&
+    declaredLength > MAX_RECEIPT_COPY_REQUEST_BYTES
+  ) {
+    return NextResponse.json({ error: "Request body is too large" }, { status: 413 });
+  }
+
   // Parse and validate request body
   let rawBody: unknown;
   try {
-    rawBody = await request.json();
+    const sourceText = await request.text();
+    if (
+      new TextEncoder().encode(sourceText).byteLength >
+      MAX_RECEIPT_COPY_REQUEST_BYTES
+    ) {
+      return NextResponse.json(
+        { error: "Request body is too large" },
+        { status: 413 },
+      );
+    }
+    rawBody = JSON.parse(sourceText) as unknown;
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }

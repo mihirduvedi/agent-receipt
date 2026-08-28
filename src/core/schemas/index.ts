@@ -542,11 +542,17 @@ export const ReceiptExportSchema = z
         message: "Integrity policyId must match the authority envelope",
       });
     }
-    if (receipt.integrity.schemaVersion !== receipt.integrity.inputFormat) {
+    const inputContractMatches =
+      (receipt.integrity.inputFormat === NATIVE_TRACE_SCHEMA_VERSION &&
+        receipt.integrity.schemaVersion === NATIVE_TRACE_SCHEMA_VERSION) ||
+      (receipt.integrity.inputFormat === "otlp-json-resource-spans.v1" &&
+        receipt.integrity.schemaVersion ===
+          "opentelemetry.proto.collector.trace.v1.ExportTraceServiceRequest");
+    if (!inputContractMatches) {
       context.addIssue({
         code: "custom",
         path: ["integrity", "schemaVersion"],
-        message: "Input schemaVersion must match inputFormat",
+        message: "Input schemaVersion must match the selected adapter format",
       });
     }
 

@@ -4,9 +4,9 @@
 
 **From first principles to architecture, code, trust boundaries, testing, and deployment**
 
-Version 1.1 - August 28, 2026
+Version 1.2 - August 28, 2026
 
-Project snapshot: repository `main` and the successful Vercel deployment are connected to `0d3881fdb1f9304cb9d2c50298384283fca25560`. The local working candidate adds Recovery Plan v1 and the refreshed submission package described in this guide; those local changes are not yet committed, pushed, or deployed.
+Project snapshot: the public repository and successful Vercel deployment are connected to Recovery Plan v1 release `3c289c64d5d63c5459e86722a1143b1bd9220f26`. The current local candidate moves the existing export earlier in the judge journey and refreshes the submission artifacts; those presentation changes are not yet committed, pushed, or deployed.
 
 > Agent Receipt gives accountable humans an evidence-linked receipt for what an AI agent did relative to what it was allowed to do.
 
@@ -397,11 +397,11 @@ receipt/
 |  |- BOB_BUILD_STORY.md          public Bob implementation evidence
 |  |- DEMO_SCRIPT.md              timed three-minute judge demo
 |  |- EVALUATION.md               reproducible synthetic evaluation
+|  |- JUDGE_GUIDE.md              60-second judge path and evidence map
 |  |- OTLP_GENAI_ADAPTER.md       supported external trace contract
 |  |- RECOVERY_PLAN.md            Recovery Plan v1 trust contract
 |  |- SUBMISSION.md               paste-ready challenge copy
 |  |- AI_ASSISTANCE_LOG.md        honest tool provenance
-|  |- RELEASE_QA.md               evidence and open gates
 |  |- ASSET_LICENSES.md           screenshot declarations
 |  `- screenshots/                nine synthetic product captures
 |- scripts/release-audit.mjs      release-audit command entry point
@@ -837,7 +837,7 @@ The fallback validates itself before use.
 
 ### Current live status
 
-The production alias and successful Vercel commit status are connected to `0d3881fdb1f9304cb9d2c50298384283fca25560`, and the public URL returned HTTP 200 on August 28, 2026. Both public fixture journeys recorded `deterministic_fallback` with no model metadata. This is an intentional, fully usable mode, not evidence that live Granite is configured in Vercel.
+The production alias and successful Vercel commit status are connected to public release `3c289c64d5d63c5459e86722a1143b1bd9220f26`, and both the demo and repository returned HTTP 200 without authentication on August 28, 2026. Both exact-release fixture journeys completed in deterministic fallback mode. The overreaching journey displayed the Recovery Plan v1 citation-validation and exact-receipt SHA-256 success state, but browser automation did not independently capture the Blob download. Focused tests cover plan serialization, digest binding, citation closure, and raw-source exclusion. This does not establish that live Granite is configured in Vercel.
 
 Local live-service verification was repeated on August 28, 2026. IAM authentication and the Dallas watsonx.ai Chat API succeeded with `ibm/granite-4-h-small` through the compact finding-selection boundary. Earlier checks also covered rejected open-ended paraphrases, an invalid process-only key, and explicit fallback mode. These results prove the bounded local success and failure paths. They do not prove that the deployed candidate has working live credentials or that future provider behavior will be identical.
 
@@ -944,7 +944,8 @@ The final view contains:
 - requested task and observed outcome;
 - seven manager metrics;
 - incident brief grouped only by cited event overlap or a shared explicit action key;
-- proposed recovery plan with human authority and reversibility labels;
+- Recovery Plan v1 export placed before the longer proposal list for a shorter judge path;
+- proposed recovery actions with human authority and reversibility labels;
 - human action summary;
 - chronological timeline;
 - systems and movement map plus full text table;
@@ -1000,7 +1001,7 @@ If none of those statements is supportable, it says that nothing in those declar
 
 The detailed finding list remains authoritative, but a manager should not have to interpret twelve separate rule hits as twelve unrelated real-world problems. `buildManagerIncidentBrief` groups findings only when they cite the same event or share an explicit `actionKey`. On the overreaching fixture, the deterministic result is two incidents: an external spreadsheet creation retried after an unknown outcome, and a 20-message external customer-email send.
 
-`buildRecoveryPlan` then proposes six cited follow-up actions. Each proposal states who must approve it and whether it is reversible. The Recovery Plan v1 download validates those proposals again, closes their citations over retained receipt evidence, and binds the plan to the receipt with SHA-256. These are plans, not tools: the product never re-accesses a system, changes credentials, deletes data, sends a correction, or rolls back an action.
+`buildRecoveryPlan` then proposes six cited follow-up actions. Each proposal states who must approve it and whether it is reversible. The export panel appears before the longer proposal list so a judge or manager can reach the portable artifact without scrolling through every action first. The download validates those proposals again, closes their citations over retained receipt evidence, and binds the plan to the receipt with SHA-256. These are plans, not tools: the product never re-accesses a system, changes credentials, deletes data, sends a correction, or rolls back an action.
 
 Automatic remediation is outside the MVP because a completed uploaded trace does not prove current external state, credential availability, rollback behavior, evidence-preservation requirements, or the manager's authority to execute. A production executor would need fresh connectors, read-before-write state checks, dry runs, explicit approval, idempotency, rollback, and a separate audit trail.
 
@@ -1061,6 +1062,17 @@ The CSS includes:
 - a screen-reader-only helper class.
 
 The current evidence includes keyboard, focus, accessibility-tree, responsive, long-content, and zoom-equivalent checks. It does not include a real screen-reader session, a physical touch-device matrix, or WCAG certification.
+
+### Accessibility evidence boundary
+
+| Evidence layer | Checked in this project | Honest limit |
+|---|---|---|
+| Source and static scan | Semantic controls, visible focus styles, screen-reader-only text, forced-colors rules, reduced-motion rules | Presence in source does not prove assistive usability |
+| Automated Chrome interaction | Drawer focus entry, Tab and Shift+Tab containment, Escape close, focus return, and scroll restoration | One browser automation path is not a screen-reader session |
+| Responsive browser checks | Core journeys at 390 and 1280 CSS pixels, long content, and a 640-pixel zoom-equivalent reflow | No physical touch-device or full browser matrix was run |
+| Manual assistive technology | Not completed | Make no screen-reader or WCAG-conformance claim |
+
+This separation is deliberate: automated evidence can catch regressions, while a real screen-reader session would answer a different question and must be reported separately if the team performs one.
 
 ---
 
@@ -1144,7 +1156,7 @@ At the documented release snapshot it passed with:
 - Next production build: passed;
 - release audit: passed.
 
-The committed candidate `0d3881fdb1f9304cb9d2c50298384283fca25560` passed GitHub Actions run `33178195979` on August 28, 2026. The newer local Recovery Plan v1 candidate needs its own exact-SHA CI run after an approved push.
+Public release `3c289c64d5d63c5459e86722a1143b1bd9220f26` passed GitHub Actions run `33184141465` on August 28, 2026. The current local presentation patch passed the same complete gate on August 28: 15 test files, 313 tests, zero lint warnings, strict type checking, the Next production build, and the release audit all succeeded.
 
 ## 27. Release audit
 
@@ -1163,7 +1175,7 @@ Next.js includes the build root inside specific required-server metadata files. 
 
 At the release snapshot it checked:
 
-- 67 release-scoped source text files, including untracked candidate files;
+- 68 release-scoped source text files, including the untracked judge-guide candidate;
 - 147 production-build text files;
 - 474 dependency package entries;
 - 9 app-owned media assets;
@@ -1219,7 +1231,7 @@ The public URL is:
 
 `https://receipt-one-flax.vercel.app`
 
-The URL returned HTTP 200 during this guide's August 28, 2026 verification pass. The production alias and successful Vercel commit status were connected to `0d3881fdb1f9304cb9d2c50298384283fca25560`. The local Recovery Plan v1 changes are newer than that deployment.
+The URL returned HTTP 200 during this guide's August 28, 2026 verification pass. The production alias and successful Vercel commit status were connected to public release `3c289c64d5d63c5459e86722a1143b1bd9220f26`. Recovery Plan v1 is present in that deployment; the current local change affects placement, not the export contract.
 
 Why Vercel?
 
@@ -1232,17 +1244,17 @@ The deployment is connected to `main`, so an approved future push can also chang
 
 ### Deployed evidence boundary
 
-The August 28 public `0d3881f` validation showed:
+The August 28 public release validation showed:
 
 - expected run: clean verdict, 3/3 coverage, deterministic fallback with no model metadata;
 - overreaching run: material deviations, two incidents, 12 findings, 6/6 coverage, deterministic fallback;
 - incident evidence drawer opened and closed;
 - Investigate disposition persisted;
-- UI reported validated JSON download without raw input;
+- Recovery Plan v1 was present in both fixture journeys, and the overreaching activation displayed the citation-validation and exact-receipt SHA-256 success state;
 - no rendered error summary appeared;
-- no document-level overflow at 1280 pixels.
+- no document-level overflow at 1280 or 390 pixels.
 
-The browser harness did not independently inspect the downloaded receipt file. Therefore this evidence supports the UI's validated success confirmation, while receipt serialization and raw-source exclusion are established by focused tests. Public journeys on the exact final post-recovery-plan SHA still belong to the final release pass.
+Browser automation reached the Recovery Plan v1 control at 390 pixels and the overreaching activation displayed its citation-validation and exact-receipt SHA-256 success state. It did not independently capture the Blob file event. Focused tests separately cover the clean empty plan, the overreaching plan with two incidents and six actions, receipt-digest binding, the fixed non-execution boundary, citation closure, and raw input/output exclusion.
 
 ## 30. IBM Bob and AI assistance provenance
 
@@ -1474,7 +1486,7 @@ Checklist:
 - never infer boundaries, categories, quantities, approvals, or outcomes;
 - add adapter, accounting, policy interaction, golden, and integration tests.
 
-The first narrow OpenTelemetry JSON profile now exists in `src/adapters/otlpGenAi.ts`. It demonstrates this checklist for one documented GenAI/action span shape. Universal OTLP compatibility, protobuf ingestion, collector operation, logs, metrics, arbitrary semantic conventions, and inferred action meaning remain explicitly outside the MVP.
+The narrow profile in `src/adapters/otlpGenAi.ts` demonstrates this checklist for one documented GenAI/action span shape. Broader OTLP compatibility, protobuf, collector operation, logs, metrics, and inferred semantics remain outside the MVP.
 
 ## 38. How to add another model provider
 
@@ -1541,15 +1553,14 @@ Remaining risks include:
 
 ## 41. What remains before the hackathon release is fully complete
 
-At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, Granite selection hardening, narrow OTLP adapter, automated evaluation corpus, screenshots, license, exact-HEAD CI, and Vercel deployment were complete. The current local candidate adds the citation-closed Recovery Plan v1 export and a judge-ready submission package.
+At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, citation-closed Recovery Plan v1 export, Granite selection hardening, narrow OTLP adapter, automated evaluation corpus, screenshots, license, public repository, exact-HEAD CI, Vercel deployment, and both public fixture journeys were complete. The current local candidate adds a shorter judge path and synchronized release documentation.
 
 Open release work included:
 
 - decide whether to configure encrypted live watsonx.ai credentials in Vercel, then verify that deployment if approved;
-- complete a real screen-reader spot check;
-- commit and push the current candidate only after fresh explicit approvals, then verify the resulting deployment and both public fixture journeys;
-- scan the exact public repository after visibility change;
-- obtain explicit approval before making the repository public;
+- obtain fresh commit and push approvals for the verified local presentation patch;
+- repeat exact-SHA CI, Vercel, and both public fixture checks after any approved push;
+- complete a real screen-reader spot check only if a stronger accessibility claim is desired;
 - recheck challenge rules, eligibility, learning requirements, and deadline;
 - publish and verify a public video of no more than three minutes;
 - complete and submit the project page;
@@ -1561,9 +1572,9 @@ These are release and external-state gates. They do not erase the completed dete
 
 The safest order is:
 
-1. finish public-deployment and submission evidence;
-2. strengthen accessible verification;
-3. update documentation to match deployed state;
+1. finish video, eligibility, and submission evidence;
+2. add broader accessibility verification only if the team chooses to make stronger accessibility claims;
+3. keep documentation synchronized with deployed state;
 4. validate the narrow OTLP adapter against larger, consented external fixtures;
 5. prototype a separate recovery executor only with read-before-write checks, dry runs, explicit approval, rollback, idempotency, and its own evidence trail;
 6. add signed capture or provenance only with a real threat model;
@@ -1788,7 +1799,7 @@ Granite demonstrates a bounded IBM-native explanation layer and future flexibili
 
 ## Is the public deployment using live Granite?
 
-No. Both public `0d3881f` fixture journeys recorded deterministic fallback with no model metadata on August 28, 2026. Local IAM and Chat API success is verified separately, but that does not prove live Granite is configured in Vercel.
+No live-Granite claim is established for production. Both exact-release fixture journeys displayed deterministic fallback on August 28. Local IAM and Chat API success is verified separately, but that does not prove live Granite is configured in Vercel.
 
 ## Does a clean receipt prove the agent behaved perfectly?
 
@@ -1813,6 +1824,22 @@ It accepts one narrow documented OTLP/JSON `resourceSpans` profile for GenAI inf
 ## Why is incomplete evidence the highest-priority verdict?
 
 Because a material evidence gap prevents a complete assessment. Existing findings still remain visible.
+
+## What does the Recovery Plan export actually do?
+
+It packages deterministic, evidence-cited follow-up proposals for human review. It does not reconnect to systems, change credentials, send messages, delete data, or execute a rollback.
+
+## Can a Recovery Plan be reused with another receipt?
+
+No. The file carries the SHA-256 of the exact validated receipt serialization, so downstream tooling can reject a plan that is detached from its source receipt.
+
+## Is the raw uploaded trace sent to Granite?
+
+No. The server route receives canonical facts, recomputes policy, and sends only a minimized, recursively redacted fact bundle. Raw input and output bodies are excluded.
+
+## What happens when Granite or the network is unavailable?
+
+The same receipt remains usable with deterministic fallback copy. The verdict, findings, coverage, evidence links, disposition, receipt export, and Recovery Plan do not depend on model availability.
 
 ## Are the screenshots real customer data?
 
@@ -1847,10 +1874,11 @@ It is a bounded hackathon MVP. Production use would require authentication, pers
 | How does the UI behave? | `src/components/ReceiptReviewApp.tsx` |
 | How is manager copy derived? | `src/ui/receiptView.ts` |
 | How is the automated evaluation reproduced? | `src/evaluation/hackathonEvaluation.ts`, `docs/EVALUATION.md` |
+| What should a judge inspect first? | `docs/JUDGE_GUIDE.md` |
 | Where is public IBM Bob evidence? | `docs/BOB_BUILD_STORY.md`, commits `1fa6679` and `560b5b9` |
 | What do the samples contain? | `src/fixtures/index.ts` |
 | What does release scanning do? | `src/release/audit.ts` |
-| What is verified and still open? | `docs/RELEASE_QA.md` plus the current continuation handoff |
+| What is the shortest judge path? | `docs/JUDGE_GUIDE.md` plus `docs/EVALUATION.md` |
 | What copy is ready for the challenge form and video? | `docs/SUBMISSION.md`, `docs/DEMO_SCRIPT.md` |
 | How were AI tools used? | `docs/AI_ASSISTANCE_LOG.md` |
 | What source use is permitted? | `LICENSE` |
@@ -1861,18 +1889,18 @@ It is a bounded hackathon MVP. Production use would require authentication, pers
 
 ## Repository evidence used for this guide
 
-This guide was cross-checked against the complete tracked repository, including the PRD, README, release QA ledger, assistance log, source, tests, configuration, screenshots, license, and the attached deployed-project handoff. The handoff was treated as continuity evidence, not as authority over the current source.
+This guide was cross-checked against the complete tracked repository, including the PRD, README, judge guide, evaluation report, assistance log, source, tests, configuration, screenshots, license, and the attached deployed-project handoff. The handoff was treated as continuity evidence, not as authority over the current source.
 
 ## Current external evidence used
 
-- The public Agent Receipt URL returned HTTP 200 and the Vercel commit status for `0d3881fdb1f9304cb9d2c50298384283fca25560` was successful during the August 28, 2026 guide pass: `https://receipt-one-flax.vercel.app`.
+- The public Agent Receipt URL and repository returned HTTP 200, and Vercel reported a successful status for exact release `3c289c64d5d63c5459e86722a1143b1bd9220f26` during the August 28, 2026 guide pass: `https://receipt-one-flax.vercel.app` and `https://github.com/mihirduvedi/agent-receipt`.
 - The current challenge page describes the August 31, 2026 11:59 PM ET submission deadline, public repository, clear README, working prototype, IBM Bob primary-development requirement, SkillsBuild activity, and public video up to three minutes: `https://aibuilderschallenge-bob.bemyapp.com/`.
 
 ## Evidence boundaries
 
 - Current repository behavior is supported by local source inspection and the exact verification commands reported in this guide.
-- Exact-HEAD CI, Vercel connection details, and both public `0d3881f` journeys were checked live on August 28; older deployment details remain continuity evidence only.
-- Local live Granite success under the compact selection boundary was re-observed on August 28, 2026. Prior rejected-claim fallback, explicit fallback mode, and invalid-credential fallback remain recorded evidence. The current Recovery Plan v1 candidate has not been pushed or deployed. Live Granite on the exact final public candidate, real screen-reader use, public-repository conversion, public video, and final submission were not verified as complete in this guide pass.
+- Exact-HEAD CI, Vercel status, public repository visibility, and both deployed fixture journeys were checked live on August 28. The overreaching Recovery Plan activation displayed its validated success state; the browser-created Blob file was not independently captured.
+- Local live Granite success under the compact selection boundary was re-observed on August 28, 2026. Prior rejected-claim fallback, explicit fallback mode, and invalid-credential fallback remain recorded evidence. Live Granite on the exact final public release, a real screen-reader session, the public video, and final submission were not verified as complete in this guide pass.
 - Challenge and provider details can change; recheck official pages before release action.
 
 ---

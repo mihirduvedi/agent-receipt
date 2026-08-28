@@ -46,7 +46,7 @@ Target length: 2 minutes 40 seconds. Record at 1280 × 720 or higher. Keep the b
 
 ### 2:05–2:30 — Recovery without hidden execution
 
-**Show:** Recovery plan, required authority and reversibility labels, then **Download recovery plan JSON**. Point to the success message.
+**Show:** Open **Recovery plan**, download the JSON from the export panel near the heading, point to the success message, then scan the required-authority and reversibility labels on the proposals below.
 
 **Say:**
 

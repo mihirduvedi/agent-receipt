@@ -10,7 +10,7 @@ The product rule is simple: deterministic rules establish what happened relative
 
 The receipt puts the deterministic verdict, evidence scope, and manager attention queue first.
 
-**Live demo:** [receipt-one-flax.vercel.app](https://receipt-one-flax.vercel.app) · **Full guide:** [project guide](docs/PROJECT_GUIDE.md) ([PDF](output/pdf/agent-receipt-complete-project-guide.pdf))
+**Live demo:** [receipt-one-flax.vercel.app](https://receipt-one-flax.vercel.app) · **60-second judge path:** [judge guide](docs/JUDGE_GUIDE.md) · **Public repository:** [GitHub](https://github.com/mihirduvedi/agent-receipt) · **Full guide:** [project guide](docs/PROJECT_GUIDE.md) ([PDF](output/pdf/agent-receipt-complete-project-guide.pdf))
 
 ## What the prototype does
 
@@ -172,7 +172,7 @@ Run the reproducible synthetic evaluation separately:
 npm run eval
 ```
 
-The full gate runs lint, strict TypeScript, the complete test suite, a production build, and a deterministic release audit (secrets, personal paths, dependency licenses, media attribution). The [evaluation report](docs/EVALUATION.md) records exact results and limitations. See [docs/RELEASE_QA.md](docs/RELEASE_QA.md) for the full evidence ledger and remaining gates, including clean-clone CI, a real screen-reader check, and final deployed-candidate verification.
+The full gate runs lint, strict TypeScript, the complete test suite, a production build, and a deterministic release audit (secrets, personal paths, dependency licenses, media attribution). The [evaluation report](docs/EVALUATION.md) records exact results and limitations. The [judge guide](docs/JUDGE_GUIDE.md) gives the shortest evidence path; remaining submission work is limited to team eligibility, the public video, and the final project page.
 
 ## Input contract
 
@@ -204,10 +204,11 @@ The committed `.devcontainer/devcontainer.json` provisions Node.js 24 and forwar
 This MVP targets the IBM SkillsBuild AI Builders Challenge with IBM Bob, Wildcard track. The recorded deadline is August 31, 2026 at 11:59 PM ET / 8:59 PM PT. Live rules can change; recheck the [challenge page](https://aibuilderschallenge-bob.bemyapp.com/), [submission platform](https://aibuilderschallenge-bobhub.bemyapp.com/), and [official rules](https://res.cloudinary.com/ideation/image/upload/q_100,f_pdf,dpr_auto/id-ibm-skillsbuil-3eec69/pkqvg8j3q3a4teedy1kd.pdf) before submission.
 
 - [Product requirements](docs/PRD.md)
-- [Release QA ledger](docs/RELEASE_QA.md)
+- [60-second judge guide](docs/JUDGE_GUIDE.md)
 - [IBM Bob and supporting-tools workflow](docs/IBM_BOB_WORKFLOW.md)
 - [IBM Bob build evidence](docs/BOB_BUILD_STORY.md)
 - [Reproducible evaluation](docs/EVALUATION.md)
+- [60-second judge guide](docs/JUDGE_GUIDE.md)
 - [Recovery Plan v1 contract](docs/RECOVERY_PLAN.md)
 - [Paste-ready submission copy](docs/SUBMISSION.md)
 - [Three-minute judge demo script](docs/DEMO_SCRIPT.md)

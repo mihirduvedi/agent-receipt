@@ -1439,9 +1439,10 @@ fieldset.form-section > p,
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px 32px;
   align-items: center;
-  margin-top: 34px;
-  padding-top: 28px;
+  margin: 0 0 34px;
+  padding: 24px 0;
   border-top: 1px solid #646b67;
+  border-bottom: 1px solid #646b67;
 }
 
 .recovery-export strong {

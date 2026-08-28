@@ -1,6 +1,6 @@
 # Agent Receipt submission copy
 
-This is paste-ready copy for the IBM SkillsBuild AI Builders Challenge with IBM Bob. Replace the bracketed link and team placeholders only after checking them in a signed-out browser.
+This is paste-ready copy for the IBM SkillsBuild AI Builders Challenge with IBM Bob. Replace the video and team placeholders only after checking the final details in a signed-out browser.
 
 ## Project title
 
@@ -53,7 +53,7 @@ These are synthetic-prototype results, not claims about universal policy coverag
 ## Links
 
 - Live demo: <https://receipt-one-flax.vercel.app>
-- Public repository: `[ADD PUBLIC GITHUB URL AFTER VISIBILITY CHECK]`
+- Public repository: <https://github.com/mihirduvedi/agent-receipt>
 - Public video, no more than three minutes: `[ADD VIDEO URL AFTER SIGNED-OUT PLAYBACK CHECK]`
 - Team members: `[CONFIRM REGISTERED ELIGIBLE TEAM LIST]`
 
@@ -63,5 +63,5 @@ These are synthetic-prototype results, not claims about universal policy coverag
 - Confirm every teammate completed the required IBM SkillsBuild Bob activity.
 - Open the repository, live demo, and video links while signed out.
 - Confirm the video duration is at or below three minutes.
-- Re-run `npm run verify` from the exact public candidate.
+- Confirm GitHub Actions remains successful for exact public commit `3c289c64d5d63c5459e86722a1143b1bd9220f26`.
 - Submit before August 31, 2026 at 11:59 PM ET / 8:59 PM PT, unless the live challenge page shows a newer deadline.

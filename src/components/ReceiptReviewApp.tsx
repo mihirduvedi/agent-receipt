@@ -1232,6 +1232,30 @@ function RecoveryPlanPanel(props: {
           the named systems, executed a fix, or verified recovery.
         </p>
       </div>
+      <div className="recovery-export">
+        <div>
+          <strong>Carry the plan into a controlled response workflow.</strong>
+          <p id="recovery-export-note">
+            The JSON includes the authority envelope, cited canonical evidence, proposed actions,
+            and a SHA-256 binding to the exact validated receipt. It contains no credentials or
+            execution command.
+          </p>
+        </div>
+        <button
+          type="button"
+          aria-describedby="recovery-export-note recovery-export-status"
+          onClick={props.onDownload}
+        >
+          Download recovery plan JSON
+        </button>
+        <p
+          id="recovery-export-status"
+          className="recovery-export-status"
+          aria-live="polite"
+        >
+          {props.exportStatus}
+        </p>
+      </div>
       {props.actions.length === 0 ? (
         <p className="recovery-empty">No corrective actions are proposed because this receipt contains no findings.</p>
       ) : (
@@ -1274,22 +1298,6 @@ function RecoveryPlanPanel(props: {
         platform-specific rollback, and human approval. Automatic changes would exceed this
         post-run review MVP and could destroy evidence or compound the original mistake.
       </p>
-      <div className="recovery-export">
-        <div>
-          <strong>Carry the plan into a controlled response workflow.</strong>
-          <p>
-            The JSON includes the authority envelope, cited canonical evidence, proposed actions,
-            and a SHA-256 binding to the exact validated receipt. It contains no credentials or
-            execution command.
-          </p>
-        </div>
-        <button type="button" onClick={props.onDownload}>
-          Download recovery plan JSON
-        </button>
-        <p className="recovery-export-status" aria-live="polite">
-          {props.exportStatus}
-        </p>
-      </div>
     </section>
   );
 }

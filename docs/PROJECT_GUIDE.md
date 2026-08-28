@@ -4,9 +4,9 @@
 
 **From first principles to architecture, code, trust boundaries, testing, and deployment**
 
-Version 1.0 - August 27, 2026
+Version 1.1 - August 28, 2026
 
-Project snapshot: repository `main` at `8f5b99ff1e9a524f7a2a38e1f4e8c00e07f37878`, plus the locally verified working candidate and separately verified Vercel deployment described in this guide.
+Project snapshot: repository `main` and the successful Vercel deployment are connected to `0d3881fdb1f9304cb9d2c50298384283fca25560`. The local working candidate adds Recovery Plan v1 and the refreshed submission package described in this guide; those local changes are not yet committed, pushed, or deployed.
 
 > Agent Receipt gives accountable humans an evidence-linked receipt for what an AI agent did relative to what it was allowed to do.
 
@@ -78,7 +78,8 @@ It produces a receipt containing:
 - plain-language, evidence-cited copy;
 - integrity metadata;
 - a separate human disposition;
-- a validated JSON export.
+- a validated receipt JSON export;
+- a citation-closed recovery-plan JSON export bound to that receipt.
 
 The word **deterministic** matters. It means the same validated evidence and authority produce the same policy result. An AI model does not decide whether a violation occurred.
 
@@ -157,14 +158,15 @@ The receipt presents:
 
 1. overview and verdict;
 2. incident brief grouped from related deterministic findings;
-3. cited recovery proposals for human approval;
+3. cited recovery proposals and a versioned recovery-plan export for human approval;
 4. plain-language action summary;
 5. chronological activity;
 6. systems and data movement;
 7. deviations and evidence coverage;
 8. cited explanatory copy;
 9. integrity record;
-10. human disposition and JSON export.
+10. human disposition;
+11. validated receipt JSON export.
 
 The manager can open any important statement into its canonical event and the exact retained raw object.
 
@@ -393,8 +395,11 @@ receipt/
 |  |- PRD.md                      product source of truth
 |  |- IBM_BOB_WORKFLOW.md         Bob-primary workflow
 |  |- BOB_BUILD_STORY.md          public Bob implementation evidence
+|  |- DEMO_SCRIPT.md              timed three-minute judge demo
 |  |- EVALUATION.md               reproducible synthetic evaluation
 |  |- OTLP_GENAI_ADAPTER.md       supported external trace contract
+|  |- RECOVERY_PLAN.md            Recovery Plan v1 trust contract
+|  |- SUBMISSION.md               paste-ready challenge copy
 |  |- AI_ASSISTANCE_LOG.md        honest tool provenance
 |  |- RELEASE_QA.md               evidence and open gates
 |  |- ASSET_LICENSES.md           screenshot declarations
@@ -405,7 +410,7 @@ receipt/
 |  |- ai/                         minimization, Granite, validation, fallback
 |  |- app/                        Next page, layout, CSS, API route
 |  |- components/                 complete interactive review UI
-|  |- core/                       schemas, policy, coverage, receipt
+|  |- core/                       schemas, policy, coverage, receipt, recovery export
 |  |- fixtures/                   expected and overreaching traces
 |  |- evaluation/                 executable judge-facing corpus
 |  |- release/                    privacy/license/media release audit
@@ -462,12 +467,18 @@ COVERAGE                 AUTHORITY ENVELOPE
                                              v
                                       STRICT RECEIPT RESULT
                                              |
+                                             v
+                                      REVIEW INTERFACE
+                                             |
+                               optional human disposition
+                                             |
+                                             v
+                                   VALIDATED RECEIPT STATE
+                                             |
                                 +------------+------------+
                                 v                         v
-                         REVIEW INTERFACE          VALIDATED JSON EXPORT
-                                |
-                                v
-                         HUMAN DISPOSITION
+                    VALIDATED RECEIPT JSON      CITED RECOVERY PLAN
+                                                + RECEIPT DIGEST
 ```
 
 There are two parallel sources inside the browser:
@@ -826,9 +837,9 @@ The fallback validates itself before use.
 
 ### Current live status
 
-The public deployment verified at commit `057305d` ran in deterministic fallback mode. The application route was deployed and the public page was reachable, but no live watsonx.ai credential was configured in that snapshot.
+The production alias and successful Vercel commit status are connected to `0d3881fdb1f9304cb9d2c50298384283fca25560`, and the public URL returned HTTP 200 on August 28, 2026. Both public fixture journeys recorded `deterministic_fallback` with no model metadata. This is an intentional, fully usable mode, not evidence that live Granite is configured in Vercel.
 
-Local live-service verification was completed on August 27, 2026. IAM authentication and the Dallas watsonx.ai Chat API succeeded with `ibm/granite-4-h-small`. An earlier open-ended-copy boundary accepted the expected fixture but safely rejected unsupported overreaching-fixture paraphrases. The current compact finding-selection boundary was then reverified through both full browser journeys: both fixtures produced accepted `granite` provenance while all displayed sentences remained deterministic. Separate invalid-key and explicit-fallback processes completed with `deterministic_fallback` and no model metadata. This proves the bounded local success and failure paths; it does not prove live Granite is configured in Vercel.
+Local live-service verification was repeated on August 28, 2026. IAM authentication and the Dallas watsonx.ai Chat API succeeded with `ibm/granite-4-h-small` through the compact finding-selection boundary. Earlier checks also covered rejected open-ended paraphrases, an invalid process-only key, and explicit fallback mode. These results prove the bounded local success and failure paths. They do not prove that the deployed candidate has working live credentials or that future provider behavior will be identical.
 
 ## 18. Receipt orchestration
 
@@ -888,6 +899,14 @@ This prevents a casual object mutation from smuggling changed findings or copy t
 
 It does not contain retained raw bytes, the raw document, or the retained source object.
 
+### Recovery Plan v1 export
+
+`src/core/recoveryPlan.ts` builds a second, narrower artifact for carrying proposed follow-up into an approval or incident workflow. It computes the SHA-256 of the exact validated receipt serialization, copies the trace digest and decision metadata, and includes only the events and findings cited by the grouped incidents.
+
+The schema rejects invented evidence, unknown incident links, duplicate identifiers, cross-incident citations, and evidence records that no incident cites. It also fixes the execution boundary to four facts: nothing was executed, current external state is unknown, execution authority was not granted, and approval is required.
+
+The clean fixture produces a valid empty plan. The overreaching fixture produces two incidents and six proposed actions backed by three canonical events and twelve findings. Retained raw input, credentials, connectors, and mutation commands are absent. The complete contract is documented in `docs/RECOVERY_PLAN.md`.
+
 ## 19. The frontend as a state machine
 
 `ReceiptReviewApp.tsx` is a client component with three main states:
@@ -896,7 +915,7 @@ It does not contain retained raw bytes, the raw document, or the retained source
 intake -> authority -> receipt
 ```
 
-It also owns source bytes, paste value, authority draft, validation errors, analysis progress, successful build, evidence drawer request, and export status.
+It also owns source bytes, paste value, authority draft, validation errors, analysis progress, successful build, evidence drawer request, receipt-export status, and recovery-export status.
 
 ### Intake
 
@@ -981,7 +1000,7 @@ If none of those statements is supportable, it says that nothing in those declar
 
 The detailed finding list remains authoritative, but a manager should not have to interpret twelve separate rule hits as twelve unrelated real-world problems. `buildManagerIncidentBrief` groups findings only when they cite the same event or share an explicit `actionKey`. On the overreaching fixture, the deterministic result is two incidents: an external spreadsheet creation retried after an unknown outcome, and a 20-message external customer-email send.
 
-`buildRecoveryPlan` then proposes six cited follow-up actions. Each proposal states who must approve it and whether it is reversible. These are plans, not tools: the product never re-accesses a system, changes credentials, deletes data, sends a correction, or rolls back an action.
+`buildRecoveryPlan` then proposes six cited follow-up actions. Each proposal states who must approve it and whether it is reversible. The Recovery Plan v1 download validates those proposals again, closes their citations over retained receipt evidence, and binds the plan to the receipt with SHA-256. These are plans, not tools: the product never re-accesses a system, changes credentials, deletes data, sends a correction, or rolls back an action.
 
 Automatic remediation is outside the MVP because a completed uploaded trace does not prove current external state, credential availability, rollback behavior, evidence-preservation requirements, or the manager's authority to execute. A production executor would need fresh connectors, read-before-write state checks, dry runs, explicit approval, idempotency, rollback, and a separate audit trail.
 
@@ -1065,7 +1084,7 @@ The project separates evidence layers because each answers a different question.
 
 ## 25. Automated test suite
 
-The current source snapshot contains 307 tests across 14 files.
+The current source snapshot contains 313 tests across 15 files.
 
 ### Test families
 
@@ -1092,6 +1111,8 @@ They include adversarial claims about unsupported systems, operations, people, b
 
 **Receipt orchestration tests** cover size, UTF-8, JSON, trace and authority validation, byte snapshots, timeouts, generation provenance, copy validation, policy recomputation, disposition, and export tamper rejection.
 
+**Recovery-plan tests** cover citation closure, exact receipt binding, byte-identical replay, digest changes after disposition changes, the clean empty plan, invented evidence rejection, and exclusion of a raw-only secret.
+
 **Golden tests** assert the two fixture verdicts, accounting, findings, and evidence links.
 
 **Integration tests** lock exact fixture byte lengths, hashes, event mappings, complete finding arrays, copy, provenance, and raw-source exclusion from export.
@@ -1100,7 +1121,7 @@ They include adversarial claims about unsupported systems, operations, people, b
 
 **Release-audit tests** cover secret patterns, personal paths, dependency license metadata, media attribution, and the narrow Next build-root allowance.
 
-**Evaluation tests** run three declared synthetic cases and adversarial checks for verdicts, seeded rules, raw-record accounting, known digests, deterministic replay, citations, invalid Granite selections, and material OTLP parsing gaps. `docs/EVALUATION.md` records the exact method and its limitations.
+**Evaluation tests** run three declared synthetic cases and adversarial checks for verdicts, seeded rules, raw-record accounting, known digests, deterministic replay, citations, invalid Granite selections, material OTLP parsing gaps, and the Recovery Plan v1 receipt/execution boundaries. `docs/EVALUATION.md` records the exact method and its limitations.
 
 ## 26. The complete local gate
 
@@ -1118,12 +1139,12 @@ At the documented release snapshot it passed with:
 
 - ESLint: zero warnings;
 - strict TypeScript: passed;
-- 14 test files: passed;
-- 307 tests: passed;
+- 15 test files: passed;
+- 313 tests: passed;
 - Next production build: passed;
 - release audit: passed.
 
-The exact release commit also passed GitHub Actions run `33033170371`.
+The committed candidate `0d3881fdb1f9304cb9d2c50298384283fca25560` passed GitHub Actions run `33178195979` on August 28, 2026. The newer local Recovery Plan v1 candidate needs its own exact-SHA CI run after an approved push.
 
 ## 27. Release audit
 
@@ -1142,7 +1163,7 @@ Next.js includes the build root inside specific required-server metadata files. 
 
 At the release snapshot it checked:
 
-- 62 release-scoped source text files, including untracked candidate files;
+- 67 release-scoped source text files, including untracked candidate files;
 - 147 production-build text files;
 - 474 dependency package entries;
 - 9 app-owned media assets;
@@ -1198,7 +1219,7 @@ The public URL is:
 
 `https://receipt-one-flax.vercel.app`
 
-The URL returned HTTP 200 during this guide's August 27, 2026 verification pass. The deployment snapshot described in the handoff was connected to commit `057305d167b3501a2454ab9b24ecd3b199f7a6f3` and displayed deterministic fallback.
+The URL returned HTTP 200 during this guide's August 28, 2026 verification pass. The production alias and successful Vercel commit status were connected to `0d3881fdb1f9304cb9d2c50298384283fca25560`. The local Recovery Plan v1 changes are newer than that deployment.
 
 Why Vercel?
 
@@ -1209,19 +1230,19 @@ Why Vercel?
 
 The deployment is connected to `main`, so an approved future push can also change the public site. That is one reason the project requires fresh push approval.
 
-### Deployed evidence at the handoff snapshot
+### Deployed evidence boundary
 
-The recorded signed-out validation showed:
+The August 28 public `0d3881f` validation showed:
 
-- expected run: clean verdict, 3/3 coverage, fallback;
-- overreaching run: material deviations, 12 findings, 6/6 coverage, fallback;
-- evidence drawer opened and closed with Escape;
+- expected run: clean verdict, 3/3 coverage, deterministic fallback with no model metadata;
+- overreaching run: material deviations, two incidents, 12 findings, 6/6 coverage, deterministic fallback;
+- incident evidence drawer opened and closed;
 - Investigate disposition persisted;
 - UI reported validated JSON download without raw input;
-- no browser warning/error logs;
-- Vercel showed two function invocations and zero-percent error rate.
+- no rendered error summary appeared;
+- no document-level overflow at 1280 pixels.
 
-The browser harness timed out waiting for its separate download event. Therefore the evidence supports the UI's success confirmation, not an independently inspected deployed file.
+The browser harness did not independently inspect the downloaded receipt file. Therefore this evidence supports the UI's validated success confirmation, while receipt serialization and raw-source exclusion are established by focused tests. Public journeys on the exact final post-recovery-plan SHA still belong to the final release pass.
 
 ## 30. IBM Bob and AI assistance provenance
 
@@ -1295,8 +1316,9 @@ Open `http://localhost:3000`.
 8. Compare the unknown attempt with the successful retry.
 9. Inspect the external spreadsheet and email findings.
 10. Set Investigate.
-11. Download the receipt JSON.
-12. Confirm the raw uploaded document is absent from the export.
+11. Download Recovery Plan v1 and inspect its receipt digest and execution boundary.
+12. Download the receipt JSON.
+13. Confirm the raw uploaded document is absent from both exports.
 
 ## 33. Input format by example
 
@@ -1519,13 +1541,13 @@ Remaining risks include:
 
 ## 41. What remains before the hackathon release is fully complete
 
-At the guide snapshot, the P0 implementation, prior local gate, local Granite success and forced-failure checks, exact-release CI, screenshots, license, Vercel deployment, and fallback journeys were complete. The current local candidate also includes incident grouping, human-approved recovery proposals, Granite selection hardening, the narrow OTLP adapter, and the automated evaluation corpus.
+At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, Granite selection hardening, narrow OTLP adapter, automated evaluation corpus, screenshots, license, exact-HEAD CI, and Vercel deployment were complete. The current local candidate adds the citation-closed Recovery Plan v1 export and a judge-ready submission package.
 
 Open release work included:
 
 - decide whether to configure encrypted live watsonx.ai credentials in Vercel, then verify that deployment if approved;
 - complete a real screen-reader spot check;
-- commit and push the current candidate only after fresh explicit approvals, then verify the resulting deployment;
+- commit and push the current candidate only after fresh explicit approvals, then verify the resulting deployment and both public fixture journeys;
 - scan the exact public repository after visibility change;
 - obtain explicit approval before making the repository public;
 - recheck challenge rules, eligibility, learning requirements, and deadline;
@@ -1646,6 +1668,20 @@ Raw input, output, error body, and general metadata are not copied into the cano
 | `reviewerDisposition` | Human state |
 | `integrity` | Digest, versions, time, and generation provenance |
 
+## A6. Recovery Plan v1 fields
+
+| Field | Meaning |
+|---|---|
+| `schemaVersion` | `agent-receipt.recovery-plan.v1` |
+| `qualifier` | Evidence and non-execution limitation |
+| `sourceReceipt` | Receipt digest, trace digest, trace/policy IDs, verdict, disposition, and time |
+| `authority` | The exact validated authority envelope from the receipt |
+| `executionBoundary` | Not executed; current state unknown; authority not granted; approval required |
+| `incidents` | Deterministically grouped cited findings |
+| `actions` | Proposed follow-up with required authority and reversibility |
+| `evidence.events` | Canonical events cited by incidents |
+| `evidence.findings` | Deterministic findings cited by incidents |
+
 ---
 
 # Appendix B - Failure behavior
@@ -1671,6 +1707,7 @@ Raw input, output, error body, and general metadata are not copied into the cano
 | Invalid model JSON | One repair, then fallback |
 | Unsupported model claim | One repair, then fallback |
 | Tampered receipt before export | Recompute/revalidate and reject export |
+| Invented or inconsistent recovery citation | Reject recovery-plan export |
 | Browser refresh | Uploaded trace may be lost; samples remain available |
 
 ---
@@ -1717,6 +1754,8 @@ Raw input, output, error body, and general metadata are not copied into the cano
 
 **Redaction** - Replacement of detected sensitive values before a model request.
 
+**Recovery plan** - A citation-closed set of proposed actions bound to one exact receipt; not approval or execution.
+
 **Retained source** - Browser-session exact bytes and raw document used for evidence drill-down, never exported.
 
 **Schema** - A machine-checkable contract for data shape and relationships.
@@ -1749,7 +1788,7 @@ Granite demonstrates a bounded IBM-native explanation layer and future flexibili
 
 ## Is the public deployment using live Granite?
 
-Not in the verified `057305d` snapshot. That deployment used deterministic fallback. Local IAM and Chat API success are verified separately, but live Granite has not been configured or verified in Vercel.
+No. Both public `0d3881f` fixture journeys recorded deterministic fallback with no model metadata on August 28, 2026. Local IAM and Chat API success is verified separately, but that does not prove live Granite is configured in Vercel.
 
 ## Does a clean receipt prove the agent behaved perfectly?
 
@@ -1800,6 +1839,7 @@ It is a bounded hackathon MVP. Production use would require authentication, pers
 | How is coverage enforced? | `src/core/coverage.ts` |
 | How are findings/verdict computed? | `src/core/policyEngine.ts` |
 | How is a receipt assembled/exported? | `src/core/receipt.ts` |
+| How is a recovery plan assembled/exported? | `src/core/recoveryPlan.ts`, `docs/RECOVERY_PLAN.md` |
 | What can reach Granite? | `src/ai/factBundle.ts`, `src/ai/redact.ts` |
 | How is model output constrained? | `src/ai/validateClaims.ts`, `src/ai/deterministicFallback.ts` |
 | How is watsonx called? | `src/ai/graniteClient.ts` |
@@ -1810,7 +1850,8 @@ It is a bounded hackathon MVP. Production use would require authentication, pers
 | Where is public IBM Bob evidence? | `docs/BOB_BUILD_STORY.md`, commits `1fa6679` and `560b5b9` |
 | What do the samples contain? | `src/fixtures/index.ts` |
 | What does release scanning do? | `src/release/audit.ts` |
-| What is verified and still open? | `docs/RELEASE_QA.md` plus the deployed handoff snapshot |
+| What is verified and still open? | `docs/RELEASE_QA.md` plus the current continuation handoff |
+| What copy is ready for the challenge form and video? | `docs/SUBMISSION.md`, `docs/DEMO_SCRIPT.md` |
 | How were AI tools used? | `docs/AI_ASSISTANCE_LOG.md` |
 | What source use is permitted? | `LICENSE` |
 
@@ -1824,14 +1865,14 @@ This guide was cross-checked against the complete tracked repository, including 
 
 ## Current external evidence used
 
-- The public Agent Receipt URL returned HTTP 200 and rendered the Agent Receipt title during the August 27, 2026 guide pass: `https://receipt-one-flax.vercel.app`.
+- The public Agent Receipt URL returned HTTP 200 and the Vercel commit status for `0d3881fdb1f9304cb9d2c50298384283fca25560` was successful during the August 28, 2026 guide pass: `https://receipt-one-flax.vercel.app`.
 - The current challenge page describes the August 31, 2026 11:59 PM ET submission deadline, public repository, clear README, working prototype, IBM Bob primary-development requirement, SkillsBuild activity, and public video up to three minutes: `https://aibuilderschallenge-bob.bemyapp.com/`.
 
 ## Evidence boundaries
 
 - Current repository behavior is supported by local source inspection and the exact verification commands reported in this guide.
-- Exact-release CI and deployment journey details come from the verified deployed-project handoff and repository QA artifacts.
-- Local live Granite success for both fixtures under the compact selection boundary, prior rejected-claim fallback, explicit fallback mode, and invalid-credential fallback were verified on August 27, 2026. The current local candidate has not been pushed or deployed. Live Granite in the public deployment, real screen-reader use, public-repository conversion, public video, and final submission were not verified as complete in this guide pass.
+- Exact-HEAD CI, Vercel connection details, and both public `0d3881f` journeys were checked live on August 28; older deployment details remain continuity evidence only.
+- Local live Granite success under the compact selection boundary was re-observed on August 28, 2026. Prior rejected-claim fallback, explicit fallback mode, and invalid-credential fallback remain recorded evidence. The current Recovery Plan v1 candidate has not been pushed or deployed. Live Granite on the exact final public candidate, real screen-reader use, public-repository conversion, public video, and final submission were not verified as complete in this guide pass.
 - Challenge and provider details can change; recheck official pages before release action.
 
 ---

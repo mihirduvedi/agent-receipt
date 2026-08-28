@@ -45,6 +45,15 @@ describe("judge-facing automated evaluation", () => {
         invalidGraniteSelectionFellBack: true,
         materialUnparsedSpanForcedIncompleteVerdict: true,
       },
+      recoveryPlan: {
+        incidents: 2,
+        proposedActions: 6,
+        citedEvents: 3,
+        citedFindings: 12,
+        receiptDigestBound: true,
+        deterministicReplayPassed: true,
+        executionBoundaryClosed: true,
+      },
     });
   });
 });

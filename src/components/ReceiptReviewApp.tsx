@@ -15,6 +15,7 @@ import {
   serializeReceipt,
   withReviewerDisposition,
 } from "../core/receipt";
+import { serializeRecoveryPlan } from "../core/recoveryPlan";
 import type {
   BuildReceiptResult,
   ReceiptCopyGenerator,
@@ -128,6 +129,7 @@ export function ReceiptReviewApp() {
   const [result, setResult] = useState<SuccessfulBuild | null>(null);
   const [evidence, setEvidence] = useState<EvidenceRequest | null>(null);
   const [exportStatus, setExportStatus] = useState("");
+  const [recoveryExportStatus, setRecoveryExportStatus] = useState("");
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -207,6 +209,7 @@ export function ReceiptReviewApp() {
     setIntakeError(null);
     setBuildError(null);
     setExportStatus("");
+    setRecoveryExportStatus("");
     setSource({ bytes: Uint8Array.from(bytes), label, kind });
     setAuthorityDraft(
       useSampleAuthority ? authorityToDraft(sharedAuthority) : blankAuthorityDraft(),
@@ -265,6 +268,7 @@ export function ReceiptReviewApp() {
     setAnalyzing(true);
     setBuildError(null);
     setExportStatus("");
+    setRecoveryExportStatus("");
     try {
       const build = await buildReceipt(
         {
@@ -318,6 +322,7 @@ export function ReceiptReviewApp() {
       const receipt = withReviewerDisposition(result.receipt, disposition);
       setResult({ ...result, receipt });
       setExportStatus(`Decision saved for this browser session: ${disposition}.`);
+      setRecoveryExportStatus("");
     } catch {
       setExportStatus("This decision did not pass validation, so it was not saved.");
     }
@@ -343,6 +348,38 @@ export function ReceiptReviewApp() {
     }
   }
 
+  async function downloadRecoveryPlan() {
+    if (!result) return;
+    const incidents = buildManagerIncidentBrief(result.receipt);
+    const actions = buildRecoveryPlan(result.receipt, incidents);
+    try {
+      const serialized = await serializeRecoveryPlan({
+        receipt: result.receipt,
+        incidents,
+        actions,
+      });
+      const blob = new Blob([serialized], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      const safeTraceId = result.receipt.run.traceId.replace(/[^a-z0-9_-]+/gi, "-");
+      anchor.href = url;
+      anchor.download = `agent-receipt-recovery-${safeTraceId}.json`;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setRecoveryExportStatus(
+        actions.length === 0
+          ? "Empty recovery plan downloaded. The receipt has no findings or proposed actions."
+          : "Recovery plan downloaded. It passed citation validation and is bound to this exact receipt by SHA-256.",
+      );
+    } catch {
+      setRecoveryExportStatus(
+        "Export stopped because the recovery plan failed validation.",
+      );
+    }
+  }
+
   function startAgain() {
     setStep("intake");
     setResult(null);
@@ -350,6 +387,7 @@ export function ReceiptReviewApp() {
     setBuildError(null);
     setIntakeError(null);
     setExportStatus("");
+    setRecoveryExportStatus("");
     setPasteValue("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
@@ -421,9 +459,11 @@ export function ReceiptReviewApp() {
             build={result}
             source={source}
             exportStatus={exportStatus}
+            recoveryExportStatus={recoveryExportStatus}
             onOpenEvidence={openEvidence}
             onDisposition={changeDisposition}
             onDownload={downloadReceipt}
+            onDownloadRecovery={downloadRecoveryPlan}
           />
         ) : null}
       </main>
@@ -846,9 +886,11 @@ function ReceiptStep(props: {
   build: SuccessfulBuild;
   source: TraceSource;
   exportStatus: string;
+  recoveryExportStatus: string;
   onOpenEvidence: OpenEvidence;
   onDisposition: (disposition: ReviewDisposition) => void;
   onDownload: () => void;
+  onDownloadRecovery: () => void;
 }) {
   const { receipt } = props.build;
   const metrics = summarizeReceipt(receipt);
@@ -948,7 +990,9 @@ function ReceiptStep(props: {
       <RecoveryPlanPanel
         incidents={incidents}
         actions={recoveryPlan}
+        exportStatus={props.recoveryExportStatus}
         onOpen={props.onOpenEvidence}
+        onDownload={props.onDownloadRecovery}
       />
 
       <HumanActionSummaryPanel
@@ -1172,7 +1216,9 @@ function IncidentBriefPanel(props: {
 function RecoveryPlanPanel(props: {
   incidents: IncidentBrief[];
   actions: RecoveryAction[];
+  exportStatus: string;
   onOpen: OpenEvidence;
+  onDownload: () => void;
 }) {
   return (
     <section id="recovery" className="recovery-section" aria-labelledby="recovery-title">
@@ -1228,6 +1274,22 @@ function RecoveryPlanPanel(props: {
         platform-specific rollback, and human approval. Automatic changes would exceed this
         post-run review MVP and could destroy evidence or compound the original mistake.
       </p>
+      <div className="recovery-export">
+        <div>
+          <strong>Carry the plan into a controlled response workflow.</strong>
+          <p>
+            The JSON includes the authority envelope, cited canonical evidence, proposed actions,
+            and a SHA-256 binding to the exact validated receipt. It contains no credentials or
+            execution command.
+          </p>
+        </div>
+        <button type="button" onClick={props.onDownload}>
+          Download recovery plan JSON
+        </button>
+        <p className="recovery-export-status" aria-live="polite">
+          {props.exportStatus}
+        </p>
+      </div>
     </section>
   );
 }

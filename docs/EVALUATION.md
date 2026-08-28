@@ -16,6 +16,9 @@ This report records a reproducible automated evaluation of the current prototype
 | Invented citation rejected | Passed |
 | Invalid Granite selection rejected with usable fallback | Passed |
 | Material unparsed OTLP span forced an incomplete verdict | Passed |
+| Recovery plan receipt binding and deterministic replay | Passed |
+| Recovery plan evidence closure | 2 incidents, 6 actions, 3 events, 12 findings |
+| Recovery plan execution boundary | Closed: not executed, current state unknown, approval required |
 
 Run the evaluation with:
 
@@ -56,6 +59,8 @@ The harness also changes inputs or generated output to verify failure behavior:
 2. Replacing a generated citation with `evt-invented` causes claim validation to reject the copy.
 3. Returning a Granite selection containing `finding-invented` causes the application to use deterministic fallback copy.
 4. Removing the explicit operation semantic from a material OTLP action span makes that span unparsed and changes the receipt verdict to `unable_to_assess_fully`.
+5. Building the recovery plan twice from the same validated receipt produces identical JSON, and its SHA-256 binding independently matches the exact serialized receipt.
+6. Every incident and proposed action in the exported plan resolves to retained receipt evidence. The plan carries no execution authority and makes no claim about current external state.
 
 These checks protect the product's central claim: uncertainty is exposed rather than filled in by a model.
 
@@ -69,4 +74,4 @@ These checks protect the product's central claim: uncertainty is exposed rather 
 
 ## Suggested judge demo
 
-Run `npm run eval`, then open the overreaching sample in the product. The automated result establishes deterministic behavior; the interface shows how a manager can move from two grouped incidents to exact cited findings, retained events, and proposed recovery steps without granting the product authority to execute changes.
+Run `npm run eval`, then open the overreaching sample in the product. The automated result establishes deterministic behavior; the interface shows how a manager can move from two grouped incidents to exact cited findings, retained events, proposed recovery steps, and a portable recovery-plan export without granting the product authority to execute changes.

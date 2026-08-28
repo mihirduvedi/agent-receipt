@@ -507,6 +507,7 @@ textarea::placeholder {
 .attention-list button,
 .incident-card button,
 .recovery-list button,
+.recovery-export button,
 .finding-card button,
 .responsive-table button {
   min-height: 44px;
@@ -1190,6 +1191,7 @@ fieldset.form-section > p,
 .attention-list button,
 .incident-card button,
 .recovery-list button,
+.recovery-export button,
 .finding-card button,
 .responsive-table button {
   padding: 8px 10px;
@@ -1200,6 +1202,7 @@ fieldset.form-section > p,
 .attention-list button:hover,
 .incident-card button:hover,
 .recovery-list button:hover,
+.recovery-export button:hover,
 .finding-card button:hover,
 .responsive-table button:hover {
   background: var(--ink);
@@ -1429,6 +1432,49 @@ fieldset.form-section > p,
   padding-left: 18px;
   border-left: 5px solid var(--signal);
   font-size: 0.82rem;
+}
+
+.recovery-export {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px 32px;
+  align-items: center;
+  margin-top: 34px;
+  padding-top: 28px;
+  border-top: 1px solid #646b67;
+}
+
+.recovery-export strong {
+  color: var(--signal);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  font-weight: 400;
+}
+
+.recovery-export p {
+  max-width: 78ch;
+  margin: 5px 0 0;
+  color: #c8cfca;
+  font-size: 0.82rem;
+}
+
+.recovery-export button {
+  padding: 12px 15px;
+  border: 1px solid var(--signal);
+  background: var(--signal);
+  color: var(--signal-dark);
+}
+
+.recovery-export button:hover {
+  background: var(--paper);
+  color: var(--signal-dark);
+}
+
+.recovery-export .recovery-export-status {
+  min-height: 20px;
+  grid-column: 1 / -1;
+  margin-top: 0;
+  color: var(--signal);
 }
 
 .recovery-empty {
@@ -2448,6 +2494,7 @@ tr:last-child td {
   .attention-list button:hover,
   .incident-card button:hover,
   .recovery-list button:hover,
+  .recovery-export button:hover,
   .finding-card button:hover,
   .responsive-table button:hover {
     transition-duration: 120ms;
@@ -2812,6 +2859,15 @@ tr:last-child td {
 
   .recovery-section {
     padding: 38px 20px;
+  }
+
+  .recovery-export {
+    grid-template-columns: 1fr;
+  }
+
+  .recovery-export button,
+  .recovery-export .recovery-export-status {
+    grid-column: 1;
   }
 
   .recovery-list article {

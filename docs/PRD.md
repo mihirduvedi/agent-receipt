@@ -877,7 +877,8 @@ See `docs/IBM_BOB_WORKFLOW.md` for the exact daily protocol.
 5. Open the prohibited-data finding, system edge, canonical event, and raw JSON.
 6. Point out deterministic rules, Granite citations, and fallback metadata.
 7. Show the reviewer disposition.
-8. Close with Bob’s primary development role, Granite’s bounded runtime role, and the product’s honest limits.
+8. Export the citation-closed recovery plan and point out its receipt digest and non-execution boundary.
+9. Close with Bob’s primary development role, Granite’s bounded runtime role, and the product’s honest limits.
 
 ### Submission definition of done
 
@@ -904,3 +905,31 @@ See `docs/IBM_BOB_WORKFLOW.md` for the exact daily protocol.
 - [watsonx.ai API documentation](https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-api.html?context=wx)
 
 The challenge platform and official rules are the authority for contest requirements. This PRD’s architecture and schedule are team recommendations.
+
+## 23. Release amendment: Recovery Plan v1
+
+**Added:** August 28, 2026
+
+The P0 receipt, incident grouping, and recovery proposals were complete before this amendment. Recovery Plan v1 makes those proposals portable without widening Agent Receipt into an executor.
+
+### User value
+
+After reviewing a completed run, the manager can download one deterministic JSON handoff containing the grouped incidents, proposed actions, required authority, reversibility notes, and only the receipt evidence those items cite. This turns the on-screen review into a useful input for an approval or incident workflow while preserving the product boundary.
+
+### Required contract
+
+- Schema version: `agent-receipt.recovery-plan.v1`.
+- The export carries the SHA-256 of the exact validated receipt serialization, plus the source trace digest, trace ID, policy ID, verdict, and reviewer disposition.
+- Every incident and action citation must resolve to included canonical events and findings. Invented or cross-incident citations fail validation.
+- Included evidence must be citation-closed: no cited record is missing, and no uncited event or finding is added.
+- The export must exclude retained raw input, raw event payloads, credentials, connectors, and mutation commands.
+- The execution boundary must state `not_executed`, current external state `unknown`, execution authority `not_granted`, and approval `required`.
+- The clean fixture must produce a valid empty plan rather than inventing work.
+
+### Acceptance evidence
+
+- Focused tests cover deterministic serialization, receipt-digest sensitivity to reviewer disposition, citation rejection, empty-plan behavior, and exclusion of a raw-only secret.
+- The reproducible evaluation verifies the overreaching fixture produces two incidents, six proposed actions, three cited events, and twelve cited findings with a closed execution boundary.
+- Browser QA must confirm the export control and status remain readable at desktop and mobile widths and that no execution control is introduced.
+
+Automatic re-probing or remediation remains outside the six-day MVP. A future executor would be a separate system with fresh credentials, read-before-write checks, dry runs, exact approval, idempotency, rollback, and its own audit trail.

@@ -5,6 +5,10 @@ import {
 } from "../core/schemas/index";
 import { OtlpExportTraceServiceRequestSchema } from "../adapters/otlpGenAi";
 import type {
+  RecoveryAction,
+  RecoveryIncident,
+} from "../core/recoveryPlan";
+import type {
   AuthorityEnvelopeV1,
   CanonicalEvent,
   CanonicalOperation,
@@ -106,30 +110,8 @@ export type HumanActionSummary = {
   }>;
 };
 
-export type IncidentBrief = {
-  incidentId: string;
-  title: string;
-  summary: string;
-  severity: Finding["severity"];
-  eventIds: string[];
-  findingIds: string[];
-  findingCount: number;
-  statuses: CanonicalEvent["status"][];
-  systems: string[];
-  dataCategories: string[];
-};
-
-export type RecoveryAction = {
-  actionId: string;
-  incidentId: string;
-  title: string;
-  description: string;
-  eventIds: string[];
-  findingIds: string[];
-  authorityRequired: string;
-  reversibility: string;
-  status: "proposed";
-};
+export type IncidentBrief = RecoveryIncident;
+export type { RecoveryAction };
 
 export function exactFixtureBytes(trace: NativeTraceV1): Uint8Array {
   return new TextEncoder().encode(`${JSON.stringify(trace, null, 2)}\n`);

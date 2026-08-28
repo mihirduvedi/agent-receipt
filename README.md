@@ -24,6 +24,7 @@ The receipt puts the deterministic verdict, evidence scope, and manager attentio
 - Opens every material conclusion into its canonical event and retained raw JSON object.
 - Keeps the human accept/investigate/reject disposition separate from the product verdict.
 - Exports a schema-validated receipt as JSON.
+- Exports a versioned recovery plan whose citations close over retained receipt evidence and whose SHA-256 binds it to the exact receipt under review.
 - Remains usable without credentials or network inference through a deterministic fallback.
 
 ## Product tour
@@ -52,7 +53,7 @@ Related deterministic findings become a concise incident brief only when they ci
 
 ![Agent Receipt human-approved recovery plan](docs/screenshots/agent-receipt-recovery-plan.jpg)
 
-The receipt proposes cited follow-up steps with required authority and reversibility notes. It does not access systems or execute a repair.
+The receipt proposes cited follow-up steps with required authority and reversibility notes. A manager can download the plan as validated JSON bound to the exact receipt. The plan records that current external state is unknown, approval is required, and nothing was executed.
 
 ### 5. Translate every canonical action
 
@@ -95,7 +96,7 @@ Open [http://localhost:3000](http://localhost:3000), then:
 4. Open an evidence control to compare the canonical event with the retained raw object.
 5. Start a new review with **Overreaching run**.
 6. Inspect the external spreadsheet attempt, successful retry, customer-email movement, and unapproved send.
-7. Record a reviewer disposition and download the receipt JSON.
+7. Record a reviewer disposition, download the receipt JSON, and export the citation-closed recovery plan.
 
 The samples are synthetic. The expected run contains three in-authority events. The overreaching run contains six events, including an unknown-outcome external write followed by a successful retry and an external message send.
 
@@ -110,7 +111,10 @@ deterministic policy engine → findings + qualified verdict
       ↓
 minimized, redacted fact bundle → server-only Granite route
       ↓ valid citations and schema, or deterministic fallback
-evidence-linked receipt → human disposition → validated JSON export
+evidence-linked receipt → human disposition → validated receipt JSON
+                                      ↓
+                         cited recovery-plan JSON
+                         bound to the receipt digest
 ```
 
 The browser retains the source snapshot for evidence drill-down. The server route recomputes the findings, then builds a minimized and redacted fact bundle for Granite. Generated claims are schema-checked and rejected if their citations are invalid. Missing fields remain unknown; the model is never asked to fill them in.
@@ -123,7 +127,7 @@ The browser retains the source snapshot for evidence drill-down. The server rout
 |---|---|
 | Technical execution | A working strict-TypeScript prototype preserves exact input bytes, accounts for every raw event, runs deterministic policy rules, validates external boundaries with Zod, and keeps a credential-free fallback usable. |
 | Innovation | Compares declared intent with observed action; generated prose cannot change the verdict and must cite retained evidence. |
-| Feasibility | Accepts bounded Native Trace v1 and documented OTLP/JSON GenAI contracts, works locally without external services, exports a validated receipt, and isolates the optional watsonx.ai call behind one server route. |
+| Feasibility | Accepts bounded Native Trace v1 and documented OTLP/JSON GenAI contracts, works locally without external services, exports a validated receipt and recovery plan, and isolates the optional watsonx.ai call behind one server route. |
 | Challenge fit | Gives teams and AI operations managers decision support for reviewing work completed by AI collaborators, directly matching the future-of-work wildcard theme. |
 | Real-world impact | Helps a manager decide whether to accept, investigate, or reject a completed run while preserving unknowns and the limits of the supplied evidence. |
 
@@ -151,6 +155,7 @@ Granite gives the prototype an IBM-native runtime explanation layer that fits th
 | Human action summary | Yes | Translate every canonical event without changing unknown outcomes |
 | Granite copy | No | Explain only supplied, redacted facts with citations |
 | Claim validation and fallback | Yes | Reject unsupported generated copy and keep the receipt usable |
+| Recovery-plan export | Yes | Bind cited proposed actions to the exact receipt without granting execution authority |
 | Reviewer disposition | Human | Record accept, investigate, reject, or unreviewed without changing the verdict |
 
 ## Verification
@@ -203,6 +208,9 @@ This MVP targets the IBM SkillsBuild AI Builders Challenge with IBM Bob, Wildcar
 - [IBM Bob and supporting-tools workflow](docs/IBM_BOB_WORKFLOW.md)
 - [IBM Bob build evidence](docs/BOB_BUILD_STORY.md)
 - [Reproducible evaluation](docs/EVALUATION.md)
+- [Recovery Plan v1 contract](docs/RECOVERY_PLAN.md)
+- [Paste-ready submission copy](docs/SUBMISSION.md)
+- [Three-minute judge demo script](docs/DEMO_SCRIPT.md)
 - [Narrow OTLP/JSON adapter contract](docs/OTLP_GENAI_ADAPTER.md)
 
 ## Limits

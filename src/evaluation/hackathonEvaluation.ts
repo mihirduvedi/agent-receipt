@@ -6,6 +6,11 @@ import {
   serializeReceipt,
   type BuildReceiptResult,
 } from "../core/receipt";
+import { sha256HexPortable } from "../core/portableDigest";
+import {
+  buildRecoveryPlanExport,
+  serializeRecoveryPlan,
+} from "../core/recoveryPlan";
 import type { ReceiptResult, Verdict } from "../core/schemas/index";
 import {
   fixtureA,
@@ -14,7 +19,11 @@ import {
   otlpGenAiFixture,
   sharedAuthority,
 } from "../fixtures";
-import { exactFixtureBytes } from "../ui/receiptView";
+import {
+  buildManagerIncidentBrief,
+  buildRecoveryPlan,
+  exactFixtureBytes,
+} from "../ui/receiptView";
 
 const EVALUATION_TIME = "2026-08-27T23:00:00.000Z";
 
@@ -48,6 +57,15 @@ export type HackathonEvaluationResult = {
     invalidCitationRejected: boolean;
     invalidGraniteSelectionFellBack: boolean;
     materialUnparsedSpanForcedIncompleteVerdict: boolean;
+  };
+  recoveryPlan: {
+    incidents: number;
+    proposedActions: number;
+    citedEvents: number;
+    citedFindings: number;
+    receiptDigestBound: boolean;
+    deterministicReplayPassed: boolean;
+    executionBoundaryClosed: boolean;
   };
 };
 
@@ -149,6 +167,17 @@ export async function runHackathonEvaluation(): Promise<HackathonEvaluationResul
     }),
   );
 
+  const incidents = buildManagerIncidentBrief(nativeB);
+  const recoveryInput = {
+    receipt: nativeB,
+    incidents,
+    actions: buildRecoveryPlan(nativeB, incidents),
+  };
+  const recoveryPlan = await buildRecoveryPlanExport(recoveryInput);
+  const expectedReceiptDigest = await sha256HexPortable(
+    new TextEncoder().encode(serializeReceipt(nativeB)),
+  );
+
   return {
     methodology: "automated_synthetic_corpus",
     corpus: {
@@ -204,6 +233,22 @@ export async function runHackathonEvaluation(): Promise<HackathonEvaluationResul
       materialUnparsedSpanForcedIncompleteVerdict:
         incompleteReceipt.verdict === "unable_to_assess_fully" &&
         incompleteReceipt.coverage.unparsed === 1,
+    },
+    recoveryPlan: {
+      incidents: recoveryPlan.incidents.length,
+      proposedActions: recoveryPlan.actions.length,
+      citedEvents: recoveryPlan.evidence.events.length,
+      citedFindings: recoveryPlan.evidence.findings.length,
+      receiptDigestBound:
+        recoveryPlan.sourceReceipt.receiptDigest === expectedReceiptDigest,
+      deterministicReplayPassed:
+        (await serializeRecoveryPlan(recoveryInput)) ===
+        (await serializeRecoveryPlan(recoveryInput)),
+      executionBoundaryClosed:
+        recoveryPlan.executionBoundary.status === "not_executed" &&
+        recoveryPlan.executionBoundary.currentExternalState === "unknown" &&
+        recoveryPlan.executionBoundary.executionAuthority === "not_granted" &&
+        recoveryPlan.executionBoundary.approval === "required",
     },
   };
 }

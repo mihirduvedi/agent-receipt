@@ -246,7 +246,7 @@ def draw_cover(canvas, doc) -> None:
     canvas.rect(0, 0, PAGE_W, 16, fill=1, stroke=0)
     canvas.setFillColor(colors.white)
     canvas.setFont("Arial", 7.8)
-    canvas.drawString(42, 58, "VERSION 1.0  |  AUGUST 27, 2026")
+    canvas.drawString(42, 58, "VERSION 1.1  |  AUGUST 28, 2026")
     canvas.drawRightString(PAGE_W - 42, 58, "EDITABLE SOURCE: docs/PROJECT_GUIDE.md")
     canvas.restoreState()
 

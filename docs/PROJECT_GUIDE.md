@@ -4,9 +4,9 @@
 
 **From first principles to architecture, code, trust boundaries, testing, and deployment**
 
-Version 1.2 - August 28, 2026
+Version 1.3 - August 28, 2026
 
-Project snapshot: the public repository and successful Vercel deployment are connected to judge-path product release `25cfde56ff520ec50580147e35b34dfb55525867`. That release moves the Recovery Plan export earlier in the judge journey and refreshes the submission artifacts. The documentation-only evidence sync that follows it changes no product or trust-critical source.
+Project snapshot: the public repository and successful Vercel deployment are connected to judge-path product release `25cfde56ff520ec50580147e35b34dfb55525867`. The current local release candidate adds an inspectable Granite boundary and refreshed synthetic product evidence. It is not described as deployed until a separately approved push and post-deployment check succeed.
 
 > Agent Receipt gives accountable humans an evidence-linked receipt for what an AI agent did relative to what it was allowed to do.
 
@@ -403,7 +403,7 @@ receipt/
 |  |- SUBMISSION.md               paste-ready challenge copy
 |  |- AI_ASSISTANCE_LOG.md        honest tool provenance
 |  |- ASSET_LICENSES.md           screenshot declarations
-|  `- screenshots/                nine synthetic product captures
+|  `- screenshots/                ten synthetic product captures
 |- scripts/release-audit.mjs      release-audit command entry point
 |- src/
 |  |- adapters/                   native + narrow OTLP canonicalization
@@ -835,6 +835,20 @@ Fallback creates the same `GeneratedReceiptCopy` structure:
 
 The fallback validates itself before use.
 
+### Inspecting the boundary in the receipt
+
+The receipt's **AI boundary** section rebuilds the same `GraniteFactBundle` from the validated receipt with `buildFactBundle`. It does not read the retained raw source object. The panel shows:
+
+- whether the receipt copy came from Granite or deterministic fallback;
+- the reduced event and finding counts;
+- the exact event and finding ID allowlists Granite may select from;
+- the fields removed before the model boundary;
+- the exact read-only, recursively redacted JSON projection.
+
+The preview is a transparency surface, not a second model call. It keeps the hosted fallback demo useful because a judge can inspect the IBM runtime contract even when credentials are absent. Focused tests verify that raw pointers, source event IDs, raw bodies, metadata, policy paths, and observed or expected comparison values are absent. A credential-shaped authority value is redacted before display.
+
+![Agent Receipt inspectable Granite boundary](screenshots/agent-receipt-granite-boundary.jpg)
+
 ### Current live status
 
 The production alias and successful Vercel commit status are connected to product release `25cfde56ff520ec50580147e35b34dfb55525867`, and both the demo and repository returned HTTP 200 without authentication on August 28, 2026. Both exact-release fixture journeys completed at 390 pixels in deterministic fallback mode with no document-level overflow or browser warnings/errors. The export preceded the proposal list. Overreaching activation displayed the citation-validation and exact-receipt SHA-256 success state; the clean fixture displayed the explicit empty-plan success state. Browser automation did not independently capture either Blob download. Focused tests cover plan serialization, digest binding, citation closure, and raw-source exclusion. This does not establish that live Granite is configured in Vercel.
@@ -951,6 +965,7 @@ The final view contains:
 - systems and movement map plus full text table;
 - findings and coverage;
 - generated-copy sections;
+- inspectable Granite boundary with provenance, deterministic gates, omission ledger, and exact redacted projection;
 - integrity grid;
 - disposition controls;
 - export action.
@@ -970,6 +985,8 @@ The summary has three parts:
 ![Agent Receipt human-approved recovery plan](screenshots/agent-receipt-recovery-plan.jpg)
 
 ![Agent Receipt action summary](screenshots/agent-receipt-action-summary.jpg)
+
+![Agent Receipt inspectable Granite boundary](screenshots/agent-receipt-granite-boundary.jpg)
 
 ### Why it is derived rather than stored
 
@@ -1045,6 +1062,7 @@ The interface uses a review-ledger visual language:
 - lime signal color for active and review actions;
 - red for material attention;
 - ruled geometry instead of generic rounded cards;
+- a cool blueprint band for the Granite boundary so the model contract is visually distinct from the deterministic receipt while staying inside the same ledger system;
 - large editorial serif-like browser headings and compact sans labels;
 - visible focus outlines;
 - text labels in addition to color.
@@ -1096,7 +1114,7 @@ The project separates evidence layers because each answers a different question.
 
 ## 25. Automated test suite
 
-The current source snapshot contains 313 tests across 15 files.
+The current local source snapshot contains 315 tests across 16 files.
 
 ### Test families
 
@@ -1147,7 +1165,7 @@ npm run build
 npm run release:audit
 ```
 
-At the documented release snapshot it passed with:
+At the deployed release snapshot it passed with:
 
 - ESLint: zero warnings;
 - strict TypeScript: passed;
@@ -1156,7 +1174,7 @@ At the documented release snapshot it passed with:
 - Next production build: passed;
 - release audit: passed.
 
-Product release `25cfde56ff520ec50580147e35b34dfb55525867` passed GitHub Actions run `33189569253` on August 28, 2026. The documentation-only evidence sync that records its deployed checks passed the same complete local gate: 15 test files, 313 tests, zero lint warnings, strict type checking, the Next production build, and the release audit all succeeded.
+Product release `25cfde56ff520ec50580147e35b34dfb55525867` passed GitHub Actions run `33189569253` on August 28, 2026 with 15 test files and 313 tests. The current local Granite-boundary candidate passed the complete gate with 16 test files, 315 tests, zero lint warnings, strict type checking, the Next production build, and the release audit. That local pass is not hosted CI or deployment evidence.
 
 ## 27. Release audit
 
@@ -1173,12 +1191,12 @@ Product release `25cfde56ff520ec50580147e35b34dfb55525867` passed GitHub Actions
 
 Next.js includes the build root inside specific required-server metadata files. The audit masks only that exact expected root in only those allowlisted files. An unrelated personal path still fails.
 
-At the release snapshot it checked:
+For the current local candidate it checked:
 
-- 68 release-scoped source text files, including the untracked judge-guide candidate;
+- 70 release-scoped source text files;
 - 147 production-build text files;
 - 474 dependency package entries;
-- 9 app-owned media assets;
+- 10 app-owned media assets;
 - 8 allowlisted Next build-root metadata references.
 
 This is a high-signal guard, not a proof that no secret, personal datum, vulnerability, or licensing issue exists.
@@ -1231,7 +1249,7 @@ The public URL is:
 
 `https://receipt-one-flax.vercel.app`
 
-The URL returned HTTP 200 during this guide's August 28, 2026 verification pass. The production alias and successful Vercel commit status were connected to product release `25cfde56ff520ec50580147e35b34dfb55525867`. Recovery Plan v1 is present in that deployment, with its export placed before the longer proposal list. The following documentation-only sync does not change that product behavior.
+The URL returned HTTP 200 during this guide's August 28, 2026 verification pass. The production alias and successful Vercel commit status were connected to product release `25cfde56ff520ec50580147e35b34dfb55525867`. Recovery Plan v1 is present in that deployment, with its export placed before the longer proposal list. The local Granite-boundary candidate is not part of this deployed evidence.
 
 Why Vercel?
 
@@ -1278,8 +1296,9 @@ Codex and associated design/QA skills contributed:
 - manager UI and deterministic action summary;
 - responsive/accessibility-adjacent QA;
 - release audit;
-- README, screenshots, license, deployment, and this guide.
-- later incident/recovery presentation, Granite reliability hardening, the narrow OTLP adapter, and the reproducible evaluation.
+- README, screenshots, license, deployment, and this guide;
+- later incident/recovery presentation, Granite reliability hardening, the narrow OTLP adapter, and the reproducible evaluation;
+- the inspectable Granite boundary, focused view tests, refreshed screenshots, and submission-readiness documentation.
 
 The point of the log is not to invent a percentage. It is to show material prompts, artifacts, human review, and executed verification without attributing one tool's work to another. `docs/BOB_BUILD_STORY.md` points judges to the two large Bob-authored foundation commits and the bounded workflow that produced them.
 
@@ -1293,7 +1312,7 @@ Important qualifications:
 - The license is not legal advice.
 - It has not been reviewed by qualified counsel.
 - Third-party packages retain their own licenses.
-- The nine project screenshots are declared as project-owned synthetic captures in `docs/ASSET_LICENSES.md`.
+- The ten project screenshots are declared as project-owned synthetic captures in `docs/ASSET_LICENSES.md`.
 
 ---
 
@@ -1321,16 +1340,17 @@ Open `http://localhost:3000`.
 1. Choose Expected run.
 2. Read the preset authority.
 3. Select Build receipt.
-4. Confirm the clean verdict, 3/3 coverage, and fallback source.
+4. Confirm the clean verdict, 3/3 coverage, and displayed copy source.
 5. Open one evidence control.
 6. Start a new review.
 7. Choose Overreaching run.
 8. Compare the unknown attempt with the successful retry.
 9. Inspect the external spreadsheet and email findings.
 10. Set Investigate.
-11. Download Recovery Plan v1 and inspect its receipt digest and execution boundary.
-12. Download the receipt JSON.
-13. Confirm the raw uploaded document is absent from both exports.
+11. Open AI boundary and inspect the exact redacted projection and omission ledger.
+12. Download Recovery Plan v1 and inspect its receipt digest and execution boundary.
+13. Download the receipt JSON.
+14. Confirm the raw uploaded document is absent from both exports.
 
 ## 33. Input format by example
 
@@ -1553,7 +1573,7 @@ Remaining risks include:
 
 ## 41. What remains before the hackathon release is fully complete
 
-At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, citation-closed Recovery Plan v1 export, Granite selection hardening, narrow OTLP adapter, automated evaluation corpus, screenshots, license, public repository, judge guide, exact product-release CI, Vercel deployment, and both public fixture journeys were complete. Product release `25cfde56ff520ec50580147e35b34dfb55525867` includes the shorter judge path. A documentation-only sync records the resulting evidence without changing product behavior.
+At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, citation-closed Recovery Plan v1 export, Granite selection hardening, narrow OTLP adapter, automated evaluation corpus, screenshots, license, public repository, judge guide, exact product-release CI, Vercel deployment, and both public fixture journeys were complete. Product release `25cfde56ff520ec50580147e35b34dfb55525867` includes the shorter judge path. The current local candidate adds an inspectable Granite boundary; its local evidence is kept separate from the deployed baseline until an approved release is checked publicly.
 
 Open release work included:
 
@@ -1835,13 +1855,17 @@ No. The file carries the SHA-256 of the exact validated receipt serialization, s
 
 No. The server route receives canonical facts, recomputes policy, and sends only a minimized, recursively redacted fact bundle. Raw input and output bodies are excluded.
 
+## Can I inspect what Granite receives?
+
+Yes. The receipt's AI boundary section rebuilds the same minimized, recursively redacted projection from the validated receipt. It shows the allowed citation IDs and fields held back from the model request. The preview does not read or reveal the retained raw trace.
+
 ## What happens when Granite or the network is unavailable?
 
 The same receipt remains usable with deterministic fallback copy. The verdict, findings, coverage, evidence links, disposition, receipt export, and Recovery Plan do not depend on model availability.
 
 ## Are the screenshots real customer data?
 
-No. All nine use the committed synthetic overreaching fixture.
+No. All ten use the committed synthetic overreaching fixture.
 
 ## Is the project open source?
 
@@ -1896,7 +1920,7 @@ This guide was cross-checked against the complete tracked repository, including 
 
 ## Evidence boundaries
 
-- Current repository behavior is supported by local source inspection and the exact verification commands reported in this guide.
+- Current local-candidate behavior is supported by source inspection, 315 tests across 16 files, a successful production build and release audit, and the browser checks reported in this guide.
 - Exact product-release CI, Vercel status, public repository visibility, and both deployed fixture journeys were checked live on August 28. The Recovery Plan export preceded the overreaching proposal list, both fixture activations displayed their correct success states, and neither browser-created Blob file was independently captured.
 - Local live Granite success under the compact selection boundary was re-observed on August 28, 2026. Prior rejected-claim fallback, explicit fallback mode, and invalid-credential fallback remain recorded evidence. Live Granite on the exact final public release, a real screen-reader session, the public video, and final submission were not verified as complete in this guide pass.
 - Challenge and provider details can change; recheck official pages before release action.

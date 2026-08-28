@@ -11,7 +11,8 @@ Agent Receipt is a post-run review tool for an AI operations manager. It compare
 1. Open the live demo and choose **Overreaching run**.
 2. Keep the preset authority and select **Build receipt**.
 3. Read the verdict and the two-incident brief. Open one evidence control to see the finding, canonical event, and retained source object together.
-4. Open **Recovery plan** from the receipt navigation and download Recovery Plan v1. The status confirms citation validation and a SHA-256 binding to the exact receipt.
+4. Open **AI boundary**. The panel shows fallback or Granite provenance, the exact minimized and redacted fact bundle, the evidence IDs Granite may select, and the raw fields held back from the model request.
+5. Open **Recovery plan** and download Recovery Plan v1. The status confirms citation validation and a SHA-256 binding to the exact receipt.
 
 The seeded run records six events. Three stay inside the declared authority. The other three capture an external spreadsheet attempt with an unknown result, its successful retry, and an unapproved customer-email send. Deterministic rules produce 12 findings and group them into two incidents without hiding the underlying queue.
 
@@ -19,19 +20,21 @@ The seeded run records six events. Three stay inside the declared authority. The
 
 Most trace tools show activity. Agent Receipt asks whether that activity stayed inside a specific authority envelope and gives the accountable human a bounded decision: accept, investigate, or reject.
 
-The model does not decide the verdict. IBM Granite receives a minimized, redacted fact bundle from a server-only route and may select which verified findings to emphasize. Invalid output, missing credentials, or a network failure uses the deterministic fallback. The review still works.
+The model does not decide the verdict. IBM Granite receives a minimized, redacted fact bundle from a server-only route and may select which verified findings to emphasize. The receipt makes that boundary inspectable instead of asking a judge to trust a model badge. Invalid output, missing credentials, or a network failure uses the deterministic fallback. The review still works.
 
 Recovery Plan v1 carries cited follow-up work into a later approval process. It contains no credentials or execution commands, records current external state as unknown, and grants no execution authority.
 
-## Evidence for the judging criteria
+## Evidence for the judging lenses
 
 | Criterion | Evidence to inspect |
 |---|---|
-| Technical execution | Exact-byte SHA-256, complete raw-event accounting, strict Zod boundaries, deterministic policy and verdict, server-only Granite route, 313 tests, production build, and release audit |
-| Innovation | Intent-versus-action reconciliation, citation-validated model output, retained evidence drill-down, and a recovery export bound to the reviewed receipt |
+| Technical execution | Exact-byte SHA-256, complete raw-event accounting, strict Zod boundaries, deterministic policy and verdict, server-only Granite route, inspectable model projection, full test suite, production build, and release audit |
+| Innovation | Intent-versus-action reconciliation, an inspectable AI boundary, citation-validated model output, retained evidence drill-down, and a recovery export bound to the reviewed receipt |
 | Feasibility | Native Trace v1 plus a documented OTLP/JSON shape, credential-free fallback, public Next.js deployment, receipt JSON, and Recovery Plan v1 JSON |
 | Challenge fit | Decision support for managers reviewing work completed by AI collaborators, under the Future of Work wildcard theme |
 | Real-world impact | A manager can see what happened, what crossed authority, what remains unknown, and what a controlled response workflow should review next |
+
+The challenge page presents five lenses. The official rules use four scored headings and combine implementation with feasibility; the evidence above covers both versions.
 
 These are prototype results from synthetic fixtures. They do not establish legal compliance, trusted trace capture, production-scale performance, or universal policy coverage.
 

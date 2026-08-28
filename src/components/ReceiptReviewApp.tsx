@@ -29,6 +29,10 @@ import type {
 } from "../core/schemas/index";
 import { fixtureA, fixtureB, sharedAuthority } from "../fixtures";
 import {
+  buildGraniteBoundaryView,
+  type GraniteBoundaryView,
+} from "../ui/graniteBoundaryView";
+import {
   ALL_OPERATIONS,
   authorityToDraft,
   blankAuthorityDraft,
@@ -897,6 +901,7 @@ function ReceiptStep(props: {
   const humanSummary = buildHumanActionSummary(receipt);
   const incidents = buildManagerIncidentBrief(receipt);
   const recoveryPlan = buildRecoveryPlan(receipt, incidents);
+  const graniteBoundary = buildGraniteBoundaryView(receipt);
   const findingsByEvent = new Map<string, Finding[]>();
   for (const finding of receipt.findings) {
     for (const eventId of finding.eventIds) {
@@ -915,6 +920,7 @@ function ReceiptStep(props: {
         <a href="#activity">Timeline</a>
         <a href="#movement">Systems and data</a>
         <a href="#deviations">Findings</a>
+        <a href="#ai-boundary">AI boundary</a>
         <a href="#integrity">Integrity</a>
         <a href="#disposition">Decision</a>
       </nav>
@@ -1088,8 +1094,10 @@ function ReceiptStep(props: {
         </div>
       </section>
 
+      <GraniteBoundaryPanel view={graniteBoundary} />
+
       <section id="integrity" className="receipt-section" aria-labelledby="integrity-title">
-        <SectionTitle number="06" title="Integrity record" detail="Input hash, schema versions, policy ID, and copy source" id="integrity-title" />
+        <SectionTitle number="07" title="Integrity record" detail="Input hash, schema versions, policy ID, and copy source" id="integrity-title" />
         <IntegrityStrip receipt={receipt} />
       </section>
 
@@ -1121,6 +1129,86 @@ function ReceiptStep(props: {
         </div>
       </section>
     </div>
+  );
+}
+
+function GraniteBoundaryPanel({ view }: { view: GraniteBoundaryView }) {
+  const usedGranite = view.generationSource === "granite";
+
+  return (
+    <section
+      id="ai-boundary"
+      className="receipt-section ai-boundary-section"
+      aria-labelledby="ai-boundary-title"
+    >
+      <SectionTitle
+        number="06"
+        title="What Granite can see"
+        detail="The exact minimized, redacted fact bundle and the deterministic gates around it"
+        id="ai-boundary-title"
+      />
+
+      <div className="ai-boundary-status">
+        <span>{usedGranite ? "Granite used" : "Fallback active"}</span>
+        <p>
+          {usedGranite
+            ? "Granite selected verified finding IDs for this receipt. Deterministic code rendered the cited sentences."
+            : "This receipt used the deterministic fallback. The same validated fact bundle is ready for Granite when live mode is available."}
+        </p>
+      </div>
+
+      <p className="ai-boundary-intro">
+        The server route recomputes policy before it creates this projection. Only the bundle
+        shown below can reach Granite. The retained trace, raw event bodies, detected credential
+        values, raw pointers, and policy comparison values stay out of the model request.
+      </p>
+
+      <ol className="ai-boundary-flow" aria-label="Granite control flow">
+        <li>
+          <span>01</span>
+          <strong>Server verifies</strong>
+          <p>Validate the request, account for events, and rerun deterministic policy.</p>
+        </li>
+        <li>
+          <span>02</span>
+          <strong>Granite selects</strong>
+          <p>Choose up to five known finding IDs from the redacted projection.</p>
+        </li>
+        <li>
+          <span>03</span>
+          <strong>Code closes claims</strong>
+          <p>Reject unknown citations, render fixed text, or use the validated fallback.</p>
+        </li>
+      </ol>
+
+      <div className="ai-boundary-ledger">
+        <dl aria-label="Granite fact bundle counts">
+          <div><dt>Reduced events</dt><dd>{view.eventCount}</dd></div>
+          <div><dt>Reduced findings</dt><dd>{view.findingCount}</dd></div>
+          <div><dt>Allowed event citations</dt><dd>{view.allowedEventCitationCount}</dd></div>
+          <div><dt>Allowed finding citations</dt><dd>{view.allowedFindingCitationCount}</dd></div>
+          <div><dt>Projection size</dt><dd>{view.payloadBytes.toLocaleString()} bytes</dd></div>
+        </dl>
+        <div>
+          <p className="section-number">Left out before Granite</p>
+          <ul>
+            <li>Retained source JSON and exact input bytes</li>
+            <li>Event input, output, metadata, raw pointers, and source IDs</li>
+            <li>Finding policy paths and observed or expected comparison values</li>
+            <li>Credentials and values caught by recursive redaction</li>
+          </ul>
+        </div>
+      </div>
+
+      <details className="granite-bundle-preview">
+        <summary>Inspect the exact minimized, redacted bundle</summary>
+        <p>
+          This read-only JSON is reconstructed from the validated receipt with the same bundle
+          builder used by the server route.
+        </p>
+        <pre tabIndex={0}>{view.serializedBundle}</pre>
+      </details>
+    </section>
   );
 }
 

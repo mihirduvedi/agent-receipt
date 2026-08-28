@@ -25,6 +25,7 @@ The receipt puts the deterministic verdict, evidence scope, and manager attentio
 - Keeps the human accept/investigate/reject disposition separate from the product verdict.
 - Exports a schema-validated receipt as JSON.
 - Exports a versioned recovery plan whose citations close over retained receipt evidence and whose SHA-256 binds it to the exact receipt under review.
+- Shows the exact minimized, redacted fact bundle that Granite can receive, together with the fields held back and the deterministic gates around the model call.
 - Remains usable without credentials or network inference through a deterministic fallback.
 
 ## Product tour
@@ -67,13 +68,19 @@ The summary separates observed activity from carefully qualified no-observed-act
 
 The boundary map highlights local, internal, external, and unknown destinations, with a full text-equivalent table for accessibility and exact evidence navigation.
 
-### 7. Open a claim into retained evidence
+### 7. See the model boundary, not just a model badge
+
+![Agent Receipt Granite boundary showing the minimized fact bundle and deterministic gates](docs/screenshots/agent-receipt-granite-boundary.jpg)
+
+The AI boundary panel rebuilds the same minimized, recursively redacted projection used by the server route. It shows whether Granite or fallback produced the receipt copy, which evidence IDs Granite may select, what is deliberately excluded, and the exact read-only JSON bundle.
+
+### 8. Open a claim into retained evidence
 
 ![Agent Receipt evidence drawer linking a finding to its canonical event](docs/screenshots/agent-receipt-evidence-drawer.jpg)
 
 Every material conclusion opens into its cited finding, canonical event, and retained raw JSON object.
 
-### 8. Keep human disposition separate from the verdict
+### 9. Keep human disposition separate from the verdict
 
 ![Agent Receipt manager disposition and validated JSON export](docs/screenshots/agent-receipt-disposition-export.jpg)
 
@@ -117,7 +124,7 @@ evidence-linked receipt → human disposition → validated receipt JSON
                          bound to the receipt digest
 ```
 
-The browser retains the source snapshot for evidence drill-down. The server route recomputes the findings, then builds a minimized and redacted fact bundle for Granite. Generated claims are schema-checked and rejected if their citations are invalid. Missing fields remain unknown; the model is never asked to fill them in.
+The browser retains the source snapshot for evidence drill-down. The server route recomputes the findings, then builds a minimized and redacted fact bundle for Granite. The receipt exposes that same projection in a read-only AI boundary panel so a judge or manager can inspect what the model may receive. Generated claims are schema-checked and rejected if their citations are invalid. Missing fields remain unknown; the model is never asked to fill them in.
 
 ## Hackathon fit
 
@@ -130,6 +137,8 @@ The browser retains the source snapshot for evidence drill-down. The server rout
 | Feasibility | Accepts bounded Native Trace v1 and documented OTLP/JSON GenAI contracts, works locally without external services, exports a validated receipt and recovery plan, and isolates the optional watsonx.ai call behind one server route. |
 | Challenge fit | Gives teams and AI operations managers decision support for reviewing work completed by AI collaborators, directly matching the future-of-work wildcard theme. |
 | Real-world impact | Helps a manager decide whether to accept, investigate, or reject a completed run while preserving unknowns and the limits of the supplied evidence. |
+
+The challenge page presents five judging lenses. The official rules score four headings by combining implementation and feasibility. This evidence map covers both formulations.
 
 The challenge requires IBM Bob as the primary development tool, permits additional IBM AI technologies such as Granite, and asks for a working prototype, public repository, clear README, and public video.
 
@@ -155,6 +164,7 @@ Granite gives the prototype an IBM-native runtime explanation layer that fits th
 | Human action summary | Yes | Translate every canonical event without changing unknown outcomes |
 | Granite copy | No | Explain only supplied, redacted facts with citations |
 | Claim validation and fallback | Yes | Reject unsupported generated copy and keep the receipt usable |
+| AI boundary view | Yes | Rebuild and disclose the minimized, redacted projection without exposing the retained raw trace |
 | Recovery-plan export | Yes | Bind cited proposed actions to the exact receipt without granting execution authority |
 | Reviewer disposition | Human | Record accept, investigate, reject, or unreviewed without changing the verdict |
 
@@ -208,7 +218,6 @@ This MVP targets the IBM SkillsBuild AI Builders Challenge with IBM Bob, Wildcar
 - [IBM Bob and supporting-tools workflow](docs/IBM_BOB_WORKFLOW.md)
 - [IBM Bob build evidence](docs/BOB_BUILD_STORY.md)
 - [Reproducible evaluation](docs/EVALUATION.md)
-- [60-second judge guide](docs/JUDGE_GUIDE.md)
 - [Recovery Plan v1 contract](docs/RECOVERY_PLAN.md)
 - [Paste-ready submission copy](docs/SUBMISSION.md)
 - [Three-minute judge demo script](docs/DEMO_SCRIPT.md)

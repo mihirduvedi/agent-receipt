@@ -74,4 +74,4 @@ These checks protect the product's central claim: uncertainty is exposed rather 
 
 ## Suggested judge demo
 
-Run `npm run eval`, then open the overreaching sample in the product. The automated result establishes deterministic behavior; the interface shows how a manager can move from two grouped incidents to exact cited findings, retained events, proposed recovery steps, and a portable recovery-plan export without granting the product authority to execute changes.
+Run `npm run eval`, then open the overreaching sample in the product. The automated result establishes deterministic behavior; the interface shows how a manager can move from two grouped incidents to exact cited findings, inspect the facts that may reach Granite, review retained events, and export a recovery plan without granting the product authority to execute changes.

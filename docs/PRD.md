@@ -933,3 +933,24 @@ After reviewing a completed run, the manager can download one deterministic JSON
 - Browser QA must confirm the export control and status remain readable at desktop and mobile widths and that no execution control is introduced.
 
 Automatic re-probing or remediation remains outside the six-day MVP. A future executor would be a separate system with fresh credentials, read-before-write checks, dry runs, exact approval, idempotency, rollback, and its own audit trail.
+
+## 24. Release amendment: inspectable Granite boundary
+
+**Added:** August 28, 2026
+
+The runtime Granite boundary already minimized and redacted facts, restricted the model to known finding IDs, validated the result, and preserved a credential-free fallback. This amendment makes that boundary visible in the completed receipt without changing Granite's authority or widening the MVP.
+
+### User value
+
+An AI operations manager or judge can inspect the exact read-only projection that Granite may receive, see whether this receipt used Granite or fallback, and confirm which raw fields never enter the bundle. This makes the integration boundary reviewable in both live and credential-free demo conditions.
+
+### Required behavior
+
+- Rebuild the preview from the validated receipt with the same fact-bundle function used by the server route.
+- Show reduced event and finding counts, allowed citation counts, and fallback or Granite provenance.
+- Name the excluded raw fields and make the recursively redacted JSON projection inspectable.
+- Never read the retained raw source object to build the preview.
+- Keep verdict, findings, copy validation, and fallback deterministic.
+- Add focused tests for raw-field exclusion and a detected credential value.
+
+The panel is post-run transparency, not model observability, chain-of-thought access, live monitoring, or a claim that heuristic redaction can detect every possible secret.

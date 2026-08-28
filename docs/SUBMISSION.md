@@ -26,7 +26,7 @@ When a run needs attention, the interface groups related findings into incidents
 
 ## AI and technical architecture
 
-IBM Granite has a deliberately narrow runtime role. A server-only route recomputes deterministic findings, minimizes and redacts the facts, then asks Granite to select notable finding IDs. The application accepts only valid IDs and renders deterministic cited sentences. Missing credentials, timeouts, malformed output, or invented citations use the same usable deterministic fallback.
+IBM Granite has a deliberately narrow runtime role. A server-only route recomputes deterministic findings, minimizes and redacts the facts, then asks Granite to select notable finding IDs. The application accepts only valid IDs and renders deterministic cited sentences. The receipt also exposes the exact read-only model projection, allowed citation IDs, omitted fields, and fallback or Granite provenance. Missing credentials, timeouts, malformed output, or invented citations use the same usable deterministic fallback.
 
 The prototype is built with strict TypeScript, Next.js, React, and Zod. It supports Agent Receipt Native Trace v1 and one documented OTLP/JSON GenAI shape. The browser receives no model credentials, Granite cannot change the verdict, and missing evidence stays unknown.
 
@@ -44,6 +44,7 @@ Agent Receipt gives people a practical review surface for work completed by AI c
 - All twelve raw corpus records are explicitly accounted for.
 - The overreaching fixture activates all six seeded authority-rule families.
 - Invented generated citations and invalid Granite selections are rejected.
+- The AI boundary preview uses the same minimized, redacted bundle builder as the server route and excludes retained raw fields.
 - A material unparsed OTLP span forces `unable_to_assess_fully`.
 - Recovery Plan v1 closes two incidents and six proposed actions over three events and twelve findings, with an independently checked receipt digest.
 - `npm run verify` runs lint, strict type checking, the full tests, a production build, and release-safety scans.
@@ -63,5 +64,5 @@ These are synthetic-prototype results, not claims about universal policy coverag
 - Confirm every teammate completed the required IBM SkillsBuild Bob activity.
 - Open the repository, live demo, and video links while signed out.
 - Confirm the video duration is at or below three minutes.
-- Confirm GitHub Actions remains successful for current `main`. The deployed judge-path product release `25cfde56ff520ec50580147e35b34dfb55525867` passed run `33189569253`; the following evidence-sync commit changes documentation only.
+- Confirm GitHub Actions remains successful for current `main`. The deployed judge-path baseline `25cfde56ff520ec50580147e35b34dfb55525867` passed run `33189569253`. If the local Granite-boundary candidate is released, replace this baseline with its exact commit and successful hosted run before submission.
 - Submit before August 31, 2026 at 11:59 PM ET / 8:59 PM PT, unless the live challenge page shows a newer deadline.

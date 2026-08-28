@@ -2,9 +2,9 @@
 
 **Snapshot:** August 28, 2026
 
-**Scope:** Deployed judge-path product release `25cfde56ff520ec50580147e35b34dfb55525867` plus the documentation-only evidence sync that records its post-deployment checks
+**Scope:** Deployed judge-path product release `25cfde56ff520ec50580147e35b34dfb55525867` plus the current local candidate that adds an inspectable Granite boundary and refreshed submission evidence
 
-**Decision:** Product release `25cfde56ff520ec50580147e35b34dfb55525867` has successful GitHub CI and Vercel status. The repository is public, both synthetic fixture journeys work at the production alias in deterministic fallback mode, and the Recovery Plan export now appears before the long proposal list. This evidence sync updates documentation and the generated guide only; it does not change product or trust-critical source.
+**Decision:** Product release `25cfde56ff520ec50580147e35b34dfb55525867` remains the verified deployed baseline. The current local candidate passed the complete local gate and desktop/mobile browser checks for the new Granite boundary. It is not yet committed, pushed, covered by hosted CI, or verified at the production alias.
 
 This ledger separates automated evidence from browser, manual-accessibility, live-service, deployment, and submission evidence. A checked local test does not prove an unexecuted layer.
 
@@ -12,18 +12,18 @@ This ledger separates automated evidence from browser, manual-accessibility, liv
 
 | Check | Latest result | What it supports |
 |---|---|---|
-| `npm run verify` | Passed on August 28 for the judge-path product release and again for this documentation-only sync: lint with zero warnings, strict TypeScript, 15 test files and 313 tests, production build, release audit across 68 source files | The released product source and synchronized documentation pass the tested deterministic and release-safety contracts |
+| `npm run verify` | Current local candidate passed on August 28: lint with zero warnings, strict TypeScript, 16 test files and 315 tests, production build, release audit across 70 source files | The local candidate passes the tested deterministic, UI-helper, build, and release-safety contracts; this is not hosted CI evidence |
 | GitHub Actions `CI` | [Run `33189569253`](https://github.com/mihirduvedi/agent-receipt/actions/runs/33189569253) passed for exact product SHA `25cfde56ff520ec50580147e35b34dfb55525867` on August 28 | A clean hosted install and complete `npm run verify` passed for the deployed judge-path product release |
 | `npm run eval` | One declared evaluation test passed on August 28 | Synthetic verdict, rule-family, accounting, deterministic replay, citation, fallback, OTLP limitation, and Recovery Plan v1 assertions passed |
 | `npm audit --omit=dev --json` | Zero known production dependency vulnerabilities on August 28 | Current npm advisory data reported no production vulnerability |
-| Strict UI static scan | 26 source files, 0 errors, 0 warnings | Source-level UI heuristics only; not rendered or assistive-technology proof |
-| Markdown local-link audit | 39 local links checked across 14 Markdown files, 0 missing | Current judge-facing repository links resolve locally |
+| Strict UI static scan | 27 source files, 0 errors, 0 warnings | Source-level UI heuristics only; not rendered or assistive-technology proof |
+| Markdown local-link audit | 41 local links checked across 15 tracked Markdown files, 0 missing | Current judge-facing repository links resolve locally |
 
 The full suite covers exact-byte digest behavior, native and narrow OTLP adaptation/accounting, deterministic policy rules, incident grouping, recovery proposals, Recovery Plan v1 binding and citation closure, Granite fact minimization/redaction/selection validation/fallback/token caching, route media and body limits, receipt orchestration and export validation, both golden fixtures, the synthetic evaluation corpus, release-source enumeration, and deterministic UI view helpers.
 
 ## Current public deployment
 
-Verified product target: <https://receipt-one-flax.vercel.app>, exact product commit `25cfde56ff520ec50580147e35b34dfb55525867`, synthetic fixtures only. The documentation-only sync that follows this release does not change the tested UI or trust contracts.
+Verified product target: <https://receipt-one-flax.vercel.app>, exact product commit `25cfde56ff520ec50580147e35b34dfb55525867`, synthetic fixtures only. The local Granite-boundary candidate is not included in this deployed evidence.
 
 - The alias returned HTTP 200 on August 28.
 - Vercel reported **Deployment has completed** for the exact SHA.
@@ -39,6 +39,20 @@ Verified product target: <https://receipt-one-flax.vercel.app>, exact product co
 
 These checks used Chrome with pointer interaction and a responsive viewport override. They are not a cross-browser, physical-device, or screen-reader certification.
 
+## Current local candidate browser evidence
+
+The Granite-boundary candidate was exercised locally in the in-app Chromium browser at 1280 × 720 and 390 × 844:
+
+- the overreaching fixture displayed deterministic fallback and the clean fixture completed with live Granite locally;
+- the panel exposed the exact redacted projection, both citation allowlists, and the correct reduced counts for each fixture;
+- expanded JSON omitted raw pointers, source event IDs, event input/output, metadata, policy comparison fields, and retained raw source data;
+- desktop and mobile layouts had no document-level horizontal overflow;
+- the JSON preview stayed inside a bounded scroll region;
+- browser logs contained no warning or error entries;
+- browser automation observed the Recovery Plan download control and success UI, but did not capture the browser-created Blob file event.
+
+These checks do not establish deployment, cross-browser behavior, a real screen-reader experience, or future live-provider availability.
+
 ## Previously verified rendered behavior
 
 The current implementation also has recorded browser evidence for:
@@ -50,7 +64,7 @@ The current implementation also has recorded browser evidence for:
 - evidence-drawer focus entry, Tab/Shift+Tab containment, Escape close, focus restoration, and body-scroll restoration;
 - human disposition and receipt JSON status;
 - explicit text labels for unknown and succeeded outcomes;
-- nine README screenshots at 1280 × 720 using only synthetic data;
+- ten README screenshots at 1280 × 720 using only synthetic data;
 - the complete project-guide PDF with bounds, font, page-grid, and readable-page inspection.
 
 The focused 390-pixel rerun was completed on deployed product release `25cfde56ff520ec50580147e35b34dfb55525867`. Earlier evidence remains useful for the unchanged wider responsive, long-content, keyboard-dialog, and accessibility-tree checks.
@@ -73,8 +87,8 @@ The production browser journeys recorded `deterministic_fallback`. Local provide
 
 - `README.md` links the live demo, public repository, judge guide, complete guide, PDF, evaluation, recovery contract, submission copy, and demo script.
 - `docs/SUBMISSION.md` contains the verified public repository URL. The public-video and eligible-team fields remain intentionally unresolved.
-- `docs/JUDGE_GUIDE.md` gives a 60-second path and maps concrete evidence to all five judging criteria.
-- `docs/PROJECT_GUIDE.md` and the 55-page Version 1.2 PDF reflect product release `25cfde56ff520ec50580147e35b34dfb55525867` and the documentation-only evidence sync. The exact PDF rendered 55 pages, contained text on every page, passed bounds validation with 0 errors and 0 warnings, and passed readable four-page-sheet inspection across the full document.
+- `docs/JUDGE_GUIDE.md` gives a 60-second path and maps concrete evidence to the five public challenge-page lenses while noting the official rules' four-heading formulation.
+- `docs/PROJECT_GUIDE.md` and the 56-page Version 1.3 PDF distinguish the deployed baseline from the current local candidate and document the inspectable Granite boundary. The exact PDF contains text on every page, reports Version 1.3 with no stale Version 1.2 cover text, passes bounds validation with 0 errors and 0 warnings, and passed readable four-page-sheet inspection across all 56 pages.
 - All application screenshots use synthetic fixture data and are declared in `docs/ASSET_LICENSES.md`.
 
 ## Open release and submission gates
@@ -88,6 +102,8 @@ The production browser journeys recorded `deterministic_fallback`. Local provide
 - [x] Finish `npm run verify`, strict UI scan, local-link audit, and the focused local browser rerun on the presentation patch.
 - [x] Commit and push the judge-path product release after explicit approval.
 - [x] Verify exact-SHA CI/Vercel status and repeat both public fixture journeys after the product push. At 390 px, the export preceded the proposal list, its descriptive/status references resolved, both fixture activations displayed their correct success states, and document width equaled viewport width. Browser automation did not independently capture either Blob file event.
+- [x] Run the complete local gate, static UI scan, and desktop/mobile browser checks for the Granite-boundary candidate.
+- [ ] Commit and push the Granite-boundary candidate only after fresh approval, then verify exact-SHA hosted CI and repeat both public fixture journeys.
 - [ ] Run a real screen-reader spot check if a stronger accessibility claim is desired.
 - [ ] Have the custom proprietary terms reviewed by qualified counsel before relying on them for commercial enforcement.
 - [ ] Confirm every teammate's eligibility, challenge registration, required IBM SkillsBuild Bob activity, and no conflicting prior Wildcard submission.

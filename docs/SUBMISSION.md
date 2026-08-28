@@ -64,5 +64,5 @@ These are synthetic-prototype results, not claims about universal policy coverag
 - Confirm every teammate completed the required IBM SkillsBuild Bob activity.
 - Open the repository, live demo, and video links while signed out.
 - Confirm the video duration is at or below three minutes.
-- Confirm GitHub Actions remains successful for current `main`. The deployed judge-path baseline `25cfde56ff520ec50580147e35b34dfb55525867` passed run `33189569253`. If the local Granite-boundary candidate is released, replace this baseline with its exact commit and successful hosted run before submission.
+- Confirm GitHub Actions remains successful for current `main`. The feature-bearing Granite-boundary release `7b712e5df8ad781162c896ddcae0463b3160c210` passed run `33196317863` and reached the public production alias.
 - Submit before August 31, 2026 at 11:59 PM ET / 8:59 PM PT, unless the live challenge page shows a newer deadline.

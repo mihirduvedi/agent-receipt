@@ -63,5 +63,5 @@ These are synthetic-prototype results, not claims about universal policy coverag
 - Confirm every teammate completed the required IBM SkillsBuild Bob activity.
 - Open the repository, live demo, and video links while signed out.
 - Confirm the video duration is at or below three minutes.
-- Confirm GitHub Actions remains successful for exact public commit `3c289c64d5d63c5459e86722a1143b1bd9220f26`.
+- Confirm GitHub Actions remains successful for current `main`. The deployed judge-path product release `25cfde56ff520ec50580147e35b34dfb55525867` passed run `33189569253`; the following evidence-sync commit changes documentation only.
 - Submit before August 31, 2026 at 11:59 PM ET / 8:59 PM PT, unless the live challenge page shows a newer deadline.

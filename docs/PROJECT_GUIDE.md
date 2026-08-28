@@ -6,7 +6,7 @@
 
 Version 1.2 - August 28, 2026
 
-Project snapshot: the public repository and successful Vercel deployment are connected to Recovery Plan v1 release `3c289c64d5d63c5459e86722a1143b1bd9220f26`. The current local candidate moves the existing export earlier in the judge journey and refreshes the submission artifacts; those presentation changes are not yet committed, pushed, or deployed.
+Project snapshot: the public repository and successful Vercel deployment are connected to judge-path product release `25cfde56ff520ec50580147e35b34dfb55525867`. That release moves the Recovery Plan export earlier in the judge journey and refreshes the submission artifacts. The documentation-only evidence sync that follows it changes no product or trust-critical source.
 
 > Agent Receipt gives accountable humans an evidence-linked receipt for what an AI agent did relative to what it was allowed to do.
 
@@ -837,7 +837,7 @@ The fallback validates itself before use.
 
 ### Current live status
 
-The production alias and successful Vercel commit status are connected to public release `3c289c64d5d63c5459e86722a1143b1bd9220f26`, and both the demo and repository returned HTTP 200 without authentication on August 28, 2026. Both exact-release fixture journeys completed in deterministic fallback mode. The overreaching journey displayed the Recovery Plan v1 citation-validation and exact-receipt SHA-256 success state, but browser automation did not independently capture the Blob download. Focused tests cover plan serialization, digest binding, citation closure, and raw-source exclusion. This does not establish that live Granite is configured in Vercel.
+The production alias and successful Vercel commit status are connected to product release `25cfde56ff520ec50580147e35b34dfb55525867`, and both the demo and repository returned HTTP 200 without authentication on August 28, 2026. Both exact-release fixture journeys completed at 390 pixels in deterministic fallback mode with no document-level overflow or browser warnings/errors. The export preceded the proposal list. Overreaching activation displayed the citation-validation and exact-receipt SHA-256 success state; the clean fixture displayed the explicit empty-plan success state. Browser automation did not independently capture either Blob download. Focused tests cover plan serialization, digest binding, citation closure, and raw-source exclusion. This does not establish that live Granite is configured in Vercel.
 
 Local live-service verification was repeated on August 28, 2026. IAM authentication and the Dallas watsonx.ai Chat API succeeded with `ibm/granite-4-h-small` through the compact finding-selection boundary. Earlier checks also covered rejected open-ended paraphrases, an invalid process-only key, and explicit fallback mode. These results prove the bounded local success and failure paths. They do not prove that the deployed candidate has working live credentials or that future provider behavior will be identical.
 
@@ -1156,7 +1156,7 @@ At the documented release snapshot it passed with:
 - Next production build: passed;
 - release audit: passed.
 
-Public release `3c289c64d5d63c5459e86722a1143b1bd9220f26` passed GitHub Actions run `33184141465` on August 28, 2026. The current local presentation patch passed the same complete gate on August 28: 15 test files, 313 tests, zero lint warnings, strict type checking, the Next production build, and the release audit all succeeded.
+Product release `25cfde56ff520ec50580147e35b34dfb55525867` passed GitHub Actions run `33189569253` on August 28, 2026. The documentation-only evidence sync that records its deployed checks passed the same complete local gate: 15 test files, 313 tests, zero lint warnings, strict type checking, the Next production build, and the release audit all succeeded.
 
 ## 27. Release audit
 
@@ -1231,7 +1231,7 @@ The public URL is:
 
 `https://receipt-one-flax.vercel.app`
 
-The URL returned HTTP 200 during this guide's August 28, 2026 verification pass. The production alias and successful Vercel commit status were connected to public release `3c289c64d5d63c5459e86722a1143b1bd9220f26`. Recovery Plan v1 is present in that deployment; the current local change affects placement, not the export contract.
+The URL returned HTTP 200 during this guide's August 28, 2026 verification pass. The production alias and successful Vercel commit status were connected to product release `25cfde56ff520ec50580147e35b34dfb55525867`. Recovery Plan v1 is present in that deployment, with its export placed before the longer proposal list. The following documentation-only sync does not change that product behavior.
 
 Why Vercel?
 
@@ -1250,11 +1250,11 @@ The August 28 public release validation showed:
 - overreaching run: material deviations, two incidents, 12 findings, 6/6 coverage, deterministic fallback;
 - incident evidence drawer opened and closed;
 - Investigate disposition persisted;
-- Recovery Plan v1 was present in both fixture journeys, and the overreaching activation displayed the citation-validation and exact-receipt SHA-256 success state;
+- Recovery Plan v1 was present before the proposal list in both fixture journeys; overreaching activation displayed the citation-validation and exact-receipt SHA-256 success state, while the clean fixture displayed the explicit empty-plan success state;
 - no rendered error summary appeared;
 - no document-level overflow at 1280 or 390 pixels.
 
-Browser automation reached the Recovery Plan v1 control at 390 pixels and the overreaching activation displayed its citation-validation and exact-receipt SHA-256 success state. It did not independently capture the Blob file event. Focused tests separately cover the clean empty plan, the overreaching plan with two incidents and six actions, receipt-digest binding, the fixed non-execution boundary, citation closure, and raw input/output exclusion.
+Browser automation reached the Recovery Plan v1 control at 390 pixels in both fixtures, confirmed that it preceded the six-action list in the overreaching journey, and observed both correct success states. It did not independently capture either Blob file event. Focused tests separately cover the clean empty plan, the overreaching plan with two incidents and six actions, receipt-digest binding, the fixed non-execution boundary, citation closure, and raw input/output exclusion.
 
 ## 30. IBM Bob and AI assistance provenance
 
@@ -1553,13 +1553,11 @@ Remaining risks include:
 
 ## 41. What remains before the hackathon release is fully complete
 
-At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, citation-closed Recovery Plan v1 export, Granite selection hardening, narrow OTLP adapter, automated evaluation corpus, screenshots, license, public repository, exact-HEAD CI, Vercel deployment, and both public fixture journeys were complete. The current local candidate adds a shorter judge path and synchronized release documentation.
+At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, citation-closed Recovery Plan v1 export, Granite selection hardening, narrow OTLP adapter, automated evaluation corpus, screenshots, license, public repository, judge guide, exact product-release CI, Vercel deployment, and both public fixture journeys were complete. Product release `25cfde56ff520ec50580147e35b34dfb55525867` includes the shorter judge path. A documentation-only sync records the resulting evidence without changing product behavior.
 
 Open release work included:
 
 - decide whether to configure encrypted live watsonx.ai credentials in Vercel, then verify that deployment if approved;
-- obtain fresh commit and push approvals for the verified local presentation patch;
-- repeat exact-SHA CI, Vercel, and both public fixture checks after any approved push;
 - complete a real screen-reader spot check only if a stronger accessibility claim is desired;
 - recheck challenge rules, eligibility, learning requirements, and deadline;
 - publish and verify a public video of no more than three minutes;
@@ -1893,13 +1891,13 @@ This guide was cross-checked against the complete tracked repository, including 
 
 ## Current external evidence used
 
-- The public Agent Receipt URL and repository returned HTTP 200, and Vercel reported a successful status for exact release `3c289c64d5d63c5459e86722a1143b1bd9220f26` during the August 28, 2026 guide pass: `https://receipt-one-flax.vercel.app` and `https://github.com/mihirduvedi/agent-receipt`.
+- The public Agent Receipt URL and repository returned HTTP 200, and GitHub Actions plus Vercel reported successful status for product release `25cfde56ff520ec50580147e35b34dfb55525867` during the August 28, 2026 guide pass: `https://receipt-one-flax.vercel.app` and `https://github.com/mihirduvedi/agent-receipt`.
 - The current challenge page describes the August 31, 2026 11:59 PM ET submission deadline, public repository, clear README, working prototype, IBM Bob primary-development requirement, SkillsBuild activity, and public video up to three minutes: `https://aibuilderschallenge-bob.bemyapp.com/`.
 
 ## Evidence boundaries
 
 - Current repository behavior is supported by local source inspection and the exact verification commands reported in this guide.
-- Exact-HEAD CI, Vercel status, public repository visibility, and both deployed fixture journeys were checked live on August 28. The overreaching Recovery Plan activation displayed its validated success state; the browser-created Blob file was not independently captured.
+- Exact product-release CI, Vercel status, public repository visibility, and both deployed fixture journeys were checked live on August 28. The Recovery Plan export preceded the overreaching proposal list, both fixture activations displayed their correct success states, and neither browser-created Blob file was independently captured.
 - Local live Granite success under the compact selection boundary was re-observed on August 28, 2026. Prior rejected-claim fallback, explicit fallback mode, and invalid-credential fallback remain recorded evidence. Live Granite on the exact final public release, a real screen-reader session, the public video, and final submission were not verified as complete in this guide pass.
 - Challenge and provider details can change; recheck official pages before release action.
 

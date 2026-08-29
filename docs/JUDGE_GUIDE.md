@@ -6,13 +6,13 @@ Agent Receipt is a post-run review tool for an AI operations manager. It compare
 
 **Public repository:** <https://github.com/mihirduvedi/agent-receipt>
 
-**Latest local candidate:** Evidence Gap Mode plus the Portable Receipt Verifier. These features are not part of the public deployment until a separately approved release is pushed and verified.
+**Current public release:** Evidence Gap Mode plus the Portable Receipt Verifier at product commit `4f96c4b34c3336a5f4facc1fde135a1368d0e89f`. Exact-SHA CI and Vercel deployment passed on August 28, 2026.
 
-## If you have 30 seconds locally
+## If you have 30 seconds
 
-1. Run `npm run dev` and open `http://localhost:3000/?mode=verify&sample=valid`.
+1. Open `https://receipt-one-flax.vercel.app/?mode=verify&sample=valid`.
 2. Read **PASS** and scan the eight replay gates: exact bytes, size, UTF-8, JSON, receipt contract, accounting, policy, and citations.
-3. Change `sample=valid` to `sample=altered`. One exported finding was changed after the receipt was built, so deterministic policy and citation replay fail.
+3. Change `sample=valid` to `sample=altered`. One exported finding was changed after the receipt was built, so deterministic policy and citation replay fail with **CHECK FAILED**.
 4. Point to **What this cannot verify**. The checker proves internal consistency, not exporter identity, trace completeness, or signed provenance.
 
 ## If you have 60 seconds

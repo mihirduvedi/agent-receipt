@@ -71,6 +71,5 @@ A passing verifier report means the supplied receipt agrees with itself under th
 - Confirm every teammate completed the required IBM SkillsBuild Bob activity.
 - Open the repository, live demo, and video links while signed out.
 - Confirm the video duration is at or below three minutes.
-- Confirm GitHub Actions remains successful for current `main`. The feature-bearing Granite-boundary release `7b712e5df8ad781162c896ddcae0463b3160c210` passed run `33196317863` and reached the public production alias.
-- Commit and push the local Evidence Gap Mode and Portable Receipt Verifier candidate only after fresh approval, then repeat hosted CI, public fixture, and both verifier-shortcut checks on the exact release SHA.
+- Confirm GitHub Actions remains successful for current `main`. Product release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f` passed run `33224543916`, reached Vercel production deployment `dpl_8H1hpRVHXgXmZhJBapPcKKYNk3kZ`, and passed the public Evidence Gap Mode plus valid/altered verifier journeys.
 - Submit before August 31, 2026 at 11:59 PM ET / 8:59 PM PT, unless the live challenge page shows a newer deadline.

@@ -4,9 +4,9 @@
 
 **From first principles to architecture, code, trust boundaries, testing, and deployment**
 
-Version 1.5 - August 28, 2026
+Version 1.6 - August 28, 2026
 
-Project snapshot: public `main` is synchronized through documentation release `13f5229`, while the verified feature-bearing deployment remains product release `7b712e5`. The workspace additionally contains two locally verified candidates: Evidence Gap Mode and the Portable Receipt Verifier. Neither candidate has been committed, pushed, or deployed.
+Project snapshot: Evidence Gap Mode and the Portable Receipt Verifier are committed and deployed in product release `4f96c4b`. GitHub Actions run `33224543916` and Vercel deployment `dpl_8H1hpRVHXgXmZhJBapPcKKYNk3kZ` passed for that exact product SHA. Local responsive and live-Granite evidence remain qualified separately from the hosted fallback deployment.
 
 > Agent Receipt gives accountable humans an evidence-linked receipt for what an AI agent did relative to what it was allowed to do.
 
@@ -888,7 +888,7 @@ The preview is a transparency surface, not a second model call. It keeps the hos
 
 ### Current live status
 
-The production alias and successful Vercel commit status are connected to product release `7b712e5df8ad781162c896ddcae0463b3160c210`, and both the demo and repository were publicly reachable without authentication on August 28, 2026. Both exact-release fixture journeys completed in deterministic fallback mode with no document-level overflow or browser warnings/errors. The expected AI boundary displayed 3 reduced events, 0 reduced findings, and citation allowlists of 3/0; overreaching displayed 6/12 and allowlists of 6/12. Expanded JSON omitted raw pointers, source event IDs, event input/output, metadata, policy comparison fields, and retained raw source data. At 390 pixels, the Granite JSON preview stayed bounded and the recovery export preceded the proposal list. Overreaching recovery content remained explicitly proposed and not executed; the clean fixture displayed its explicit empty-plan state. Browser automation did not independently capture either Blob download. Focused tests cover plan serialization, digest binding, citation closure, and raw-source exclusion. This does not establish that live Granite is configured in Vercel.
+The production alias and successful Vercel commit status are connected to product release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f`, and both the demo and repository were publicly reachable without authentication on August 28, 2026. GitHub Actions run `33224543916` passed the complete gate and Vercel deployment `dpl_8H1hpRVHXgXmZhJBapPcKKYNk3kZ` reached **Ready**. Public browser automation activated both verifier samples: the valid export passed all eight gates, while the altered export failed exactly policy and citation replay. The incomplete OTLP journey produced an authority-assessment-incomplete receipt with 3/3 raw-record accounting and the 1 mapped, 1 metadata-only, 1 unparsed split. All three deployed journeys used deterministic fallback, matched the 1280-pixel viewport width, and logged no browser errors. Earlier public checks still support the expected and overreaching fixture details, 390-pixel Granite-boundary layout, recovery-plan placement, and evidence-drawer behavior. Browser automation did not independently capture either Blob download. This does not establish that live Granite is configured in Vercel.
 
 Local live-service verification was repeated on August 28, 2026. IAM authentication and the Dallas watsonx.ai Chat API succeeded with `ibm/granite-4-h-small` through the compact finding-selection boundary. Earlier checks also covered rejected open-ended paraphrases, an invalid process-only key, and explicit fallback mode. These results prove the bounded local success and failure paths. They do not prove that the production deployment has working live credentials or that future provider behavior will be identical.
 
@@ -1221,7 +1221,7 @@ npm run build
 npm run release:audit
 ```
 
-At the combined local Evidence Gap Mode and Portable Receipt Verifier candidate it passed with:
+For the combined Evidence Gap Mode and Portable Receipt Verifier release it passed locally with:
 
 - ESLint: zero warnings;
 - strict TypeScript: passed;
@@ -1230,7 +1230,7 @@ At the combined local Evidence Gap Mode and Portable Receipt Verifier candidate 
 - Next production build: passed;
 - release audit: passed across 77 source files, 143 build files, 474 dependency entries, and 11 declared media assets.
 
-This local result does not replace hosted evidence. Product release `7b712e5df8ad781162c896ddcae0463b3160c210` passed GitHub Actions run `33196317863` on August 28, 2026 after its complete gate passed with 16 test files and 315 tests. The same feature-bearing SHA reached a ready Vercel production deployment and passed the focused public browser journeys described below. Evidence Gap Mode and the Portable Receipt Verifier are not part of that deployed SHA.
+This local result is independently reproduced by hosted CI. Product release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f` passed GitHub Actions run `33224543916` on August 28, 2026 with the same complete gate, then reached a ready Vercel production deployment and passed the focused public browser journeys described below.
 
 ## 27. Release audit
 
@@ -1247,7 +1247,7 @@ This local result does not replace hosted evidence. Product release `7b712e5df8a
 
 Next.js includes the build root inside specific required-server metadata files. The audit masks only that exact expected root in only those allowlisted files. An unrelated personal path still fails.
 
-For the current local Version 1.5 candidate it checked:
+For the Version 1.6 release it checked:
 
 - 77 release-scoped source text files;
 - 143 production-build text files;
@@ -1279,7 +1279,7 @@ Local rendered checks covered:
 - Chromium accessibility-tree landmarks and dialog naming;
 - no document-level overflow or recorded browser console warnings/errors.
 
-The 640-pixel zoom-equivalent and accessibility-tree checks predate Evidence Gap Mode and support the unchanged core shell, not the new panels specifically. Evidence Gap Mode's keyboard drawer behavior, responsive layout, and browser logs were checked directly. The verifier's query-rendered reports and semantics were inspected at all three widths; browser-automation clicks did not update either the new intake controls or an unchanged original sample control in this session, so human pointer activation remains unexecuted evidence rather than an implied pass. These checks are stronger than looking at one screenshot, but they remain browser-specific and do not equal a real screen-reader or cross-browser certification.
+The 640-pixel zoom-equivalent and accessibility-tree checks predate Evidence Gap Mode and support the unchanged core shell, not the new panels specifically. Evidence Gap Mode's keyboard drawer behavior, responsive layout, and browser logs were checked directly. The verifier's query-rendered reports and semantics were inspected locally at all three widths. On the deployed release, browser automation then activated the recovery control plus both sample controls and observed PASS and CHECK FAILED at 1280 pixels. These checks are stronger than looking at one screenshot, but they remain browser-specific and do not equal a real screen-reader or cross-browser certification.
 
 ## 29. Deployment architecture
 
@@ -1310,7 +1310,7 @@ The public URL is:
 
 `https://receipt-one-flax.vercel.app`
 
-The URL completed both synthetic receipt journeys during this guide's August 28, 2026 verification pass. The production alias and successful Vercel commit status were connected to product release `7b712e5df8ad781162c896ddcae0463b3160c210`; Vercel deployment `dpl_DKJmKuhrMnBRAjsvXceAsixPqZe6` reached **Ready**. Recovery Plan v1 and the inspectable Granite boundary are present in that deployment, with the recovery export placed before the longer proposal list.
+The URL completed the incomplete-evidence receipt and both portable-verifier journeys during this guide's August 28, 2026 release pass. The production alias and successful Vercel commit status were connected to product release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f`; Vercel deployment `dpl_8H1hpRVHXgXmZhJBapPcKKYNk3kZ` reached **Ready**. Recovery Plan v1 and the inspectable Granite boundary remain present from the earlier release, with the recovery export placed before the longer proposal list.
 
 Why Vercel?
 
@@ -1645,11 +1645,10 @@ Remaining risks include:
 
 ## 41. What remains before the hackathon release is fully complete
 
-At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, citation-closed Recovery Plan v1 export, Granite selection hardening, inspectable Granite boundary, narrow OTLP adapter, automated evaluation corpus, screenshots, license, public repository, judge guide, exact product-release CI, Vercel deployment, and both original public fixture journeys were complete. Evidence Gap Mode and the Portable Receipt Verifier are implemented and locally verified in the current workspace, but neither is committed or deployed. Public deterministic-fallback evidence remains separate from the locally verified live Granite path.
+At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, citation-closed Recovery Plan v1 export, Granite selection hardening, inspectable Granite boundary, narrow OTLP adapter, automated evaluation corpus, Evidence Gap Mode, Portable Receipt Verifier, screenshots, license, public repository, judge guide, exact product-release CI, Vercel deployment, and focused public journeys were complete. Public deterministic-fallback evidence remains separate from the locally verified live Granite path.
 
 Open release work included:
 
-- obtain fresh approval for the combined candidate commit and push, then verify exact-SHA hosted CI, deployment, all three receipt journeys, and both verifier shortcuts;
 - decide whether to configure encrypted live watsonx.ai credentials in Vercel, then verify that deployment if approved;
 - complete a real screen-reader spot check only if a stronger accessibility claim is desired;
 - recheck challenge rules, eligibility, learning requirements, and deadline;
@@ -1663,15 +1662,14 @@ These are release and external-state gates. They do not erase the completed dete
 
 The safest order is:
 
-1. release and verify the current local candidate only after fresh approval;
-2. finish video, eligibility, and submission evidence;
-3. add broader accessibility verification only if the team chooses to make stronger accessibility claims;
-4. keep documentation synchronized with deployed state;
-5. validate the narrow OTLP adapter against larger, consented external fixtures;
-6. prototype a separate recovery executor only with read-before-write checks, dry runs, explicit approval, rollback, idempotency, and its own evidence trail;
-7. add signed capture or provenance only with a real threat model;
-8. consider persistence, accounts, and team workflows;
-9. consider production integrations and comparative model evaluation only after the deterministic contract remains stable.
+1. finish video, eligibility, and submission evidence;
+2. add broader accessibility verification only if the team chooses to make stronger accessibility claims;
+3. keep documentation synchronized with deployed state;
+4. validate the narrow OTLP adapter against larger, consented external fixtures;
+5. prototype a separate recovery executor only with read-before-write checks, dry runs, explicit approval, rollback, idempotency, and its own evidence trail;
+6. add signed capture or provenance only with a real threat model;
+7. consider persistence, accounts, and team workflows;
+8. consider production integrations and comparative model evaluation only after the deterministic contract remains stable.
 
 Avoid widening immediately into enforcement, universal observability, compliance certification, or generalized policy authoring. Those are different products with different safety and legal burdens.
 
@@ -2013,15 +2011,14 @@ This guide was cross-checked against the complete tracked repository, including 
 
 ## Current external evidence used
 
-- The public Agent Receipt URL and repository were reachable, and GitHub Actions run `33196317863` plus Vercel deployment `dpl_DKJmKuhrMnBRAjsvXceAsixPqZe6` reported successful status for product release `7b712e5df8ad781162c896ddcae0463b3160c210` during the August 28, 2026 guide pass: `https://receipt-one-flax.vercel.app` and `https://github.com/mihirduvedi/agent-receipt`.
-- The current challenge page describes the August 31, 2026 11:59 PM ET submission deadline, public repository, clear README, working prototype, IBM Bob primary-development requirement, SkillsBuild activity, and public video up to three minutes: `https://aibuilderschallenge-bob.bemyapp.com/`.
+- The public Agent Receipt URL and repository were reachable, and GitHub Actions run `33224543916` plus Vercel deployment `dpl_8H1hpRVHXgXmZhJBapPcKKYNk3kZ` reported successful status for product release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f` during the August 28, 2026 guide pass: `https://receipt-one-flax.vercel.app` and `https://github.com/mihirduvedi/agent-receipt`.
+- The current challenge page describes the August 31, 2026 11:59 PM ET submission deadline, public repository, clear README, working prototype, IBM Bob primary-development requirement, SkillsBuild activity, and public video up to three minutes: `https://aibuilderschallenge-bobhub.bemyapp.com/`.
 
 ## Evidence boundaries
 
-- The combined local Evidence Gap Mode and Portable Receipt Verifier candidate is supported by source inspection, 335 tests across 19 files, a successful production build and release audit, and focused local browser checks at 390, 840, and 1280 CSS pixels. It is not committed, pushed, or deployed.
-- The public feature-bearing baseline remains product release `7b712e5df8ad781162c896ddcae0463b3160c210`, supported by 315 tests across 16 files, exact-SHA hosted CI, and the public browser checks reported in this guide.
-- Exact product-release CI, Vercel status, public repository visibility, and both deployed fixture journeys were checked live on August 28. The inspectable boundary exposed the expected reduced counts and citation allowlists while excluding raw and policy-comparison fields. The Recovery Plan export preceded the overreaching proposal list, both fixture states were correct, and neither browser-created Blob file was independently captured.
-- The local verifier's valid shortcut passed all eight gates. Its altered shortcut changed one deterministic finding and produced policy and citation failures. These query-rendered states were inspected at all three target widths; human pointer activation, hosted behavior, and deployment remain unverified.
+- The combined Evidence Gap Mode and Portable Receipt Verifier release is supported by source inspection, 335 tests across 19 files, a successful production build and release audit, focused local browser checks at 390, 840, and 1280 CSS pixels, exact-SHA hosted CI, and a ready Vercel production deployment.
+- Exact product-release CI, Vercel status, public repository visibility, the incomplete receipt, and both verifier states were checked live on August 28. Public browser automation activated both verifier controls: the valid shortcut passed all eight gates and the altered shortcut produced policy and citation failures. The deployed incomplete trace retained 3/3 accounting and both evidence gaps. All three journeys matched the 1280-pixel viewport and logged no browser errors.
+- Earlier public fixture checks remain the evidence for expected/overreaching Granite-boundary counts, recovery-plan placement, and 390-pixel behavior. Neither browser-created Blob file was independently captured.
 - Local live Granite success under the compact selection boundary was re-observed on August 28, 2026. Prior rejected-claim fallback, explicit fallback mode, and invalid-credential fallback remain recorded evidence. Live Granite on the exact final public release, a real screen-reader session, the public video, and final submission were not verified as complete in this guide pass.
 - Challenge and provider details can change; recheck official pages before release action.
 

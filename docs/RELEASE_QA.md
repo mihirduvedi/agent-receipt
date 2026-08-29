@@ -2,9 +2,9 @@
 
 **Snapshot:** August 28, 2026
 
-**Scope:** Deployed Granite-boundary product release `7b712e5df8ad781162c896ddcae0463b3160c210`, plus the separate local Evidence Gap Mode and Portable Receipt Verifier candidate
+**Scope:** Deployed Evidence Gap Mode and Portable Receipt Verifier product release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f`, including the earlier Granite-boundary and Recovery Plan surfaces
 
-**Decision:** Release `7b712e5df8ad781162c896ddcae0463b3160c210` remains the verified public product baseline. Documentation release `13f5229` is the current public `main`. Both are committed and pushed, their hosted checks passed, and the product release reached a ready Vercel deployment. Evidence Gap Mode and the Portable Receipt Verifier are verified locally but are not committed, pushed, or deployed.
+**Decision:** Release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f` is committed and pushed, passed exact-SHA GitHub Actions, reached a ready Vercel production deployment, and passed the public incomplete-evidence plus valid/altered verifier journeys. Local responsive and PDF evidence remain separate from hosted behavior.
 
 This ledger separates automated evidence from browser, manual-accessibility, live-service, deployment, and submission evidence. A checked local test does not prove an unexecuted layer.
 
@@ -13,27 +13,27 @@ This ledger separates automated evidence from browser, manual-accessibility, liv
 | Check | Latest result | What it supports |
 |---|---|---|
 | `npm run verify` | Combined Evidence Gap Mode and Portable Receipt Verifier candidate passed locally on August 28: lint with zero warnings, strict TypeScript, 19 test files and 335 tests, production build, release audit across 77 source files, 143 build files, 474 dependency entries, and 11 media assets | The tested deterministic, UI-helper, build, and release-safety contracts pass locally |
-| GitHub Actions `CI` | [Run `33196317863`](https://github.com/mihirduvedi/agent-receipt/actions/runs/33196317863) passed for exact product SHA `7b712e5df8ad781162c896ddcae0463b3160c210` on August 28 | A clean hosted install and complete `npm run verify` passed for the deployed Granite-boundary product release |
+| GitHub Actions `CI` | [Run `33224543916`](https://github.com/mihirduvedi/agent-receipt/actions/runs/33224543916) passed for exact product SHA `4f96c4b34c3336a5f4facc1fde135a1368d0e89f` on August 28 | A clean hosted install and complete `npm run verify` passed for the deployed combined release |
 | `npm run eval` | One evaluation test covering four declared cases passed on August 28 | Synthetic verdict, rule-family, accounting, deterministic replay, citation, fallback, OTLP limitation, evidence-gap, and Recovery Plan v1 assertions passed |
 | `npm audit --omit=dev --json` | Zero known production dependency vulnerabilities on August 28 | Current npm advisory data reported no production vulnerability |
 | Strict UI static scan | 50 files, 0 errors, 0 warnings | Source-level UI heuristics only; not rendered or assistive-technology proof |
-| Markdown local-link audit | 59 local links checked across 17 current product/project Markdown files, 0 missing | Current judge-facing repository links resolve locally |
+| Markdown local-link audit | 47 local links checked across 16 tracked Markdown files, 0 missing | Current judge-facing repository links resolve locally |
 
 The full suite covers exact-byte digest behavior, native and narrow OTLP adaptation/accounting, deterministic policy rules, incident grouping, recovery proposals, Recovery Plan v1 binding and citation closure, Granite fact minimization/redaction/selection validation/fallback/token caching, route media and body limits, receipt orchestration and export validation, all declared fixtures, portable-receipt replay and failure boundaries, the synthetic evaluation corpus, release-source enumeration, and deterministic UI view helpers.
 
-## Local Portable Receipt Verifier candidate
+## Deployed Portable Receipt Verifier
 
 The verifier accepts an exported receipt as exact file bytes or pasted UTF-8 text and runs entirely in the browser. It computes the imported-file SHA-256 before decoding, enforces the 2 MiB limit, validates UTF-8, JSON, the strict receipt contract and cross-object references, recomputes accounting, replays the deterministic policy verdict and complete findings, then validates the exported copy against its citations. A boundary failure is rejected; a valid receipt that contradicts replay reports CHECK FAILED.
 
 Focused automated checks covered twelve cases: passing exports from the expected, overreaching, and incomplete outcomes; exact-byte digest sensitivity; oversize, invalid UTF-8, invalid JSON, and non-receipt inputs; altered verdict and deterministic finding records; changed coverage; and invented citations.
 
-Focused browser checks covered the valid and altered query shortcuts at 1280 × 720, 840 × 900, and 390 × 844. At 840 and 390 CSS pixels the document width equaled the viewport width, and the minimum measured button height was 46 CSS pixels. The passing report showed all eight successful gates; the altered report showed policy and citation failures with the required limitations. Query-rendered states were inspected because browser-automation clicks did not update either the new intake controls or an unchanged original sample control in this session. No browser-console error was observed during the earlier desktop checks.
+Local browser checks covered the valid and altered query shortcuts at 1280 × 720, 840 × 900, and 390 × 844. At 840 and 390 CSS pixels the document width equaled the viewport width, and the minimum measured button height was 46 CSS pixels. The passing report showed all eight successful gates; the altered report showed policy and citation failures with the required limitations.
 
-This is local, browser-specific evidence. It does not establish pointer activation in a human session, cross-browser behavior, physical-device behavior, a screen-reader result, hosted CI, or a public deployment. A pass also does not prove receipt authenticity, trace completeness, exporter identity, original trace bytes, or signed provenance.
+On the deployed release, browser automation activated **Verify another receipt**, **Verify valid sample**, and **Catch altered sample** at 1280 × 720. The valid sample reported PASS with all eight gates; the altered sample reported CHECK FAILED with exactly the policy and citation gates failed. Document width equaled viewport width and browser error logs were empty. This does not establish cross-browser behavior, physical-device behavior, or a screen-reader result. A pass also does not prove receipt authenticity, trace completeness, exporter identity, original trace bytes, or signed provenance.
 
-## Local Evidence Gap Mode candidate
+## Deployed Evidence Gap Mode
 
-The local candidate adds a third, intentionally incomplete OTLP journey. One material action span lacks the supported operation field, so the adapter accounts for all three raw spans as one mapped, one metadata-only, and one unparsed. The deterministic result is `unable_to_assess_fully`, with separate findings for the material parse gap and unknown run termination. The UI links both gaps to retained evidence and asks for the missing facts instead of inferring them.
+The release adds a third, intentionally incomplete OTLP journey. One material action span lacks the supported operation field, so the adapter accounts for all three raw spans as one mapped, one metadata-only, and one unparsed. The deterministic result is `unable_to_assess_fully`, with separate findings for the material parse gap and unknown run termination. The UI links both gaps to retained evidence and asks for the missing facts instead of inferring them.
 
 Focused production-build and development-browser checks covered:
 
@@ -46,11 +46,11 @@ Focused production-build and development-browser checks covered:
 - 390 × 844, 840 × 900, and 1280 × 720 layouts with document width equal to viewport width;
 - no browser warning or error entries in the tested development or production tabs.
 
-This is local evidence only. It does not establish a public deployment, hosted CI, cross-browser behavior, a physical-device result, or a screen-reader experience for Evidence Gap Mode.
+The deployed incomplete fixture built an **Authority assessment incomplete** receipt in deterministic fallback mode, displayed 3/3 accounting with the 1/1/1 split, retained both evidence gaps and all three raw records, matched the 1280-pixel viewport width, and logged no browser errors. Local checks retain the wider responsive and evidence-drawer evidence. Cross-browser behavior, a physical-device result, and a real screen-reader experience remain unverified.
 
 ## Current public deployment
 
-Verified product target: <https://receipt-one-flax.vercel.app>, exact feature-bearing product commit `7b712e5df8ad781162c896ddcae0463b3160c210`, synthetic fixtures only. Vercel deployment `dpl_DKJmKuhrMnBRAjsvXceAsixPqZe6` reached **Ready** and received a successful exact-SHA commit status.
+Verified product target: <https://receipt-one-flax.vercel.app>, exact feature-bearing product commit `4f96c4b34c3336a5f4facc1fde135a1368d0e89f`, synthetic fixtures only. Vercel deployment `dpl_8H1hpRVHXgXmZhJBapPcKKYNk3kZ` reached **Ready** and received a successful exact-SHA commit status.
 
 - The alias returned HTTP 200 on August 28.
 - Vercel reported **Deployment has completed** for the exact SHA.
@@ -95,7 +95,7 @@ The current implementation also has recorded browser evidence for:
 - eleven README screenshots at 1280 × 720 using only synthetic data;
 - the complete project-guide PDF with bounds, font, page-grid, and readable-page inspection.
 
-The focused 390-pixel rerun was completed on deployed product release `7b712e5df8ad781162c896ddcae0463b3160c210`. Earlier evidence remains useful for the unchanged wider responsive, long-content, keyboard-dialog, and accessibility-tree checks.
+The prior focused 390-pixel public rerun was completed on product release `7b712e5df8ad781162c896ddcae0463b3160c210`. The combined release preserved that code while adding the two new surfaces; the same final code passed local 390/840/1280 checks and deployed 1280-pixel journeys. The earlier public evidence remains useful for unchanged wider responsive, long-content, keyboard-dialog, and accessibility-tree behavior.
 
 ## Live watsonx.ai evidence
 
@@ -116,7 +116,7 @@ The production browser journeys recorded `deterministic_fallback`. Local provide
 - `README.md` links the live demo, public repository, judge guide, complete guide, PDF, evaluation, recovery contract, submission copy, and demo script.
 - `docs/SUBMISSION.md` contains the verified public repository URL. The public-video and eligible-team fields remain intentionally unresolved.
 - `docs/JUDGE_GUIDE.md` gives a 60-second path and maps concrete evidence to the five public challenge-page lenses while noting the official rules' four-heading formulation.
-- `docs/PROJECT_GUIDE.md` and the 59-page Version 1.5 PDF document Evidence Gap Mode and the Portable Receipt Verifier while preserving the deployed Granite-boundary baseline and keeping local verification separate from public evidence. The exact final PDF has extractable text on every page, uses Letter dimensions throughout, contains no blank pages, passed the bounds validator with 0 errors and 0 warnings, and passed full readable-page plus document-sequence inspection.
+- `docs/PROJECT_GUIDE.md` and the 59-page Version 1.6 PDF document the deployed Evidence Gap Mode and Portable Receipt Verifier while preserving the earlier Granite-boundary evidence and separating local responsive checks from hosted behavior. The exact PDF has extractable text on every page, Letter dimensions throughout, no blank pages or stale candidate language, embedded custom fonts, 0 bounds errors, 0 bounds warnings, and a clean readable-page plus full-sequence inspection.
 - All application screenshots use synthetic fixture data and are declared in `docs/ASSET_LICENSES.md`.
 
 ## Open release and submission gates
@@ -134,7 +134,7 @@ The production browser journeys recorded `deterministic_fallback`. Local provide
 - [x] Commit and push the Granite-boundary release after fresh approval, verify exact-SHA hosted CI/Vercel status, and repeat both public fixture journeys.
 - [x] Run the complete local gate, static UI scan, and focused desktop/tablet/mobile browser checks for Evidence Gap Mode.
 - [x] Run the complete local gate and focused desktop/tablet/mobile browser checks for the Portable Receipt Verifier.
-- [ ] Commit, push, and verify Evidence Gap Mode plus the Portable Receipt Verifier only after fresh explicit approval; a push to `main` can trigger deployment.
+- [x] Commit and push Evidence Gap Mode plus the Portable Receipt Verifier after fresh explicit approval; verify exact-SHA CI, Vercel, the incomplete receipt, and both verifier states.
 - [ ] Run a real screen-reader spot check if a stronger accessibility claim is desired.
 - [ ] Have the custom proprietary terms reviewed by qualified counsel before relying on them for commercial enforcement.
 - [ ] Confirm every teammate's eligibility, challenge registration, required IBM SkillsBuild Bob activity, and no conflicting prior Wildcard submission.

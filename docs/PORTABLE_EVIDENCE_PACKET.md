@@ -14,6 +14,8 @@ The schema version is `agent-receipt.evidence-packet.v1`.
 
 The outer packet also records the supplied trace digest and byte length from the receipt, a fixed qualifier, fixed limitations, and a three-entry artifact manifest.
 
+The browser's Policy Decision Ledger is a deterministic view derived during receipt construction. It is not a fourth packet artifact and is not silently embedded in Receipt v1 or Evidence Packet v1. The packet verifier continues to replay the complete deterministic findings and verdict under the released schemas; exporting the ledger would require its own explicit versioned contract.
+
 ## Canonical artifact serialization
 
 Each embedded artifact is independently parsed through its Zod schema, then serialized as UTF-8 JSON with two-space indentation and no trailing newline. The manifest records that canonical artifact's:

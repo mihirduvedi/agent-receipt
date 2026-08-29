@@ -9,6 +9,7 @@ import { validateClaims } from "../ai/validateClaims";
 import { computeCoverage } from "./coverage";
 import { sha256HexPortable } from "./portableDigest";
 import { runPolicyEngine } from "./policyEngine";
+import type { PolicyDecisionLedger } from "./policyLedger";
 import { qualifyVerdict, VERDICT_LABELS } from "./product";
 import {
   AdapterResultSchema,
@@ -65,6 +66,7 @@ export type DeterministicReceiptEvidence = {
   adapter: AdapterResult;
   findings: Finding[];
   coverage: CoverageSummary;
+  policyLedger: PolicyDecisionLedger;
 };
 
 export type BuildReceiptInput = {
@@ -89,6 +91,7 @@ export type BuildReceiptResult =
   | {
       ok: true;
       receipt: ReceiptResult;
+      policyLedger: PolicyDecisionLedger;
       retainedSource: RetainedReceiptSource & {
         sha256: string;
         rawDocument: unknown;
@@ -325,6 +328,7 @@ export async function buildReceipt(
     adapter,
     findings: policy.findings,
     coverage,
+    policyLedger: policy.policyLedger,
   };
 
   let bundle: ReturnType<typeof buildFactBundle>;
@@ -446,6 +450,7 @@ export async function buildReceipt(
   return {
     ok: true,
     receipt: receiptResult.data,
+    policyLedger: policy.policyLedger,
     retainedSource: {
       bytes: exactBytes,
       sha256,

@@ -70,6 +70,14 @@ export type ReceiptMetrics = {
   findings: number;
 };
 
+export function formatCountLabel(
+  count: number,
+  singular: string,
+  plural = `${singular}s`,
+): string {
+  return count === 1 ? singular : plural;
+}
+
 export type SystemEdge = {
   eventId: string;
   from: string;

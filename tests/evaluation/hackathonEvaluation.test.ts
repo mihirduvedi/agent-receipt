@@ -36,6 +36,17 @@ describe("judge-facing automated evaluation", () => {
         ],
         passed: 6,
       },
+      policyDecisionLedger: {
+        cases: 4,
+        decisions: 36,
+        deviations: 6,
+        noFindings: 25,
+        unableToAssess: 1,
+        notActive: 4,
+        expectedRunRecordedEveryRule: true,
+        overreachingRunShowsFiredAndNonFired: true,
+        incompleteRunSeparatesUnknownFromInactive: true,
+      },
       trustChecks: {
         knownDigestCasesPassed: 2,
         deterministicReplayPassed: true,

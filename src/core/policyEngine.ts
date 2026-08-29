@@ -6,6 +6,10 @@ import type {
   Verdict,
 } from "./schemas/index";
 import { instantBefore } from "./timestamps";
+import {
+  buildPolicyDecisionLedger,
+  type PolicyDecisionLedger,
+} from "./policyLedger";
 
 let _findingCounter = 0;
 
@@ -494,6 +498,7 @@ export interface PolicyEngineOutput {
   findings: Finding[];
   verdict: Verdict;
   hasAssessmentLimitation: boolean;
+  policyLedger: PolicyDecisionLedger;
 }
 
 export function runPolicyEngine(input: PolicyEngineInput): PolicyEngineOutput {
@@ -538,5 +543,19 @@ export function runPolicyEngine(input: PolicyEngineInput): PolicyEngineOutput {
 
   const verdict = computeVerdict(allFindings, hasAssessmentLimitation);
 
-  return { findings: allFindings, verdict, hasAssessmentLimitation };
+  const policyLedger = buildPolicyDecisionLedger({
+    traceId: events[0]?.traceId ?? "trace-not-supplied",
+    events,
+    accounting,
+    authority,
+    findings: allFindings,
+    verdict,
+  });
+
+  return {
+    findings: allFindings,
+    verdict,
+    hasAssessmentLimitation,
+    policyLedger,
+  };
 }

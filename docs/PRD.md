@@ -1058,3 +1058,36 @@ The unsigned manifest proves internal consistency only. It does not authenticate
 - `npm run verify` must pass before any release claim.
 
 Portable Evidence Packet v1 remains a post-run review artifact. It does not add live observation, enforcement, automated remediation, compliance certification, or chain-of-thought capture.
+
+## 28. Release amendment: Policy Decision Ledger
+
+**Added:** August 29, 2026
+
+The deterministic policy engine already produced findings and a qualified verdict, but a finding-only view did not tell the manager which other checks ran, which were blocked by missing evidence, or which were not activated by the authority envelope. This amendment adds a complete deterministic review register without changing Receipt v1 or Evidence Packet v1.
+
+### User value
+
+An AI operations manager can inspect fired and non-fired policy checks together. Each row explains the declared criterion, names its deterministic outcome, and opens the supplied findings, canonical events, and retained raw pointers used by that check.
+
+### Required behavior
+
+- Build a strict `agent-receipt.policy-decision-ledger.v1` object from validated authority, canonical events, raw-event accounting, deterministic findings, and the deterministic verdict.
+- Record exactly nine manager-facing check families: systems, operations, egress, restricted data, volume, approvals, retries, state changes after branch errors, and trace sufficiency.
+- Assign every check exactly one status: `deviation_found`, `no_finding`, `unable_to_assess`, or `not_active`.
+- Keep `unable_to_assess` distinct from `not_active`. A missing fact cannot be treated as a disabled constraint, and an undeclared constraint cannot be presented as a clean assessment.
+- Require aggregate counts to equal the actual entries and reject duplicate decision IDs or citation IDs at the Zod boundary.
+- Link each active check to deterministic finding IDs, canonical event IDs, and retained raw pointers when evidence exists.
+- State visibly that “No finding” means no deviation was produced from explicit supplied facts; it is not a safety, compliance, or completeness result.
+- Keep Granite out of ledger construction and keep the ledger fully usable without credentials or network access.
+- Return the ledger as deterministic build evidence for the review UI. Do not silently add it to the released Receipt v1 or Evidence Packet v1 schemas.
+- Preserve the existing evidence drawer's keyboard behavior and keep each interactive evidence control at least 44 CSS pixels high.
+
+### Acceptance evidence
+
+- Focused tests cover clean, overreaching, and incomplete receipts; strict status counts; evidence links; count drift rejection; and the separation of unknown evidence from inactive authority constraints.
+- The reproducible four-case evaluation records 36 decisions: six deviations, 25 no-finding outcomes, one unable-to-assess outcome, and four inactive outcomes.
+- Browser QA covers the expected, overreaching, and incomplete registers at 390, 840, and 1280 CSS pixels without document-level overflow.
+- The policy-evidence drawer opens from the ledger, closes with Escape, and restores focus to its trigger.
+- `npm run verify` must pass before the candidate is described as complete.
+
+The ledger does not certify policy compliance, prove trace completeness, replace the full finding queue, add a risk score, observe an agent live, or expand Granite's authority.

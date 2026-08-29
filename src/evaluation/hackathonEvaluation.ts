@@ -7,6 +7,8 @@ import {
   type BuildReceiptResult,
 } from "../core/receipt";
 import { sha256HexPortable } from "../core/portableDigest";
+import { runPolicyEngine } from "../core/policyEngine";
+import type { PolicyDecisionLedger } from "../core/policyLedger";
 import {
   serializeEvidencePacket,
   verifyEvidencePacket,
@@ -53,6 +55,17 @@ export type HackathonEvaluationResult = {
     expected: string[];
     detected: string[];
     passed: number;
+  };
+  policyDecisionLedger: {
+    cases: number;
+    decisions: number;
+    deviations: number;
+    noFindings: number;
+    unableToAssess: number;
+    notActive: number;
+    expectedRunRecordedEveryRule: boolean;
+    overreachingRunShowsFiredAndNonFired: boolean;
+    incompleteRunSeparatesUnknownFromInactive: boolean;
   };
   trustChecks: {
     knownDigestCasesPassed: number;
@@ -148,6 +161,10 @@ export async function runHackathonEvaluation(): Promise<HackathonEvaluationResul
   const detectedRuleIds = unique(
     nativeB.findings.map((finding) => finding.ruleId),
   ).filter((ruleId) => expectedRuleIds.includes(ruleId));
+  const ledgers = cases.map((item) => policyLedgerFor(item.receipt));
+  const expectedLedger = ledgers[0];
+  const overreachingLedger = ledgers[1];
+  const incompleteLedger = ledgers[3];
 
   const replay = await requireReceipt(
     buildReceipt(
@@ -239,6 +256,25 @@ export async function runHackathonEvaluation(): Promise<HackathonEvaluationResul
       passed: expectedRuleIds.filter((ruleId) => detectedRuleIds.includes(ruleId))
         .length,
     },
+    policyDecisionLedger: {
+      cases: ledgers.length,
+      decisions: sum(ledgers.map((ledger) => ledger.counts.total)),
+      deviations: sum(ledgers.map((ledger) => ledger.counts.deviations)),
+      noFindings: sum(ledgers.map((ledger) => ledger.counts.noFindings)),
+      unableToAssess: sum(
+        ledgers.map((ledger) => ledger.counts.unableToAssess),
+      ),
+      notActive: sum(ledgers.map((ledger) => ledger.counts.notActive)),
+      expectedRunRecordedEveryRule:
+        expectedLedger?.counts.total === 9 &&
+        expectedLedger.counts.noFindings === 9,
+      overreachingRunShowsFiredAndNonFired:
+        overreachingLedger?.counts.deviations === 6 &&
+        overreachingLedger.counts.noFindings === 3,
+      incompleteRunSeparatesUnknownFromInactive:
+        incompleteLedger?.counts.unableToAssess === 1 &&
+        incompleteLedger.counts.notActive === 2,
+    },
     trustChecks: {
       knownDigestCasesPassed: [
         nativeA.integrity.sha256 ===
@@ -297,6 +333,15 @@ export async function runHackathonEvaluation(): Promise<HackathonEvaluationResul
         )?.status === "failed",
     },
   };
+}
+
+function policyLedgerFor(receipt: ReceiptResult): PolicyDecisionLedger {
+  return runPolicyEngine({
+    events: receipt.events,
+    accounting: receipt.accounting,
+    authority: receipt.authority,
+    traceCompletionStatus: receipt.run.status,
+  }).policyLedger;
 }
 
 async function requireReceipt(

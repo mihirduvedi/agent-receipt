@@ -18,6 +18,7 @@ import {
   buildRecoveryPlan,
   buildSystemEdges,
   exactFixtureBytes,
+  formatCountLabel,
   formatTraceSourceLabel,
   groupSystemsByBoundary,
   resolveRawPointer,
@@ -28,6 +29,13 @@ import {
 } from "../../src/ui/receiptView.js";
 
 describe("receipt UI view helpers", () => {
+  it("uses singular metric labels only when the count is exactly one", () => {
+    expect(formatCountLabel(1, "Event")).toBe("Event");
+    expect(formatCountLabel(0, "Event")).toBe("Events");
+    expect(formatCountLabel(2, "System")).toBe("Systems");
+    expect(formatCountLabel(1, "Finding", "Findings")).toBe("Finding");
+  });
+
   it("keeps synthetic, uploaded, and pasted source provenance distinct", () => {
     expect(formatTraceSourceLabel("synthetic")).toBe("Synthetic fixture");
     expect(formatTraceSourceLabel("upload")).toBe("Uploaded trace");

@@ -246,7 +246,7 @@ def draw_cover(canvas, doc) -> None:
     canvas.rect(0, 0, PAGE_W, 16, fill=1, stroke=0)
     canvas.setFillColor(colors.white)
     canvas.setFont("Arial", 7.8)
-    canvas.drawString(42, 58, "VERSION 1.8  |  AUGUST 28, 2026")
+    canvas.drawString(42, 58, "VERSION 1.9  |  AUGUST 29, 2026")
     canvas.drawRightString(PAGE_W - 42, 58, "EDITABLE SOURCE: docs/PROJECT_GUIDE.md")
     canvas.restoreState()
 
@@ -833,6 +833,8 @@ def parse_markdown(lines: list[str]) -> list[Flowable]:
             elif level == 3:
                 if title == "Fixture B: Overreaching run":
                     story.append(CondPageBreak(360))
+                if title == "watsonx.ai call sequence":
+                    story.append(CondPageBreak(180))
                 style = STYLES["H4"] if title == "Next.js version warning" else STYLES["H3"]
                 story.append(Paragraph(inline_markup(title), style))
             else:

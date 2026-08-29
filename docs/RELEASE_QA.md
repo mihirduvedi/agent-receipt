@@ -1,10 +1,10 @@
 # Release QA Ledger
 
-**Snapshot:** August 28, 2026
+**Snapshot:** August 29, 2026
 
-**Scope:** Deployed Portable Evidence Packet v1 product release `2dee60545e18bea965afd2bb381eb9d918af8a98`, including the preserved Evidence Gap Mode and standalone Portable Receipt Verifier
+**Scope:** Policy Decision Ledger release candidate and presentation repairs, with local evidence kept separate from the previously verified Portable Evidence Packet v1 product release `2dee60545e18bea965afd2bb381eb9d918af8a98`
 
-**Decision:** Release `2dee60545e18bea965afd2bb381eb9d918af8a98` is committed and pushed, passed exact-SHA GitHub Actions run `33227804643`, received Vercel's successful exact-SHA deployment status, returned HTTP 200 at the public alias, and passed the deployed packet download, packet replay, standalone-receipt replay, and altered-receipt failure journeys. Local responsive, PDF, and live-Granite evidence remain separate from hosted behavior.
+**Decision:** The candidate passed the complete automated gate, reproducible evaluation, strict UI scan, and focused responsive browser checks. This ledger records local evidence; exact hosted status remains a mutable external fact that must be verified against the release commit after a push. Release `2dee60545e18bea965afd2bb381eb9d918af8a98` remains the separately verified public baseline until that check is recorded.
 
 This ledger separates automated evidence from browser, manual-accessibility, live-service, deployment, and submission evidence. A checked local test does not prove an unexecuted layer.
 
@@ -12,14 +12,25 @@ This ledger separates automated evidence from browser, manual-accessibility, liv
 
 | Check | Latest result | What it supports |
 |---|---|---|
+| Local candidate `npm run verify` | August 29: lint with zero warnings, strict TypeScript, 21 test files and 351 tests, production build, release audit across 83 source files, 143 build files, 474 dependency entries, and 11 media assets | The Policy Decision Ledger, pluralization repair, source-ledger rail repair, and unchanged trust contracts pass locally; this is not hosted evidence |
+| Local candidate `npm run eval` | One evaluation test covering four declared cases and 36 policy decisions passed on August 29 | The ledger records six deviations, 25 no findings, one unable-to-assess outcome, and four inactive outcomes across the declared synthetic corpus |
+| Local candidate strict UI scan | 32 source files, 0 errors, 0 warnings | Source-level UI heuristics only; not rendered or assistive-technology proof |
 | `npm run verify` | Portable Evidence Packet v1 passed locally and in exact-SHA hosted CI on August 28: lint with zero warnings, strict TypeScript, 20 test files and 346 tests, production build, release audit across 80 source files, 143 build files, 474 dependency entries, and 11 media assets | The tested deterministic, packet, UI-helper, build, and release-safety contracts reproduce in a clean hosted runner; this is not browser or live-provider proof |
 | GitHub Actions `CI` | [Run `33227804643`](https://github.com/mihirduvedi/agent-receipt/actions/runs/33227804643) passed for exact product SHA `2dee60545e18bea965afd2bb381eb9d918af8a98` on August 28 | A clean hosted install and complete `npm run verify` passed for the deployed packet release |
 | `npm run eval` | One evaluation test covering four declared cases passed on August 28 | Synthetic verdict, rule-family, accounting, deterministic replay, citation, fallback, OTLP limitation, evidence-gap, and Recovery Plan v1 assertions passed |
 | `npm audit --omit=dev --json` | Zero known production dependency vulnerabilities on August 28 | Current npm advisory data reported no production vulnerability |
 | Strict UI static scan | Packet release scan: 31 source files, 0 errors, 0 warnings | Source-level UI heuristics only; not rendered or assistive-technology proof |
-| Markdown local-link audit | 50 local links checked across 15 repository Markdown files, 0 missing | Current judge-facing repository links resolve locally |
+| Markdown local-link audit | 52 local links checked across 17 repository Markdown files, 0 missing | Current judge-facing repository links resolve locally |
 
 The full suite covers exact-byte digest behavior, native and narrow OTLP adaptation/accounting, deterministic policy rules, incident grouping, recovery proposals, Recovery Plan v1 binding and citation closure, Granite fact minimization/redaction/selection validation/fallback/token caching, route media and body limits, receipt orchestration and export validation, all declared fixtures, portable-receipt replay and failure boundaries, the synthetic evaluation corpus, release-source enumeration, and deterministic UI view helpers.
+
+## Policy Decision Ledger release candidate
+
+The candidate adds a strict deterministic register with nine manager-facing check families and four explicit outcomes: deviation found, no finding, unable to assess, and not active. Each active row links to deterministic findings, canonical events, and retained raw pointers when available. Granite does not create or change the register. The feature is returned as browser review evidence and does not silently change Receipt v1 or Evidence Packet v1.
+
+Focused tests cover expected, overreaching, and incomplete receipts, citation linkage, strict aggregate counts, and count-drift rejection. Browser QA covered the three receipt states at 390, 840, and 1280 CSS pixels. The expected receipt showed nine no-finding checks; overreaching showed six deviations and three no findings; incomplete showed six no findings, one unable to assess, and two inactive constraints. Document width equaled viewport width at each breakpoint, the minimum measured ledger evidence control was 44 CSS pixels, and the evidence drawer closed with Escape and restored focus.
+
+The same incomplete-fixture pass confirmed the two requested presentation repairs: the receipt count strip displayed **1 Event** and **1 System**, and the final blue metadata-only rail ended at the exact source-ledger bottom. A fresh browser tab recorded no warning or error entries. These browser checks are not a real screen-reader or cross-browser certification.
 
 ## Deployed Portable Evidence Packet v1
 
@@ -128,7 +139,8 @@ The production browser journeys recorded `deterministic_fallback`. Local provide
 - `README.md` links the live demo, public repository, judge guide, complete guide, PDF, evaluation, recovery contract, submission copy, and demo script.
 - `docs/SUBMISSION.md` contains the verified public repository URL. The public-video and eligible-team fields remain intentionally unresolved.
 - `docs/JUDGE_GUIDE.md` gives a 60-second path and maps concrete evidence to the five public challenge-page lenses while noting the official rules' four-heading formulation.
-- `docs/PROJECT_GUIDE.md` and the Version 1.8 PDF document the deployed Portable Evidence Packet v1 release while preserving the earlier Granite-boundary, Evidence Gap Mode, receipt-verifier, local responsive, and live-provider evidence boundaries. The regenerated 62-page Letter PDF is 1,841,373 bytes with SHA-256 `faed23f3d0537199e835acfac218d31db752b5bbaf3b3c2469fb5f75299a17ca`; it passed metadata, encryption/JavaScript, blank-page, replacement-character, 18-point bounds, embedded-custom-font, full contact-sheet, and all-page readable-pair inspection.
+- `docs/PROJECT_GUIDE.md` and the Version 1.8 PDF document the deployed Portable Evidence Packet v1 release while preserving the earlier Granite-boundary, Evidence Gap Mode, receipt-verifier, local responsive, and live-provider evidence boundaries. The 62-page deployed-release PDF was 1,841,373 bytes with SHA-256 `faed23f3d0537199e835acfac218d31db752b5bbaf3b3c2469fb5f75299a17ca`.
+- The local Version 1.9 PDF candidate adds the Policy Decision Ledger architecture, evaluation, and schema appendix. The inspected 63-page Letter PDF is 1,847,560 bytes with SHA-256 `3d3f5a0bd5049df257d310647829e9cf98ed21e7a5600588859aec46f870df4a`; it has extractable text on every page, no blank or replacement-character pages, no encryption or JavaScript, 0 bounds errors, 0 safe-zone warnings, embedded custom fonts, and a clean changed-page, closing-sequence, and full contact-sheet review.
 - All application screenshots use synthetic fixture data and are declared in `docs/ASSET_LICENSES.md`.
 
 ## Open release and submission gates
@@ -149,6 +161,7 @@ The production browser journeys recorded `deterministic_fallback`. Local provide
 - [x] Commit and push Evidence Gap Mode plus the Portable Receipt Verifier after fresh explicit approval; verify exact-SHA CI, Vercel, the incomplete receipt, and both verifier states.
 - [x] Run the complete local gate, strict UI scan, packet-file verification, local-link audit, and rendered-guide inspection for Portable Evidence Packet v1.
 - [x] Commit and push Portable Evidence Packet v1 after fresh explicit approval; verify exact-SHA CI, Vercel, the packet download, packet replay, receipt-only replay, and altered-receipt failure on the deployed build.
+- [x] Run the complete local gate, evaluation, strict UI scan, 390/840/1280 browser QA, and Version 1.9 rendered-guide inspection for the Policy Decision Ledger candidate.
 - [ ] Run a real screen-reader spot check if a stronger accessibility claim is desired.
 - [ ] Have the custom proprietary terms reviewed by qualified counsel before relying on them for commercial enforcement.
 - [ ] Confirm every teammate's eligibility, challenge registration, required IBM SkillsBuild Bob activity, and no conflicting prior Wildcard submission.

@@ -2382,7 +2382,15 @@ tr:last-child td {
 }
 
 .raw-record-ledger {
+  display: flex;
+  flex-direction: column;
   background: #f0eee5;
+}
+
+.raw-record-ledger ol {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
 }
 
 .raw-ledger-heading {
@@ -2401,6 +2409,7 @@ tr:last-child td {
 }
 
 .raw-record-ledger li:last-child {
+  flex: 1;
   border-bottom: 0;
 }
 
@@ -2442,6 +2451,211 @@ tr:last-child td {
   margin: 10px 0 4px;
   color: var(--muted);
   font-size: 0.78rem;
+}
+
+.policy-ledger-section {
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.policy-ledger-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  gap: 36px;
+  align-items: end;
+  padding: clamp(42px, 6vw, 82px);
+  border-bottom: 1px solid var(--ink);
+  background:
+    linear-gradient(90deg, transparent 0 67%, rgb(39 113 74 / 6%) 67% 100%),
+    var(--green-soft);
+}
+
+.policy-ledger-heading h2 {
+  max-width: 11ch;
+  margin: 10px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(3.2rem, 7vw, 7rem);
+  font-weight: 400;
+  letter-spacing: -0.06em;
+  line-height: 0.88;
+}
+
+.policy-ledger-heading > p {
+  max-width: 48ch;
+  margin-bottom: 4px;
+  font-weight: 750;
+}
+
+.policy-ledger-counts {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.policy-ledger-counts > div {
+  min-height: 120px;
+  padding: 22px;
+  border-right: 1px solid #59615c;
+}
+
+.policy-ledger-counts > div:last-child {
+  border-right: 0;
+}
+
+.policy-ledger-counts dt {
+  color: #c3cac5;
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.policy-ledger-counts dd {
+  margin: 12px 0 0;
+  color: var(--signal);
+  font-family: Georgia, serif;
+  font-size: clamp(2.5rem, 5vw, 4.7rem);
+  line-height: 0.8;
+}
+
+.policy-decision-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.policy-decision-list > li {
+  border-bottom: 1px solid var(--line-strong);
+  border-left: 8px solid var(--green);
+}
+
+.policy-decision-list > li:last-child {
+  border-bottom: 0;
+}
+
+.policy-decision-list > .policy-decision-deviation_found {
+  border-left-color: var(--red);
+  background: linear-gradient(90deg, var(--red-soft), transparent 42%);
+}
+
+.policy-decision-list > .policy-decision-unable_to_assess {
+  border-left-color: var(--amber);
+  background: linear-gradient(90deg, var(--amber-soft), transparent 42%);
+}
+
+.policy-decision-list > .policy-decision-not_active {
+  border-left-color: var(--blue);
+  background: #f0eee5;
+}
+
+.policy-decision-list article {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1.25fr) minmax(230px, 0.75fr);
+  gap: 18px 32px;
+  align-items: start;
+  padding: 30px 34px 32px;
+}
+
+.policy-decision-register {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.policy-decision-register span {
+  font-family: Georgia, serif;
+  font-size: 2.9rem;
+  line-height: 0.8;
+}
+
+.policy-decision-register strong {
+  width: fit-content;
+  padding: 4px 6px;
+  border: 1px solid currentColor;
+  font-size: 0.64rem;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.policy-decision-deviation_found .policy-decision-register {
+  color: var(--red);
+}
+
+.policy-decision-unable_to_assess .policy-decision-register {
+  color: var(--amber);
+}
+
+.policy-decision-not_active .policy-decision-register {
+  color: var(--blue);
+}
+
+.policy-decision-copy .section-number {
+  margin-bottom: 8px;
+}
+
+.policy-decision-copy h3 {
+  margin-bottom: 10px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem, 3vw, 2.7rem);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.policy-decision-copy > p:last-child {
+  max-width: 62ch;
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.policy-decision-list article > dl {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.policy-decision-list article > dl > div {
+  padding-top: 10px;
+  border-top: 1px solid var(--line-strong);
+}
+
+.policy-decision-list dt {
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.policy-decision-list dd {
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.policy-decision-list button,
+.policy-no-evidence {
+  grid-column: 2 / 4;
+  justify-self: start;
+}
+
+.policy-decision-list button {
+  min-height: 44px;
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.policy-no-evidence {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-style: italic;
 }
 
 .generated-copy-grid {
@@ -3995,6 +4209,33 @@ tr:last-child td {
 }
 
 @media (max-width: 840px) {
+  .policy-ledger-heading {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .policy-ledger-counts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .policy-ledger-counts > div:nth-child(3) {
+    border-right: 0;
+  }
+
+  .policy-ledger-counts > div:nth-child(n + 4) {
+    border-top: 1px solid #59615c;
+  }
+
+  .policy-decision-list article {
+    grid-template-columns: 82px minmax(0, 1fr);
+  }
+
+  .policy-decision-list article > dl,
+  .policy-decision-list button,
+  .policy-no-evidence {
+    grid-column: 2;
+  }
+
   .evidence-gap-heading,
   .evidence-gap-layout {
     grid-template-columns: 1fr;
@@ -4011,6 +4252,55 @@ tr:last-child td {
 }
 
 @media (max-width: 600px) {
+  .policy-ledger-heading {
+    gap: 26px;
+    padding: 42px 20px;
+    background: var(--green-soft);
+  }
+
+  .policy-ledger-heading h2 {
+    font-size: clamp(3.2rem, 17vw, 4.8rem);
+  }
+
+  .policy-ledger-counts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .policy-ledger-counts > div,
+  .policy-ledger-counts > div:nth-child(3) {
+    min-height: 108px;
+    border-right: 1px solid #59615c;
+    border-bottom: 1px solid #59615c;
+  }
+
+  .policy-ledger-counts > div:nth-child(even) {
+    border-right: 0;
+  }
+
+  .policy-ledger-counts > div:last-child {
+    grid-column: 1 / -1;
+    border-right: 0;
+    border-bottom: 0;
+  }
+
+  .policy-decision-list article {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 26px 20px 28px;
+  }
+
+  .policy-decision-register {
+    align-items: end;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .policy-decision-list article > dl,
+  .policy-decision-list button,
+  .policy-no-evidence {
+    grid-column: 1;
+  }
+
   .sample-gap {
     grid-column: auto;
   }

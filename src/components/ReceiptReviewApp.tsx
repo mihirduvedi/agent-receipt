@@ -60,6 +60,7 @@ import {
   buildRecoveryPlan,
   buildSystemEdges,
   exactFixtureBytes,
+  formatCountLabel,
   formatTraceSourceLabel,
   groupSystemsByBoundary,
   resolveRawPointer,
@@ -74,6 +75,10 @@ import type {
   RecoveryAction,
   TraceSourceKind,
 } from "../ui/receiptView";
+import type {
+  PolicyDecisionLedger,
+  PolicyDecisionStatus,
+} from "../core/policyLedger";
 
 type Step = "intake" | "authority" | "receipt";
 
@@ -1353,13 +1358,14 @@ function ReceiptStep(props: {
       <nav className="receipt-nav" aria-label="Receipt sections">
         <span>In this receipt</span>
         <a href="#overview">Overview</a>
+        {evidenceGap ? <a href="#evidence-gaps">Evidence gaps</a> : null}
+        <a href="#policy-ledger">Policy checks</a>
         <a href="#brief">Incident brief</a>
         <a href="#recovery">Recovery plan</a>
         <a href="#human-summary">Trace summary</a>
         <a href="#activity">Timeline</a>
         <a href="#movement">Systems and data</a>
         <a href="#deviations">Findings</a>
-        {evidenceGap ? <a href="#evidence-gaps">Evidence gaps</a> : null}
         <a href="#ai-boundary">AI boundary</a>
         <a href="#integrity">Integrity</a>
         <a href="#disposition">Decision</a>
@@ -1420,22 +1426,30 @@ function ReceiptStep(props: {
       <section className="metric-ledger" aria-label="Receipt counts">
         {(
           [
-            ["Events", metrics.events],
-            ["Systems", metrics.systems],
-            ["State changes", metrics.stateChanges],
-            ["External events", metrics.externalTransfers],
-            ["Human approvals", metrics.approvals],
-            ["Errors", metrics.errors],
-            ["Findings", metrics.findings],
-          ] as Array<[string, number]>
-        ).map(([label, value]) => (
-          <div key={label}><strong>{value}</strong><span>{label}</span></div>
+            ["Event", "Events", metrics.events],
+            ["System", "Systems", metrics.systems],
+            ["State change", "State changes", metrics.stateChanges],
+            ["External event", "External events", metrics.externalTransfers],
+            ["Human approval", "Human approvals", metrics.approvals],
+            ["Error", "Errors", metrics.errors],
+            ["Finding", "Findings", metrics.findings],
+          ] as Array<[string, string, number]>
+        ).map(([singular, plural, value]) => (
+          <div key={singular}>
+            <strong>{value}</strong>
+            <span>{formatCountLabel(value, singular, plural)}</span>
+          </div>
         ))}
       </section>
 
       {evidenceGap ? (
         <EvidenceGapPanel view={evidenceGap} onOpen={props.onOpenEvidence} />
       ) : null}
+
+      <PolicyDecisionLedgerPanel
+        ledger={props.build.policyLedger}
+        onOpen={props.onOpenEvidence}
+      />
 
       <IncidentBriefPanel incidents={incidents} onOpen={props.onOpenEvidence} />
 
@@ -1578,6 +1592,98 @@ function ReceiptStep(props: {
         </div>
       </section>
     </div>
+  );
+}
+
+const POLICY_DECISION_STATUS_LABELS: Record<PolicyDecisionStatus, string> = {
+  deviation_found: "Deviation found",
+  no_finding: "No finding",
+  unable_to_assess: "Unable to assess",
+  not_active: "Not active",
+};
+
+function PolicyDecisionLedgerPanel(props: {
+  ledger: PolicyDecisionLedger;
+  onOpen: OpenEvidence;
+}) {
+  return (
+    <section
+      id="policy-ledger"
+      className="policy-ledger-section"
+      aria-labelledby="policy-ledger-title"
+    >
+      <div className="policy-ledger-heading">
+        <div>
+          <p className="section-number">Deterministic rule register</p>
+          <h2 id="policy-ledger-title">Every policy check gets an outcome.</h2>
+        </div>
+        <p>
+          Fired and non-fired checks stay visible together. “No finding” means
+          no deviation was produced from the supplied facts; missing fields
+          remain unknown.
+        </p>
+      </div>
+
+      <dl className="policy-ledger-counts" aria-label="Policy decision counts">
+        <div><dt>Checks recorded</dt><dd>{props.ledger.counts.total}</dd></div>
+        <div><dt>Deviation found</dt><dd>{props.ledger.counts.deviations}</dd></div>
+        <div><dt>No finding</dt><dd>{props.ledger.counts.noFindings}</dd></div>
+        <div><dt>Unable to assess</dt><dd>{props.ledger.counts.unableToAssess}</dd></div>
+        <div><dt>Not active</dt><dd>{props.ledger.counts.notActive}</dd></div>
+      </dl>
+
+      <ol className="policy-decision-list">
+        {props.ledger.entries.map((entry, index) => {
+          const hasEvidence =
+            entry.eventIds.length > 0 ||
+            entry.findingIds.length > 0 ||
+            entry.rawPointers.length > 0;
+          return (
+            <li key={entry.decisionId} className={`policy-decision-${entry.status}`}>
+              <article>
+                <div className="policy-decision-register">
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <strong>{POLICY_DECISION_STATUS_LABELS[entry.status]}</strong>
+                </div>
+                <div className="policy-decision-copy">
+                  <p className="section-number">
+                    {entry.category} · {entry.ruleIds.join(" + ")}
+                  </p>
+                  <h3>{entry.title}</h3>
+                  <p>{entry.summary}</p>
+                </div>
+                <dl>
+                  <div>
+                    <dt>Declared check</dt>
+                    <dd>{entry.criterion}</dd>
+                  </div>
+                  <div>
+                    <dt>Authority field</dt>
+                    <dd><code>{entry.policyPath ?? "Not authority-scoped"}</code></dd>
+                  </div>
+                </dl>
+                {hasEvidence ? (
+                  <button
+                    type="button"
+                    onClick={(event) => props.onOpen(
+                      event,
+                      `${entry.title}: ${POLICY_DECISION_STATUS_LABELS[entry.status]}`,
+                      entry.eventIds,
+                      entry.findingIds,
+                      entry.rawPointers,
+                    )}
+                  >Inspect evaluated evidence ↗</button>
+                ) : (
+                  <p className="policy-no-evidence">
+                    No event evidence is required because this constraint was not active.
+                  </p>
+                )}
+              </article>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }
 

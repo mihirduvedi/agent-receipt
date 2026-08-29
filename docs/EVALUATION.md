@@ -8,6 +8,8 @@ This report records a reproducible automated evaluation of the current prototype
 |---|---:|
 | Expected deterministic verdicts | 4 / 4 |
 | Seeded authority-rule detections | 6 / 6 |
+| Policy Decision Ledger | 36 / 36 decisions recorded across 4 cases |
+| Ledger outcomes | 6 deviations, 25 no findings, 1 unable to assess, 4 not active |
 | Raw records explicitly accounted for | 15 / 15 |
 | Known native-trace SHA-256 digests | 2 / 2 |
 | Receipt schemas accepted | 4 / 4 |
@@ -69,6 +71,7 @@ The harness also changes inputs or generated output to verify failure behavior:
 6. Every incident and proposed action in the exported plan resolves to retained receipt evidence. The plan carries no execution authority and makes no claim about current external state.
 7. The Portable Receipt Verifier accepts valid exports from the clean, overreaching, and incomplete fixtures; catches exact-byte changes; rejects oversize, invalid UTF-8, invalid JSON, and non-receipt input; and detects altered verdicts, findings, accounting, and citations.
 8. Portable Evidence Packet v1 deterministically serializes a manager brief, receipt, and recovery plan. The evaluation replays all three manifest entries, the full embedded receipt, and the recovery binding, then changes one deterministic finding and confirms both manifest and policy replay fail.
+9. The Policy Decision Ledger records nine check families for every corpus case. The expected run shows nine no-finding outcomes, the overreaching run keeps six fired checks beside three non-fired checks, and the incomplete run separates one unable-to-assess check from two inactive constraints.
 
 These checks protect the product's central claim: uncertainty is exposed rather than filled in by a model.
 
@@ -81,7 +84,8 @@ These checks protect the product's central claim: uncertainty is exposed rather 
 - A passing portable-verifier report establishes internal receipt consistency, not exporter identity, trace completeness, trusted capture, original trace bytes, or signed provenance.
 - The evidence-packet manifest is unsigned. A passing packet is not an authenticity, tamper-proof provenance, digital-signature, or nonrepudiation result.
 - The synthetic cases are intentionally small and known. More adapters, real consented traces, larger stress corpora, and structured user studies are future evaluation work.
+- A ledger status of `no_finding` means the current deterministic check produced no deviation from explicit supplied facts. It is not evidence that the trace is complete or that the run is safe or compliant.
 
 ## Suggested judge demo
 
-Run `npm run eval`, then open the overreaching sample in the product. After the incident and recovery path, download the evidence packet. Open **Incomplete OTLP run** to show all three raw records and the two facts that stopped assessment. Finish in **Verify an export** with the evidence-packet and altered-receipt demonstrations. The first replays the complete handoff; the second catches a changed deterministic claim.
+Run `npm run eval`, then open the overreaching sample and select **Policy checks** to show six fired checks beside three non-fired checks. After the incident and recovery path, download the evidence packet. Open **Incomplete OTLP run** to contrast one unable-to-assess check with two inactive constraints and to show all three raw records. Finish in **Verify an export** with the evidence-packet and altered-receipt demonstrations. The first replays the complete handoff; the second catches a changed deterministic claim.

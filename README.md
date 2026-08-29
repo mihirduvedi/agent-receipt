@@ -19,6 +19,7 @@ The receipt puts the deterministic verdict, evidence scope, and manager attentio
 - Stops the assessment when material evidence is missing, shows why, and opens retained raw-only records that have no canonical event.
 - Compares observed actions with declared systems, operations, data restrictions, egress rules, volume limits, and approvals.
 - Produces a deterministic verdict, findings, coverage record, and integrity metadata.
+- Records every manager-facing policy check as deviation found, no finding, unable to assess, or not active, with links to the evaluated evidence.
 - Groups related findings into a concise incident brief without hiding the detailed findings.
 - Proposes cited, reversible recovery steps for human approval; it never executes remediation.
 - Summarizes every canonical action in plain language, including systems and data referenced, work completed or attempted, and carefully qualified “no observed activity” statements.
@@ -53,49 +54,53 @@ The manager confirms task, systems, operations, data restrictions, egress rule, 
 
 The incomplete OTLP sample accounts for all three source spans, then refuses to overclaim: one material action cannot be mapped and the trace does not establish run termination. The manager can inspect both gaps and every retained source record.
 
-### 4. Triage incidents instead of rule hits
+### 4. See fired and non-fired policy checks together
+
+Open **Policy checks** to review the complete deterministic decision ledger. Every check names its authority field or behavior criterion, its outcome, and the supplied evidence evaluated. “No finding” means no deviation was produced from explicit supplied facts; it is not a completeness or compliance claim.
+
+### 5. Triage incidents instead of rule hits
 
 ![Agent Receipt manager incident brief grouping twelve findings into two incidents](docs/screenshots/agent-receipt-incident-brief.jpg)
 
 Related deterministic findings become a concise incident brief only when they cite the same events or share an explicit action key. The complete finding list remains available below.
 
-### 5. Plan recovery without hiding execution risk
+### 6. Plan recovery without hiding execution risk
 
 ![Agent Receipt human-approved recovery plan](docs/screenshots/agent-receipt-recovery-plan.jpg)
 
 The receipt proposes cited follow-up steps with required authority and reversibility notes. A manager can download the plan as validated JSON bound to the exact receipt. The plan records that current external state is unknown, approval is required, and nothing was executed.
 
-### 6. Translate every canonical action
+### 7. Translate every canonical action
 
 ![Agent Receipt plain-language action summary](docs/screenshots/agent-receipt-action-summary.jpg)
 
 The summary separates observed activity from carefully qualified no-observed-activity statements and keeps unknown facts visible.
 
-### 7. Inspect systems and data movement
+### 8. Inspect systems and data movement
 
 ![Agent Receipt systems and data movement view](docs/screenshots/agent-receipt-systems-data.jpg)
 
 The boundary map highlights local, internal, external, and unknown destinations, with a full text-equivalent table for accessibility and exact evidence navigation.
 
-### 8. See the model boundary, not just a model badge
+### 9. See the model boundary, not just a model badge
 
 ![Agent Receipt Granite boundary showing the minimized fact bundle and deterministic gates](docs/screenshots/agent-receipt-granite-boundary.jpg)
 
 The AI boundary panel rebuilds the same minimized, recursively redacted projection used by the server route. It shows whether Granite or fallback produced the receipt copy, which evidence IDs Granite may select, what is deliberately excluded, and the exact read-only JSON bundle.
 
-### 9. Open a claim into retained evidence
+### 10. Open a claim into retained evidence
 
 ![Agent Receipt evidence drawer linking a finding to its canonical event](docs/screenshots/agent-receipt-evidence-drawer.jpg)
 
 Every material conclusion opens into its cited finding, canonical event, and retained raw JSON object.
 
-### 10. Keep human disposition separate from the verdict
+### 11. Keep human disposition separate from the verdict
 
 ![Agent Receipt manager disposition and validated JSON export](docs/screenshots/agent-receipt-disposition-export.jpg)
 
 Accept, investigate, or reject records a manager decision without changing the deterministic verdict, findings, or evidence. The primary export is a single Evidence Packet v1 file containing the manager brief, validated receipt, and citation-closed recovery plan. The standalone receipt remains available. Neither export includes the retained raw input.
 
-### 11. Replay the complete handoff
+### 12. Replay the complete handoff
 
 Switch to **Verify an export** to check either Receipt v1 or Evidence Packet v1 without a server, credentials, network request, or Granite call. For a packet, the verifier hashes the exact imported file, validates the cross-artifact contract, replays all three manifest digests, runs the complete receipt verifier, and confirms the proposal-only recovery plan is bound to the canonical receipt. Its limitations stay visible even when all eight packet gates pass.
 
@@ -114,14 +119,15 @@ Open [http://localhost:3000](http://localhost:3000), then:
 
 1. Choose **Expected run**.
 2. Review the preset authority and select **Build receipt**.
-3. Read the verdict, plain-language action summary, coverage, and integrity record.
-4. Open an evidence control to compare the canonical event with the retained raw object.
-5. Start a new review with **Overreaching run**.
-6. Inspect the external spreadsheet attempt, successful retry, customer-email movement, and unapproved send.
-7. Record a reviewer disposition and download the complete evidence packet. The standalone receipt and recovery-plan exports remain available.
-8. Start a third review with **Incomplete OTLP run**.
-9. Open **Evidence gaps**, then inspect the unparsed source record that has no canonical event.
-10. Start a new review, select **Verify an export**, replay the valid evidence packet, then run the altered-receipt demonstration.
+3. Open **Policy checks** and inspect the nine deterministic outcomes.
+4. Read the verdict, plain-language action summary, coverage, and integrity record.
+5. Open an evidence control to compare the canonical event with the retained raw object.
+6. Start a new review with **Overreaching run**.
+7. Inspect the six deviating and three non-firing policy checks, then the external spreadsheet attempt, successful retry, customer-email movement, and unapproved send.
+8. Record a reviewer disposition and download the complete evidence packet. The standalone receipt and recovery-plan exports remain available.
+9. Start a third review with **Incomplete OTLP run**.
+10. Open **Evidence gaps**, then compare the explicit unable-to-assess check with the inactive authority constraints and inspect the raw-only source record.
+11. Start a new review, select **Verify an export**, replay the valid evidence packet, then run the altered-receipt demonstration.
 
 The samples are synthetic. The expected run contains three in-authority events. The overreaching run contains six events, including an unknown-outcome external write followed by a successful retry and an external message send. The incomplete OTLP run contains three source spans and demonstrates the third honest outcome: the supplied evidence is insufficient for a complete authority assessment.
 
@@ -132,7 +138,7 @@ exact trace bytes
       ↓ SHA-256 before normalization
 versioned native or narrow OTLP adapter → canonical events + raw-event accounting
       ↓
-deterministic policy engine → findings + qualified verdict
+deterministic policy engine → findings + qualified verdict + policy decision ledger
       ↓
 minimized, redacted fact bundle → server-only Granite route
       ↓ valid citations and schema, or deterministic fallback
@@ -151,8 +157,8 @@ The browser retains the source snapshot for evidence drill-down. The server rout
 
 | Judging criterion | Agent Receipt fit |
 |---|---|
-| Technical execution | A working strict-TypeScript prototype preserves exact input bytes, accounts for every raw event, runs deterministic policy rules, validates external boundaries with Zod, and replays a three-artifact evidence packet without a service dependency. |
-| Innovation | Compares declared intent with observed action, exposes a deterministic evidence-refusal state, prevents generated prose from changing the verdict, and turns the manager handoff into a self-checking evidence contract. |
+| Technical execution | A working strict-TypeScript prototype preserves exact input bytes, accounts for every raw event, records every manager-facing policy check, validates external boundaries with Zod, and replays a three-artifact evidence packet without a service dependency. |
+| Innovation | Compares declared intent with observed action, makes fired, non-fired, unknown, and inactive checks inspectable, prevents generated prose from changing the verdict, and turns the manager handoff into a self-checking evidence contract. |
 | Feasibility | Accepts bounded Native Trace v1 and documented OTLP/JSON GenAI contracts, works locally without external services, exports one complete evidence packet, verifies receipts and packets offline, and isolates the optional watsonx.ai call behind one server route. |
 | Challenge fit | Gives teams and AI operations managers decision support for reviewing work completed by AI collaborators, directly matching the future-of-work wildcard theme. |
 | Real-world impact | Helps a manager decide whether to accept, investigate, or reject a completed run while showing where the supplied evidence cannot support any complete conclusion. |
@@ -181,6 +187,7 @@ Granite gives the prototype an IBM-native runtime explanation layer that fits th
 | Adapter and event accounting | Yes | Normalize known fields and expose mapped, metadata-only, and unparsed counts |
 | Evidence Gap Mode | Yes | Stop unsupported conclusions and link gaps to canonical or raw-only source records |
 | Policy findings and verdict | Yes | Reconcile observed actions with declared authority |
+| Policy Decision Ledger | Yes | Record fired, non-fired, unable-to-assess, and inactive checks with citations to supplied evidence |
 | Human action summary | Yes | Translate every canonical event without changing unknown outcomes |
 | Granite copy | No | Explain only supplied, redacted facts with citations |
 | Claim validation and fallback | Yes | Reject unsupported generated copy and keep the receipt usable |
@@ -242,6 +249,7 @@ This MVP targets the IBM SkillsBuild AI Builders Challenge with IBM Bob, Wildcar
 - [Reproducible evaluation](docs/EVALUATION.md)
 - [Portable Receipt Verifier contract](docs/PORTABLE_RECEIPT_VERIFIER.md)
 - [Portable Evidence Packet v1 contract](docs/PORTABLE_EVIDENCE_PACKET.md)
+- [Policy Decision Ledger contract](docs/POLICY_DECISION_LEDGER.md)
 - [Recovery Plan v1 contract](docs/RECOVERY_PLAN.md)
 - [Paste-ready submission copy](docs/SUBMISSION.md)
 - [Three-minute judge demo script](docs/DEMO_SCRIPT.md)
@@ -249,7 +257,7 @@ This MVP targets the IBM SkillsBuild AI Builders Challenge with IBM Bob, Wildcar
 
 ## Limits
 
-Agent Receipt is a post-run review aid, not live interception, enforcement, legal compliance certification, trusted capture, a tamper-proof log, or access to private chain-of-thought. “No observed activity” means no supplied event referenced an item; it does not prove real-world inactivity outside the trace. Every conclusion applies only to the supplied trace and authority envelope.
+Agent Receipt is a post-run review aid, not live interception, enforcement, legal compliance certification, trusted capture, a tamper-proof log, or access to private chain-of-thought. “No observed activity” means no supplied event referenced an item; it does not prove real-world inactivity outside the trace. A ledger status of “No finding” means the corresponding deterministic check produced no deviation from explicit supplied facts; it does not prove trace completeness, safety, or compliance. Every conclusion applies only to the supplied trace and authority envelope.
 
 ## License
 

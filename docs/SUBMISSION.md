@@ -22,6 +22,8 @@ AI agents can finish useful work while leaving a manager with an accountability 
 
 Agent Receipt reviews one completed run. It preserves the exact supplied bytes, accounts for every raw event, converts supported records into canonical actions, and compares those actions with a manager-confirmed authority envelope. Deterministic rules produce the findings and verdict. Every material conclusion opens into retained evidence.
 
+The Policy Decision Ledger shows the complete deterministic review surface, not only the rules that fired. Every manager-facing check is labeled deviation found, no finding, unable to assess, or not active and links back to the supplied evidence. “No finding” is limited to explicit supplied facts; it is not a compliance or trace-completeness claim.
+
 When the supplied trace cannot support a complete conclusion, Evidence Gap Mode refuses to guess. It shows the exact missing semantics, keeps every mapped, metadata-only, and unparsed source record visible, and opens raw-only records even when no canonical event exists.
 
 When a run needs attention, the interface groups related findings into incidents and proposes cited recovery steps for human approval. The primary export is Portable Evidence Packet v1: one strict JSON file containing a deterministic manager brief, the validated receipt, and a Recovery Plan v1 artifact bound to the canonical receipt by SHA-256. The recovery plan says that current state is unknown, approval is required, and no action was executed. Standalone receipt and recovery exports remain available.
@@ -47,6 +49,7 @@ Agent Receipt gives people a practical review surface for work completed by AI c
 - Four declared synthetic cases produce four expected deterministic verdicts.
 - All fifteen raw corpus records are explicitly accounted for; twelve become canonical events.
 - The overreaching fixture activates all six seeded authority-rule families.
+- The four-case Policy Decision Ledger records 36 of 36 check outcomes: six deviations, 25 no findings, one unable to assess, and four not active.
 - Invented generated citations and invalid Granite selections are rejected.
 - The AI boundary preview uses the same minimized, redacted bundle builder as the server route and excludes retained raw fields.
 - A material unparsed OTLP span plus unknown termination forces `unable_to_assess_fully`; the UI exposes both gaps and all three source-span classifications.
@@ -55,7 +58,7 @@ Agent Receipt gives people a practical review surface for work completed by AI c
 - Evidence Packet v1 carries three independently digested artifacts. The evaluation passes the manifest, embedded receipt replay, and recovery binding, then detects one altered deterministic finding through both manifest and policy failure.
 - `npm run verify` runs lint, strict type checking, the full tests, a production build, and release-safety scans.
 
-These are synthetic-prototype results, not claims about universal policy coverage, production scale, legal compliance, or real-world false-positive rates.
+These are synthetic-prototype results, not claims about universal policy coverage, production scale, legal compliance, trace completeness, or real-world false-positive rates. The ledger candidate is local until a separately approved release action occurs; the linked live demo remains the deployed Portable Evidence Packet v1 baseline.
 
 A passing verifier report means the supplied receipt or packet agrees with itself under the current schema and rules. The packet manifest is unsigned. It does not prove trace completeness, exporter identity, original trace bytes, authenticity, tamper-proof provenance, or a digital signature.
 

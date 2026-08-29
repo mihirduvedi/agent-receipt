@@ -4,9 +4,9 @@
 
 **From first principles to architecture, code, trust boundaries, testing, and deployment**
 
-Version 1.8 - August 28, 2026
+Version 1.9 - August 29, 2026
 
-Project snapshot: Portable Evidence Packet v1 is deployed at release `2dee60545e18bea965afd2bb381eb9d918af8a98`. GitHub Actions run `33227804643`, Vercel's exact-SHA deployment status, the public packet download, packet replay, standalone-receipt replay, and altered-receipt failure passed on August 28, 2026. Local responsive, rendered-PDF, and live-Granite evidence remain qualified separately from the hosted deterministic-fallback deployment.
+Project snapshot: Portable Evidence Packet v1 was the last separately verified deployment at release `2dee60545e18bea965afd2bb381eb9d918af8a98`. GitHub Actions run `33227804643`, Vercel's exact-SHA deployment status, the public packet download, packet replay, standalone-receipt replay, and altered-receipt failure passed on August 28, 2026. Version 1.9 documents the Policy Decision Ledger release candidate and two presentation repairs. Its local responsive and rendered-PDF evidence is recorded here; exact hosted status remains a mutable external fact that must be verified against the release commit after a push.
 
 > Agent Receipt gives accountable humans an evidence-linked receipt for what an AI agent did relative to what it was allowed to do.
 
@@ -160,16 +160,17 @@ The receipt presents:
 
 1. overview and verdict;
 2. an evidence-gap ledger when material source facts are missing;
-3. incident brief grouped from related deterministic findings;
-4. cited recovery proposals and a versioned recovery-plan export for human approval;
-5. plain-language action summary;
-6. chronological activity;
-7. systems and data movement;
-8. deviations and evidence coverage;
-9. cited explanatory copy;
-10. integrity record;
-11. human disposition;
-12. one complete evidence-packet export, with standalone receipt and recovery-plan exports still available.
+3. the complete Policy Decision Ledger with fired, non-fired, unknown, and inactive checks;
+4. incident brief grouped from related deterministic findings;
+5. cited recovery proposals and a versioned recovery-plan export for human approval;
+6. plain-language action summary;
+7. chronological activity;
+8. systems and data movement;
+9. deviations and evidence coverage;
+10. cited explanatory copy;
+11. integrity record;
+12. human disposition;
+13. one complete evidence-packet export, with standalone receipt and recovery-plan exports still available.
 
 The manager can open any important statement into its canonical event and exact retained raw object. When no canonical event can be created, the evidence-gap ledger opens the retained raw record directly.
 
@@ -438,6 +439,7 @@ receipt/
 |  |- EVALUATION.md               reproducible synthetic evaluation
 |  |- JUDGE_GUIDE.md              60-second judge path and evidence map
 |  |- OTLP_GENAI_ADAPTER.md       supported external trace contract
+|  |- POLICY_DECISION_LEDGER.md   complete deterministic check register
 |  |- PORTABLE_RECEIPT_VERIFIER.md exported-receipt replay contract
 |  |- PORTABLE_EVIDENCE_PACKET.md complete handoff and manifest contract
 |  |- RECOVERY_PLAN.md            Recovery Plan v1 trust contract
@@ -451,7 +453,7 @@ receipt/
 |  |- ai/                         minimization, Granite, validation, fallback
 |  |- app/                        Next page, layout, CSS, API route
 |  |- components/                 complete interactive review UI
-|  |- core/                       schemas, policy, receipt, recovery, packet, verification
+|  |- core/                       schemas, policy ledger, receipt, recovery, packet, verification
 |  |- fixtures/                   expected, overreaching, and incomplete traces
 |  |- evaluation/                 executable judge-facing corpus
 |  |- release/                    privacy/license/media release audit
@@ -486,7 +488,8 @@ COVERAGE                 AUTHORITY ENVELOPE
                v
        DETERMINISTIC POLICY ENGINE
           |- findings
-          `- verdict
+          |- verdict
+          `- policy decision ledger
                |
                +-------------------------------+
                |                               |
@@ -544,6 +547,7 @@ agent-receipt.native-trace.v1
 agent-receipt.authority.v1
 agent-receipt.canonical-event.v1
 agent-receipt.receipt.v1
+agent-receipt.policy-decision-ledger.v1
 agent-receipt.recovery-plan.v1
 agent-receipt.decision-brief.v1
 agent-receipt.evidence-packet.v1
@@ -775,6 +779,25 @@ The engine computes the final verdict in this exact order:
 4. `within_declared_authority` if the trace is assessable and has no findings.
 
 Why does incomplete evidence outrank a high-severity deviation? Because the product must not imply a complete assessment when its evidence boundary is materially broken. Findings remain visible; the verdict communicates that the whole run cannot be assessed fully.
+
+### The Policy Decision Ledger
+
+`src/core/policyLedger.ts` makes the policy engine's full manager-facing decision surface inspectable. A finding queue shows only rules that fired. It cannot explain whether another check ran cleanly, lacked enough evidence, or was not activated by the authority envelope.
+
+The ledger records nine deterministic check families: system allowlist, operation allowlist, external egress, restricted data, record-read volume, prior human approval, uncertain-result retry, state change after branch error, and trace sufficiency. Each entry has exactly one explicit status:
+
+| Status | Meaning |
+|---|---|
+| `deviation_found` | One or more deterministic findings belong to the check |
+| `no_finding` | The check produced no deviation from explicit supplied facts |
+| `unable_to_assess` | Missing or unsupported supplied evidence blocks the check |
+| `not_active` | The authority envelope did not declare the activating constraint |
+
+The distinction is load-bearing. Missing evidence cannot become a clean result, and an undeclared constraint cannot be described as assessed. “No finding” does not mean safe, compliant, or complete.
+
+Each active entry carries deterministic finding IDs, canonical event IDs, and retained raw pointers when available. The same evidence drawer opens those citations. The strict Zod contract recomputes all four status counts and rejects duplicate decision IDs or citation values.
+
+The policy engine builds the ledger from the same validated authority, events, accounting, findings, and verdict used by the receipt builder. Granite never supplies or changes an entry. The current ledger is returned as browser-review evidence rather than silently changing Receipt v1 or Evidence Packet v1, preserving the released export and verifier contracts. `docs/POLICY_DECISION_LEDGER.md` is the source-of-truth feature contract.
 
 ## 17. Granite's exact role
 
@@ -1035,6 +1058,7 @@ The final view contains:
 - verdict register and source labels;
 - requested task and observed outcome;
 - seven manager metrics;
+- the Policy Decision Ledger with explicit deviation, no-finding, unable-to-assess, and inactive outcomes;
 - incident brief grouped only by cited event overlap or a shared explicit action key;
 - Evidence Gap Mode with deterministic refusal reasons and a complete raw-record ledger;
 - Recovery Plan v1 export placed before the longer proposal list for direct use;
@@ -1197,7 +1221,7 @@ The project separates evidence layers because each answers a different question.
 
 ## 25. Automated test suite
 
-The current local source snapshot contains 346 tests across 20 files.
+The Policy Decision Ledger release candidate contains 351 tests across 21 files. The previously verified Portable Evidence Packet v1 baseline contained 346 tests across 20 files.
 
 ### Test families
 
@@ -1236,9 +1260,13 @@ They include adversarial claims about unsupported systems, operations, people, b
 
 **Evidence-packet tests** cover strict three-artifact assembly; receipt, brief, and recovery cross-references; clean, overreaching, and incomplete verdicts; stable serialization; exact outer-byte hashing; manifest and embedded-receipt replay; recovery binding; invented citations; receipt-or-packet auto-detection; and oversize, UTF-8, and JSON failure boundaries.
 
+**Policy-ledger tests** cover expected, overreaching, and incomplete receipts; fired and non-fired outcomes; evidence linkage; strict aggregate counts; and the distinction between an unable-to-assess check and an inactive authority constraint.
+
 **Release-audit tests** cover secret patterns, personal paths, dependency license metadata, media attribution, and the narrow Next build-root allowance.
 
 **Evaluation tests** run four declared synthetic cases and adversarial checks for verdicts, seeded rules, fifteen-of-fifteen raw-record accounting, known digests, deterministic replay, citations, invalid Granite selections, material OTLP parsing gaps, and the Recovery Plan v1 receipt/execution boundaries. The same evaluation now builds a three-artifact evidence packet, replays its manifest, receipt, and recovery binding, and detects an altered finding. Focused verifier tests add exact imported-byte, boundary, schema, accounting, policy, citation, packet-cross-reference, and artifact-manifest failure cases. `docs/EVALUATION.md` records the exact method and its limitations.
+
+The evaluation also derives the Policy Decision Ledger for all four corpus cases. It requires 36 decisions in total: six deviations, 25 no-finding outcomes, one unable-to-assess outcome, and four inactive outcomes. These are declared synthetic-fixture assertions, not a measurement of universal policy coverage.
 
 ## 26. The complete local gate
 
@@ -1261,6 +1289,15 @@ For the Portable Evidence Packet v1 release it passed locally and in exact-SHA h
 - Next production build: passed;
 - release audit: passed across 80 source files, 143 build files, 474 dependency entries, and 11 declared media assets.
 
+For the Policy Decision Ledger release candidate on August 29, the same gate passed with:
+
+- ESLint: zero warnings;
+- strict TypeScript: passed;
+- 21 test files: passed;
+- 351 tests: passed;
+- Next production build: passed;
+- release audit: passed across 83 source files, 143 build files, 474 dependency entries, and 11 declared media assets.
+
 GitHub Actions run `33227804643` reproduced the complete gate for exact release `2dee60545e18bea965afd2bb381eb9d918af8a98`. Vercel then reported a successful exact-SHA deployment, and the focused public packet and verifier journeys described below passed.
 
 ## 27. Release audit
@@ -1278,9 +1315,9 @@ GitHub Actions run `33227804643` reproduced the complete gate for exact release 
 
 Next.js includes the build root inside specific required-server metadata files. The audit masks only that exact expected root in only those allowlisted files. An unrelated personal path still fails.
 
-For the Version 1.8 release documentation snapshot it checked:
+For the Version 1.9 local-candidate documentation snapshot it checked:
 
-- 80 release-scoped source text files;
+- 83 release-scoped source text files;
 - 143 production-build text files;
 - 474 dependency package entries;
 - 11 app-owned media assets;
@@ -1291,6 +1328,12 @@ This is a high-signal guard, not a proof that no secret, personal datum, vulnera
 ## 28. Browser and accessibility-adjacent evidence
 
 Local rendered checks covered:
+
+- the Policy Decision Ledger for expected, overreaching, and incomplete receipts, including 9/0/9/0/0, 9/6/3/0/0, and 9/0/6/1/2 status-count splits;
+- the ledger at 390, 840, and 1280 CSS pixels with document width equal to viewport width and 44-pixel minimum evidence-control height;
+- policy-evidence drawer opening, Escape close, and trigger-focus restoration;
+- singular metric labels for one event and one system, plus singular verbs inside one-event ledger summaries;
+- exact bottom alignment between the incomplete source ledger and its final blue metadata-only status rail;
 
 - all three fixture journeys, including the incomplete OTLP refusal state;
 - 3/3 raw-record accounting with one mapped, one metadata-only, and one unparsed record;
@@ -1395,12 +1438,15 @@ Codex and associated design/QA skills contributed:
 - README, screenshots, license, deployment, and this guide;
 - later incident/recovery presentation, Granite reliability hardening, the narrow OTLP adapter, and the reproducible evaluation;
 - the inspectable Granite boundary, focused view tests, refreshed screenshots, and submission-readiness documentation.
+- the Policy Decision Ledger, its focused trust tests and evaluation, the singular metric-label repair, and the complete raw-ledger status-rail repair.
 
 The point of the log is not to invent a percentage. It is to show material prompts, artifacts, human review, and executed verification without attributing one tool's work to another. `docs/BOB_BUILD_STORY.md` points judges to the two large Bob-authored foundation commits and the bounded workflow that produced them.
 
 For the Portable Receipt Verifier, Bob produced the architecture, trust-claim matrix, acceptance cases, and implementation task plan, then began the Agent workflow. Bob's free-trial usage limit was reached before implementation files were written. Codex completed the verifier implementation, UI, tests, guide, and QA from that plan. `portable-receipt-verifier-plan.md` and `docs/AI_ASSISTANCE_LOG.md` record that boundary directly; no Codex-authored code is attributed to Bob.
 
 For Portable Evidence Packet v1, the live Bob session still displayed **Budget Exceeded** and could not accept a new implementation prompt. Codex inspected the complete current project, ranked the hackathon opportunities, implemented the packet, extended the evaluation and interface, and ran the local checks recorded in this guide. This work builds on the Bob-authored foundation but is not attributed to Bob.
+
+For the Policy Decision Ledger candidate, Bob was opened first and still displayed **Budget Exceeded**, with the send control unavailable. Codex implemented the deterministic ledger, focused tests, interface, and documentation on top of the Bob-authored policy foundation. None of this candidate work is attributed to Bob, and no commit, push, or deployment occurred during the documented slice.
 
 ## 31. License and asset status
 
@@ -1440,25 +1486,27 @@ Open `http://localhost:3000`.
 1. Choose Expected run.
 2. Read the preset authority.
 3. Select Build receipt.
-4. Confirm the clean verdict, 3/3 coverage, and displayed copy source.
-5. Open one evidence control.
-6. Start a new review.
-7. Choose Overreaching run.
-8. Compare the unknown attempt with the successful retry.
-9. Inspect the external spreadsheet and email findings.
-10. Set Investigate.
-11. Open AI boundary and inspect the exact redacted projection and omission ledger.
-12. Inspect the Recovery Plan v1 receipt digest and execution boundary.
-13. Download the Portable Evidence Packet and confirm the success message names all three validated artifacts.
-14. Optionally download the standalone receipt and recovery plan. Confirm the raw uploaded document is absent from every export.
-15. Start a new review with Incomplete OTLP run.
-16. Confirm the incomplete verdict, 3/3 ledger, 1/1/1 accounting split, and two evidence gaps.
-17. Open the unparsed raw-only record and confirm the missing operation remains absent rather than inferred.
-18. Start a new review and select **Verify an export**.
-19. Run the evidence-packet demonstration. Confirm the summary names three artifacts and all eight packet gates pass.
-20. Reset, run the valid standalone-receipt demonstration, and confirm backward compatibility.
-21. Run the altered demonstration and confirm deterministic policy and citation replay fail.
-22. Read the always-visible limitations: the verifier proves internal consistency, not exporter identity, trace completeness, tamper-proof provenance, or a digital signature.
+4. Open Policy checks. Confirm nine no-finding outcomes and read the supplied-facts qualifier.
+5. Confirm the clean verdict, 3/3 coverage, and displayed copy source.
+6. Open one policy evidence control.
+7. Start a new review.
+8. Choose Overreaching run.
+9. Open Policy checks. Confirm six deviations and three no-finding outcomes.
+10. Compare the unknown attempt with the successful retry.
+11. Inspect the external spreadsheet and email findings.
+12. Set Investigate.
+13. Open AI boundary and inspect the exact redacted projection and omission ledger.
+14. Inspect the Recovery Plan v1 receipt digest and execution boundary.
+15. Download the Portable Evidence Packet and confirm the success message names all three validated artifacts.
+16. Optionally download the standalone receipt and recovery plan. Confirm the raw uploaded document is absent from every export.
+17. Start a new review with Incomplete OTLP run.
+18. Confirm the incomplete verdict, 3/3 raw-record ledger, 1/1/1 accounting split, two evidence gaps, one unable-to-assess policy check, and two inactive checks.
+19. Open the unparsed raw-only record and confirm the missing operation remains absent rather than inferred.
+20. Start a new review and select **Verify an export**.
+21. Run the evidence-packet demonstration. Confirm the summary names three artifacts and all eight packet gates pass.
+22. Reset, run the valid standalone-receipt demonstration, and confirm backward compatibility.
+23. Run the altered demonstration and confirm deterministic policy and citation replay fail.
+24. Read the always-visible limitations: the verifier proves internal consistency, not exporter identity, trace completeness, tamper-proof provenance, or a digital signature.
 
 ## 33. Input format by example
 
@@ -1819,7 +1867,24 @@ Raw input, output, error body, and general metadata are not copied into the cano
 | `evidence.events` | Canonical events cited by incidents |
 | `evidence.findings` | Deterministic findings cited by incidents |
 
-## A7. Portable verifier report fields
+## A7. Policy Decision Ledger fields
+
+| Field | Meaning |
+|---|---|
+| `schemaVersion` | `agent-receipt.policy-decision-ledger.v1` |
+| `traceId` | Supplied trace identifier |
+| `policyId` | Evaluated authority-envelope identifier |
+| `verdict` | Deterministic receipt verdict associated with the ledger |
+| `counts` | Entry total plus deviation, no-finding, unable-to-assess, and inactive totals |
+| `entries[].decisionId` | Stable receipt-local `decision-NNN` identifier |
+| `entries[].status` | `deviation_found`, `no_finding`, `unable_to_assess`, or `not_active` |
+| `entries[].criterion` | Manager-readable deterministic condition that was evaluated |
+| `entries[].ruleIds` | One or more policy rule IDs represented by the check family |
+| `entries[].findingIds` | Deterministic findings supporting the outcome |
+| `entries[].eventIds` | Canonical events evaluated for the check |
+| `entries[].rawPointers` | Retained source locations supporting the evidence link |
+
+## A8. Portable verifier report fields
 
 | Field | Meaning |
 |---|---|
@@ -1830,7 +1895,7 @@ Raw input, output, error body, and general metadata are not copied into the cano
 | `summary` | Artifact type/count, trace ID, verdict, finding count, raw-event count, and copy provenance after strict validation |
 | `limitations` | Always-visible authenticity, provenance, trace-completeness, and original-byte non-claims |
 
-## A8. Portable Evidence Packet v1 fields
+## A9. Portable Evidence Packet v1 fields
 
 | Field | Meaning |
 |---|---|
@@ -2044,6 +2109,7 @@ It is a bounded hackathon MVP. Production use would require authentication, pers
 | How are events normalized? | `src/adapters/nativeTrace.ts`, `src/adapters/otlpGenAi.ts` |
 | How is coverage enforced? | `src/core/coverage.ts` |
 | How are findings/verdict computed? | `src/core/policyEngine.ts` |
+| How are fired and non-fired checks recorded? | `src/core/policyLedger.ts`, `docs/POLICY_DECISION_LEDGER.md` |
 | How is a receipt assembled/exported? | `src/core/receipt.ts` |
 | How is an exported receipt replayed? | `src/core/verifyReceipt.ts`, `src/ui/verificationView.ts`, `docs/PORTABLE_RECEIPT_VERIFIER.md` |
 | How is a complete evidence packet built and replayed? | `src/core/evidencePacket.ts`, `docs/PORTABLE_EVIDENCE_PACKET.md` |
@@ -2081,6 +2147,7 @@ This guide was cross-checked against the complete tracked repository, including 
 
 - The combined Evidence Gap Mode and Portable Receipt Verifier release is supported by source inspection, 335 tests across 19 files, a successful production build and release audit, focused local browser checks at 390, 840, and 1280 CSS pixels, exact-SHA hosted CI, and a ready Vercel production deployment.
 - The deployed Portable Evidence Packet v1 release is supported by 346 tests across 20 files, a successful production build and release audit, exact-SHA hosted CI, Vercel's successful deployment status, a strict local UI scan with 0 errors and 0 warnings, 390/840/default-viewport local browser checks, and an independently verified 42,376-byte production download. The deployed packet and receipt-only demonstrations passed all eight relevant gates; the altered receipt failed deterministic policy and cited-claim validation.
+- The Policy Decision Ledger release candidate is separate from that previously verified deployment baseline. It is supported by 351 tests across 21 files, the four-case synthetic evaluation, a successful production build and release audit, a strict UI scan with 0 errors and 0 warnings, and responsive browser checks at 390, 840, and 1280 CSS pixels. The Version 1.9 guide passed structural, bounds, changed-page, closing-sequence, and full contact-sheet inspection. Exact hosted status must be verified against the release commit after a push; this guide does not infer deployment from local evidence.
 - The earlier combined product release's exact-SHA CI, Vercel status, public repository visibility, incomplete receipt, and both standalone-verifier states were checked live on August 28. Public browser automation activated both verifier controls: the valid shortcut passed all eight gates and the altered shortcut produced policy and citation failures. The deployed incomplete trace retained 3/3 accounting and both evidence gaps. Those three earlier journeys matched the 1280-pixel viewport and logged no browser errors.
 - Earlier public fixture checks remain the evidence for expected/overreaching Granite-boundary counts, recovery-plan placement, and 390-pixel behavior. Neither browser-created Blob file was independently captured.
 - Local live Granite success under the compact selection boundary was re-observed on August 28, 2026. Prior rejected-claim fallback, explicit fallback mode, and invalid-credential fallback remain recorded evidence. Live Granite on the exact final public release, a real screen-reader session, the public video, and final submission were not verified as complete in this guide pass.

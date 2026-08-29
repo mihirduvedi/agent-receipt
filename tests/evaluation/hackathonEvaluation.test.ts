@@ -54,6 +54,14 @@ describe("judge-facing automated evaluation", () => {
         deterministicReplayPassed: true,
         executionBoundaryClosed: true,
       },
+      evidencePacket: {
+        artifactCount: 3,
+        manifestDigestsValid: true,
+        embeddedReceiptReplayPassed: true,
+        recoveryBindingPassed: true,
+        deterministicReplayPassed: true,
+        alteredFindingDetected: true,
+      },
     });
   });
 });

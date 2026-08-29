@@ -11,7 +11,7 @@ Run the application locally, then open either shortcut:
 - `http://localhost:3000/?mode=verify&sample=valid` shows a receipt that passes all eight gates.
 - `http://localhost:3000/?mode=verify&sample=altered` shows the same kind of receipt with one deterministic finding changed after export. The policy replay and citation gates fail.
 
-The same verifier also accepts an exported receipt as a JSON file or pasted text from **Verify a receipt** on the intake screen.
+The same verifier also accepts an exported receipt as a JSON file or pasted text from **Verify an export** on the intake screen. That intake now auto-detects Portable Evidence Packet v1 as a separate strict path documented in `docs/PORTABLE_EVIDENCE_PACKET.md`.
 
 ## What the verifier checks
 
@@ -63,6 +63,6 @@ Verification runs in the browser. It does not call `/api/receipt-copy`, contact 
 
 The focused suite covers valid receipts from all three declared review outcomes, exact-byte digest sensitivity, the 2 MiB boundary, invalid UTF-8, invalid JSON, non-receipt JSON, changed verdicts, changed deterministic findings, altered accounting, and invented citations.
 
-The current local candidate passed `npm run verify` with 19 test files and 335 tests, a production build, and the release audit. Browser inspection covered the valid and altered reports at 1280 × 720, 840 × 900, and 390 × 844. The tested pages had no document-level horizontal overflow, and the smallest tested button height was 46 CSS pixels.
+The current combined local candidate passed `npm run verify` with 20 test files and 346 tests, a production build, and the release audit. The standalone receipt-focused cases remain covered alongside the new packet tests. Browser inspection covered the valid and altered receipt reports at 1280 × 720, 840 × 900, and 390 × 844. The tested pages had no document-level horizontal overflow, and the smallest tested button height was 46 CSS pixels.
 
 Those results are local evidence. Until this candidate is committed, pushed, and deployed with fresh approval, they do not describe the public demo or hosted CI.

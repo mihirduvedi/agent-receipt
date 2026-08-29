@@ -2780,6 +2780,21 @@ tr:last-child td {
   color: #c3cac5;
 }
 
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.export-actions .secondary-button {
+  color: var(--ink);
+}
+
+.export-actions .secondary-button:hover {
+  color: var(--paper);
+}
+
 .export-status {
   min-height: 24px;
   margin: 18px 0 0;
@@ -3143,7 +3158,7 @@ tr:last-child td {
 
 .verifier-summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1.1fr 1fr 1fr 1.8fr;
   margin: 0;
   border-bottom: 1px solid var(--ink);
 }

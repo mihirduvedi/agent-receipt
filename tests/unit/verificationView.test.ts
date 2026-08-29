@@ -18,6 +18,25 @@ describe("portable receipt verification view", () => {
     );
   });
 
+  it("names an evidence packet and its manifest size", () => {
+    const source = report("pass");
+    source.summary = {
+      artifactType: "evidence_packet",
+      artifactCount: 3,
+      traceId: "trace-packet",
+      verdict: "within_declared_authority",
+      findingCount: 0,
+      rawEventCount: 2,
+      generationSource: "deterministic_fallback",
+    };
+
+    const view = buildReceiptVerificationView(source);
+
+    expect(view.statusLabel).toBe("The evidence packet checks agree.");
+    expect(view.summary?.artifactLabel).toBe("Evidence packet · 3 artifacts");
+    expect(view.statusDescription).toContain("manifest");
+  });
+
   it("marks failed and not-run gates with distinct readable labels", () => {
     const source = report("rejected");
     source.gates = [

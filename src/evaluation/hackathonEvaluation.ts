@@ -8,6 +8,10 @@ import {
 } from "../core/receipt";
 import { sha256HexPortable } from "../core/portableDigest";
 import {
+  serializeEvidencePacket,
+  verifyEvidencePacket,
+} from "../core/evidencePacket";
+import {
   buildRecoveryPlanExport,
   serializeRecoveryPlan,
 } from "../core/recoveryPlan";
@@ -67,6 +71,14 @@ export type HackathonEvaluationResult = {
     receiptDigestBound: boolean;
     deterministicReplayPassed: boolean;
     executionBoundaryClosed: boolean;
+  };
+  evidencePacket: {
+    artifactCount: number;
+    manifestDigestsValid: boolean;
+    embeddedReceiptReplayPassed: boolean;
+    recoveryBindingPassed: boolean;
+    deterministicReplayPassed: boolean;
+    alteredFindingDetected: boolean;
   };
 };
 
@@ -178,6 +190,23 @@ export async function runHackathonEvaluation(): Promise<HackathonEvaluationResul
   const expectedReceiptDigest = await sha256HexPortable(
     new TextEncoder().encode(serializeReceipt(nativeB)),
   );
+  const serializedPacket = await serializeEvidencePacket(recoveryInput);
+  const packetReport = await verifyEvidencePacket(
+    new TextEncoder().encode(serializedPacket),
+  );
+  const alteredPacket = JSON.parse(serializedPacket) as {
+    receipt: { findings: Array<{ description: string }> };
+  };
+  if (!alteredPacket.receipt.findings[0]) {
+    throw new Error("Evaluation packet has no finding to alter.");
+  }
+  alteredPacket.receipt.findings[0].description =
+    "This deterministic finding was altered after packet assembly.";
+  const alteredPacketReport = await verifyEvidencePacket(
+    new TextEncoder().encode(JSON.stringify(alteredPacket, null, 2)),
+  );
+  const packetGatePassed = (id: "artifact_manifest" | "embedded_receipt_replay" | "recovery_plan_binding") =>
+    packetReport.gates.find((gate) => gate.id === id)?.status === "passed";
 
   return {
     methodology: "automated_synthetic_corpus",
@@ -250,6 +279,22 @@ export async function runHackathonEvaluation(): Promise<HackathonEvaluationResul
         recoveryPlan.executionBoundary.currentExternalState === "unknown" &&
         recoveryPlan.executionBoundary.executionAuthority === "not_granted" &&
         recoveryPlan.executionBoundary.approval === "required",
+    },
+    evidencePacket: {
+      artifactCount: packetReport.summary?.artifactCount ?? 0,
+      manifestDigestsValid: packetGatePassed("artifact_manifest"),
+      embeddedReceiptReplayPassed: packetGatePassed("embedded_receipt_replay"),
+      recoveryBindingPassed: packetGatePassed("recovery_plan_binding"),
+      deterministicReplayPassed:
+        serializedPacket === await serializeEvidencePacket(recoveryInput),
+      alteredFindingDetected:
+        alteredPacketReport.status === "inconsistent" &&
+        alteredPacketReport.gates.find(
+          (gate) => gate.id === "artifact_manifest",
+        )?.status === "failed" &&
+        alteredPacketReport.gates.find(
+          (gate) => gate.id === "embedded_receipt_replay",
+        )?.status === "failed",
     },
   };
 }

@@ -16,6 +16,7 @@ export type ReceiptVerificationView = {
     ariaLabel: string;
   }>;
   summary?: {
+    artifactLabel: string;
     traceId: string;
     verdict: string;
     findingCountLabel: string;
@@ -28,7 +29,8 @@ export type ReceiptVerificationView = {
 export function buildReceiptVerificationView(
   report: ReceiptVerificationReport,
 ): ReceiptVerificationView {
-  const status = statusCopy(report.status);
+  const artifactType = report.summary?.artifactType ?? "receipt";
+  const status = statusCopy(report.status, artifactType);
   return {
     status: report.status,
     ...status,
@@ -43,6 +45,10 @@ export function buildReceiptVerificationView(
     ...(report.summary
       ? {
           summary: {
+            artifactLabel:
+              report.summary.artifactType === "evidence_packet"
+                ? `Evidence packet · ${report.summary.artifactCount} artifacts`
+                : "Portable receipt · 1 artifact",
             traceId: report.summary.traceId,
             verdict: report.summary.verdict.replaceAll("_", " "),
             findingCountLabel: `${report.summary.findingCount} ${report.summary.findingCount === 1 ? "finding" : "findings"}`,
@@ -58,30 +64,38 @@ export function buildReceiptVerificationView(
   };
 }
 
-function statusCopy(status: ReceiptVerificationStatus): Pick<
+function statusCopy(
+  status: ReceiptVerificationStatus,
+  artifactType: "receipt" | "evidence_packet",
+): Pick<
   ReceiptVerificationView,
   "statusCode" | "statusLabel" | "statusDescription"
 > {
+  const subject = artifactType === "evidence_packet" ? "evidence packet" : "receipt";
   if (status === "pass") {
     return {
       statusCode: "PASS",
-      statusLabel: "The receipt checks agree.",
+      statusLabel: `The ${subject} checks agree.`,
       statusDescription:
-        "Its structure, event accounting, deterministic policy output, and cited receipt notes are internally consistent.",
+        artifactType === "evidence_packet"
+          ? "Its manifest, embedded receipt replay, and citation-closed recovery binding are internally consistent."
+          : "Its structure, event accounting, deterministic policy output, and cited receipt notes are internally consistent.",
     };
   }
   if (status === "rejected") {
     return {
       statusCode: "REJECTED",
-      statusLabel: "This is not a valid portable receipt.",
+      statusLabel: `This is not a valid portable ${subject}.`,
       statusDescription:
         "A byte, format, schema, or cross-object boundary failed, so dependent checks were not run.",
     };
   }
   return {
     statusCode: "CHECK FAILED",
-    statusLabel: "The receipt contradicts its own evidence.",
+    statusLabel: `The ${subject} contradicts its own evidence.`,
     statusDescription:
-      "The receipt parsed, but at least one deterministic replay or citation check did not match the stored result.",
+      artifactType === "evidence_packet"
+        ? "The packet parsed, but its manifest, receipt replay, or recovery binding did not match the stored result."
+        : "The receipt parsed, but at least one deterministic replay or citation check did not match the stored result.",
   };
 }

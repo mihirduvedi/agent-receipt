@@ -10,7 +10,7 @@ The product rule is simple: deterministic rules establish what happened relative
 
 The receipt puts the deterministic verdict, evidence scope, and manager attention queue first.
 
-**Live demo:** [receipt-one-flax.vercel.app](https://receipt-one-flax.vercel.app) · **60-second judge path:** [judge guide](docs/JUDGE_GUIDE.md) · **Public repository:** [GitHub](https://github.com/mihirduvedi/agent-receipt) · **Full guide:** [project guide](docs/PROJECT_GUIDE.md) ([PDF](output/pdf/agent-receipt-complete-project-guide.pdf))
+**Live demo (deployed baseline):** [receipt-one-flax.vercel.app](https://receipt-one-flax.vercel.app) · **60-second judge path:** [judge guide](docs/JUDGE_GUIDE.md) · **Public repository:** [GitHub](https://github.com/mihirduvedi/agent-receipt) · **Full guide:** [project guide](docs/PROJECT_GUIDE.md) ([PDF](output/pdf/agent-receipt-complete-project-guide.pdf))
 
 ## What the prototype does
 
@@ -26,7 +26,8 @@ The receipt puts the deterministic verdict, evidence scope, and manager attentio
 - Keeps the human accept/investigate/reject disposition separate from the product verdict.
 - Exports a schema-validated receipt as JSON.
 - Exports a versioned recovery plan whose citations close over retained receipt evidence and whose SHA-256 binds it to the exact receipt under review.
-- Replays an exported receipt entirely in the browser: exact-file digest, strict contract, event accounting, deterministic policy result, and cited copy all have to agree.
+- Packages a manager decision brief, validated receipt, and citation-closed recovery plan into one strict Evidence Packet v1 file with an independently replayable three-artifact manifest.
+- Replays an exported receipt or evidence packet entirely in the browser: exact-file digest, strict contracts, artifact manifest, event accounting, deterministic policy result, cited copy, and recovery binding all have to agree.
 - Shows the exact minimized, redacted fact bundle that Granite can receive, together with the fields held back and the deterministic gates around the model call.
 - Remains usable without credentials or network inference through a deterministic fallback.
 
@@ -92,13 +93,13 @@ Every material conclusion opens into its cited finding, canonical event, and ret
 
 ![Agent Receipt manager disposition and validated JSON export](docs/screenshots/agent-receipt-disposition-export.jpg)
 
-Accept, investigate, or reject records a manager decision without changing the deterministic verdict, findings, or evidence. The receipt then exports as validated JSON without the retained raw input.
+Accept, investigate, or reject records a manager decision without changing the deterministic verdict, findings, or evidence. The primary export is a single Evidence Packet v1 file containing the manager brief, validated receipt, and citation-closed recovery plan. The standalone receipt remains available. Neither export includes the retained raw input.
 
-### 11. Replay an exported receipt
+### 11. Replay the complete handoff
 
-Switch to **Verify a receipt** to check a JSON export without a server, credentials, network request, or Granite call. The verifier hashes the exact received bytes, validates the receipt contract, recomputes coverage, re-runs the deterministic policy engine, and checks every cited receipt note. Its limitations stay visible even when all eight gates pass.
+Switch to **Verify an export** to check either Receipt v1 or Evidence Packet v1 without a server, credentials, network request, or Granite call. For a packet, the verifier hashes the exact imported file, validates the cross-artifact contract, replays all three manifest digests, runs the complete receipt verifier, and confirms the proposal-only recovery plan is bound to the canonical receipt. Its limitations stay visible even when all eight packet gates pass.
 
-For the fastest local proof, open `/?mode=verify&sample=valid`, then `/?mode=verify&sample=altered`. The first receipt passes; the second has one changed deterministic finding and fails policy and citation replay. See the [verifier contract](docs/PORTABLE_RECEIPT_VERIFIER.md).
+For the fastest local proof, select **Verify evidence packet**, then reset and select **Catch altered sample**. The packet passes all eight gates; the changed receipt fails policy and citation replay. Existing `/?mode=verify&sample=valid` and `/?mode=verify&sample=altered` receipt shortcuts remain backward-compatible. See the [Evidence Packet contract](docs/PORTABLE_EVIDENCE_PACKET.md) and [standalone receipt-verifier contract](docs/PORTABLE_RECEIPT_VERIFIER.md).
 
 ## Run the demo locally
 
@@ -117,10 +118,10 @@ Open [http://localhost:3000](http://localhost:3000), then:
 4. Open an evidence control to compare the canonical event with the retained raw object.
 5. Start a new review with **Overreaching run**.
 6. Inspect the external spreadsheet attempt, successful retry, customer-email movement, and unapproved send.
-7. Record a reviewer disposition, download the receipt JSON, and export the citation-closed recovery plan.
+7. Record a reviewer disposition and download the complete evidence packet. The standalone receipt and recovery-plan exports remain available.
 8. Start a third review with **Incomplete OTLP run**.
 9. Open **Evidence gaps**, then inspect the unparsed source record that has no canonical event.
-10. Start a new review, select **Verify a receipt**, and run the valid and altered synthetic verifier demonstrations.
+10. Start a new review, select **Verify an export**, replay the valid evidence packet, then run the altered-receipt demonstration.
 
 The samples are synthetic. The expected run contains three in-authority events. The overreaching run contains six events, including an unknown-outcome external write followed by a successful retry and an external message send. The incomplete OTLP run contains three source spans and demonstrates the third honest outcome: the supplied evidence is insufficient for a complete authority assessment.
 
@@ -135,10 +136,11 @@ deterministic policy engine → findings + qualified verdict
       ↓
 minimized, redacted fact bundle → server-only Granite route
       ↓ valid citations and schema, or deterministic fallback
-evidence-linked receipt → human disposition → validated receipt JSON
-                                      ↓
-                         cited recovery-plan JSON
-                         bound to the receipt digest
+evidence-linked receipt → human disposition → Portable Evidence Packet v1
+                                      ↓            ├─ manager decision brief
+                                      ↓            ├─ validated receipt
+                                      └────────────└─ cited recovery plan
+                                                   + three-artifact manifest
 ```
 
 The browser retains the source snapshot for evidence drill-down. The server route recomputes the findings, then builds a minimized and redacted fact bundle for Granite. The receipt exposes that same projection in a read-only AI boundary panel so a judge or manager can inspect what the model may receive. Generated claims are schema-checked and rejected if their citations are invalid. Missing fields remain unknown; the model is never asked to fill them in.
@@ -149,9 +151,9 @@ The browser retains the source snapshot for evidence drill-down. The server rout
 
 | Judging criterion | Agent Receipt fit |
 |---|---|
-| Technical execution | A working strict-TypeScript prototype preserves exact input bytes, accounts for every raw event, runs deterministic policy rules, validates external boundaries with Zod, and keeps a credential-free fallback usable. |
-| Innovation | Compares declared intent with observed action, exposes a deterministic evidence-refusal state, and prevents generated prose from changing the verdict or escaping retained citations. |
-| Feasibility | Accepts bounded Native Trace v1 and documented OTLP/JSON GenAI contracts, works locally without external services, exports a validated receipt and recovery plan, verifies receipt exports offline, and isolates the optional watsonx.ai call behind one server route. |
+| Technical execution | A working strict-TypeScript prototype preserves exact input bytes, accounts for every raw event, runs deterministic policy rules, validates external boundaries with Zod, and replays a three-artifact evidence packet without a service dependency. |
+| Innovation | Compares declared intent with observed action, exposes a deterministic evidence-refusal state, prevents generated prose from changing the verdict, and turns the manager handoff into a self-checking evidence contract. |
+| Feasibility | Accepts bounded Native Trace v1 and documented OTLP/JSON GenAI contracts, works locally without external services, exports one complete evidence packet, verifies receipts and packets offline, and isolates the optional watsonx.ai call behind one server route. |
 | Challenge fit | Gives teams and AI operations managers decision support for reviewing work completed by AI collaborators, directly matching the future-of-work wildcard theme. |
 | Real-world impact | Helps a manager decide whether to accept, investigate, or reject a completed run while showing where the supplied evidence cannot support any complete conclusion. |
 
@@ -185,6 +187,7 @@ Granite gives the prototype an IBM-native runtime explanation layer that fits th
 | AI boundary view | Yes | Rebuild and disclose the minimized, redacted projection without exposing the retained raw trace |
 | Portable Receipt Verifier | Yes | Hash the exact imported export and replay its schema, accounting, policy result, and citations entirely in the browser |
 | Recovery-plan export | Yes | Bind cited proposed actions to the exact receipt without granting execution authority |
+| Portable Evidence Packet v1 | Yes | Carry a manager brief, receipt, and recovery plan in one strict JSON handoff with three independently replayed manifest entries |
 | Reviewer disposition | Human | Record accept, investigate, reject, or unreviewed without changing the verdict |
 
 ## Verification
@@ -238,6 +241,7 @@ This MVP targets the IBM SkillsBuild AI Builders Challenge with IBM Bob, Wildcar
 - [IBM Bob build evidence](docs/BOB_BUILD_STORY.md)
 - [Reproducible evaluation](docs/EVALUATION.md)
 - [Portable Receipt Verifier contract](docs/PORTABLE_RECEIPT_VERIFIER.md)
+- [Portable Evidence Packet v1 contract](docs/PORTABLE_EVIDENCE_PACKET.md)
 - [Recovery Plan v1 contract](docs/RECOVERY_PLAN.md)
 - [Paste-ready submission copy](docs/SUBMISSION.md)
 - [Three-minute judge demo script](docs/DEMO_SCRIPT.md)

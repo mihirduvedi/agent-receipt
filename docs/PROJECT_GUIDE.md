@@ -4,9 +4,9 @@
 
 **From first principles to architecture, code, trust boundaries, testing, and deployment**
 
-Version 1.6 - August 28, 2026
+Version 1.7 - August 29, 2026
 
-Project snapshot: Evidence Gap Mode and the Portable Receipt Verifier are committed and deployed in product release `4f96c4b`. GitHub Actions run `33224543916` and Vercel deployment `dpl_8H1hpRVHXgXmZhJBapPcKKYNk3kZ` passed for that exact product SHA. Local responsive and live-Granite evidence remain qualified separately from the hosted fallback deployment.
+Project snapshot: the deployed product baseline contains Evidence Gap Mode and the Portable Receipt Verifier at release `4f96c4b`; GitHub Actions run `33224543916` and Vercel deployment `dpl_8H1hpRVHXgXmZhJBapPcKKYNk3kZ` passed for that exact product SHA. Portable Evidence Packet v1 is implemented in the current local candidate and remains uncommitted, unpushed, and undeployed until a fresh release approval. Local responsive, packet, PDF, and live-Granite evidence are qualified separately from the hosted fallback deployment.
 
 > Agent Receipt gives accountable humans an evidence-linked receipt for what an AI agent did relative to what it was allowed to do.
 
@@ -80,6 +80,7 @@ It produces a receipt containing:
 - a separate human disposition;
 - a validated receipt JSON export;
 - a citation-closed recovery-plan JSON export bound to that receipt;
+- a single Portable Evidence Packet v1 handoff containing a manager brief, receipt, and recovery plan with a replayable three-artifact manifest;
 - an explicit evidence-gap view when the supplied trace cannot support a complete verdict.
 
 The word **deterministic** matters. It means the same validated evidence and authority produce the same policy result. An AI model does not decide whether a violation occurred.
@@ -126,7 +127,7 @@ Developers, security reviewers, and internal auditors are secondary users. They 
 
 ## 4. The reviewer's journey
 
-The product has two intake modes. **Review a trace** follows three visible steps; **Verify a receipt** replays an exported artifact without starting a new trace review.
+The product has two intake modes. **Review a trace** follows three visible steps; **Verify an export** replays a standalone receipt or complete evidence packet without starting a new trace review.
 
 ### Step 1: Choose a trace
 
@@ -168,23 +169,25 @@ The receipt presents:
 9. cited explanatory copy;
 10. integrity record;
 11. human disposition;
-12. validated receipt JSON export.
+12. one complete evidence-packet export, with standalone receipt and recovery-plan exports still available.
 
 The manager can open any important statement into its canonical event and exact retained raw object. When no canonical event can be created, the evidence-gap ledger opens the retained raw record directly.
 
-### Alternate intake: verify an exported receipt
+### Alternate intake: verify a portable export
 
-A receipt may be passed to another manager, attached to an incident record, or shown to a judge after it leaves the browser that created it. The Portable Receipt Verifier checks whether that JSON still agrees with the deterministic evidence inside it.
+A receipt or evidence packet may be passed to another manager, attached to an incident record, or shown to a judge after it leaves the browser that created it. The portable verifier auto-detects both schemas and checks whether the JSON still agrees with the deterministic evidence inside it.
 
-The verifier hashes the exact imported bytes, applies the same 2 MiB boundary, requires fatal UTF-8 decoding and valid JSON, validates the strict receipt contract, recomputes event accounting, re-runs policy, and checks the exported receipt notes against their citations. It does not call Granite, the server route, or any network service.
+Standalone receipts keep the existing eight-gate path: exact bytes, 2 MiB limit, fatal UTF-8, JSON, strict receipt contract, event accounting, deterministic policy replay, and cited-copy validation.
+
+Evidence Packet v1 uses a 4 MiB limit and a different eight-gate path. After exact-byte hashing, UTF-8, and JSON boundaries, it validates the strict cross-artifact contract, recomputes the byte length and SHA-256 for the manager brief, receipt, and recovery plan, runs the complete embedded-receipt verifier, and confirms the recovery plan is bound to the canonical receipt artifact. Neither path calls Granite, the server route, or any network service.
 
 The result is one of three explicit states:
 
 - **PASS:** all eight gates agree;
 - **REJECTED:** a byte, format, schema, or cross-object boundary failed, so dependent checks were not run;
-- **CHECK FAILED:** the receipt parsed, but its stored result disagrees with deterministic replay.
+- **CHECK FAILED:** the export parsed, but a manifest, policy, citation, or recovery binding disagrees with deterministic replay.
 
-The report always says what it cannot prove. Internal consistency is not exporter authentication, trusted capture, trace completeness, access to the original trace bytes, a digital signature, or nonrepudiation.
+The report always says what it cannot prove. Internal consistency is not exporter authentication, trusted capture, trace completeness, access to the original trace bytes, tamper-proof provenance, a digital signature, or nonrepudiation. Anyone who can rewrite an unsigned packet can also recompute its manifest.
 
 ## 5. The three synthetic stories
 
@@ -436,6 +439,7 @@ receipt/
 |  |- JUDGE_GUIDE.md              60-second judge path and evidence map
 |  |- OTLP_GENAI_ADAPTER.md       supported external trace contract
 |  |- PORTABLE_RECEIPT_VERIFIER.md exported-receipt replay contract
+|  |- PORTABLE_EVIDENCE_PACKET.md complete handoff and manifest contract
 |  |- RECOVERY_PLAN.md            Recovery Plan v1 trust contract
 |  |- SUBMISSION.md               paste-ready challenge copy
 |  |- AI_ASSISTANCE_LOG.md        honest tool provenance
@@ -447,7 +451,7 @@ receipt/
 |  |- ai/                         minimization, Granite, validation, fallback
 |  |- app/                        Next page, layout, CSS, API route
 |  |- components/                 complete interactive review UI
-|  |- core/                       schemas, policy, receipt, recovery, verification
+|  |- core/                       schemas, policy, receipt, recovery, packet, verification
 |  |- fixtures/                   expected, overreaching, and incomplete traces
 |  |- evaluation/                 executable judge-facing corpus
 |  |- release/                    privacy/license/media release audit
@@ -512,10 +516,14 @@ COVERAGE                 AUTHORITY ENVELOPE
                                              v
                                    VALIDATED RECEIPT STATE
                                              |
-                                +------------+------------+
-                                v                         v
-                    VALIDATED RECEIPT JSON      CITED RECOVERY PLAN
-                                                + RECEIPT DIGEST
+                  +--------------------------+-------------------------+
+                  |                          |                         |
+                  v                          v                         v
+      STANDALONE RECEIPT JSON     STANDALONE RECOVERY PLAN    EVIDENCE PACKET V1
+                                  + RECEIPT DIGEST             |- decision brief
+                                                               |- receipt
+                                                               |- recovery plan
+                                                               `- bytes + digests
 ```
 
 There are two parallel sources inside the browser:
@@ -527,7 +535,7 @@ The second source feeds the evidence drawer but is excluded from the exported re
 
 ## 12. The schema hub
 
-`src/core/schemas/index.ts` is the central runtime contract file. It defines version literals, every Zod schema, and the corresponding TypeScript types.
+`src/core/schemas/index.ts` is the central receipt-runtime contract file. It defines the trace-through-receipt version literals, Zod schemas, and corresponding TypeScript types. Export-layer contracts live beside their deterministic builders so the Recovery Plan and Evidence Packet boundaries remain independently testable.
 
 The major versions are:
 
@@ -536,6 +544,9 @@ agent-receipt.native-trace.v1
 agent-receipt.authority.v1
 agent-receipt.canonical-event.v1
 agent-receipt.receipt.v1
+agent-receipt.recovery-plan.v1
+agent-receipt.decision-brief.v1
+agent-receipt.evidence-packet.v1
 ```
 
 Version strings make incompatible change visible. A future trace shape should receive a new version and adapter rather than silently changing the meaning of v1.
@@ -958,6 +969,20 @@ The schema rejects invented evidence, unknown incident links, duplicate identifi
 
 The clean fixture produces a valid empty plan. The overreaching fixture produces two incidents and six proposed actions backed by three canonical events and twelve findings. Retained raw input, credentials, connectors, and mutation commands are absent. The complete contract is documented in `docs/RECOVERY_PLAN.md`.
 
+### Portable Evidence Packet v1
+
+`src/core/evidencePacket.ts` assembles the primary manager handoff from the same validated receipt, incidents, and recovery actions. It does not create a second policy result or ask a model for a new summary.
+
+The packet contains three canonical JSON artifacts:
+
+1. a deterministic manager decision brief;
+2. the complete Receipt v1 artifact; and
+3. the citation-closed Recovery Plan v1 artifact.
+
+Each artifact is parsed through its strict Zod schema, serialized with two-space indentation and no trailing newline, then measured and hashed independently. The outer manifest records three byte lengths and three SHA-256 values. Cross-artifact refinements require the task, trace, verdict, qualifier, coverage, counts, disposition, incidents, generation source, and receipt binding to agree.
+
+The packet excludes the original trace and retained raw source. It also contains no credentials, approvals, connectors, execution commands, or assertion that external state was rechecked. The fixed qualifier and limitations explain that the unsigned manifest proves internal consistency rather than authenticity. The full contract is documented in `docs/PORTABLE_EVIDENCE_PACKET.md`.
+
 ## 19. The frontend as a state machine
 
 `ReceiptReviewApp.tsx` is a client component with two intake modes. Trace review has three main states:
@@ -966,9 +991,9 @@ The clean fixture produces a valid empty plan. The overreaching fixture produces
 intake -> authority -> receipt
 ```
 
-It also owns source bytes, paste value, authority draft, validation errors, analysis progress, successful build, evidence drawer request, receipt-export status, and recovery-export status.
+It also owns source bytes, paste value, authority draft, validation errors, analysis progress, successful build, evidence drawer request, complete-packet or receipt export status, and recovery-export status.
 
-Receipt verification is a separate local branch with imported bytes, paste text, a running flag, a report view model, and a reset action. It never adds the imported receipt to the trace-review state.
+Portable-export verification is a separate local branch with imported bytes, paste text, a running flag, a report view model, and a reset action. It never adds an imported receipt or packet to the trace-review state.
 
 ### Intake
 
@@ -983,7 +1008,7 @@ The UI validates before moving on:
 
 Invalid JSON messages report line and column when the runtime error exposes a position. They do not echo private invalid content.
 
-### Portable receipt verification
+### Portable receipt and evidence-packet verification
 
 `src/core/verifyReceipt.ts` takes a `Uint8Array` and returns a deterministic report. It copies the bytes immediately, hashes before decoding, and returns eight ordered gate records. Early boundary failures append explicit `not_run` gates rather than making later checks look successful.
 
@@ -992,6 +1017,10 @@ After `ReceiptResultSchema` accepts the export, the verifier calls the same `com
 `src/ui/verificationView.ts` turns that report into manager-readable status labels without changing the core result. The report UI shows the imported-file digest and byte length, receipt summary, gate ledger, bounded failures, and the required limitations. It does not render the imported JSON body.
 
 The query shortcuts `/?mode=verify&sample=valid` and `/?mode=verify&sample=altered` server-render the two judge states. The altered version changes one deterministic finding description after export, so the strict receipt still parses but policy and citation replay expose the contradiction.
+
+`src/core/evidencePacket.ts` adds receipt-or-packet auto-detection and the packet-specific verifier. The packet path hashes the exact outer bytes before decoding, validates the strict packet and cross-artifact references, reserializes and rehashes all three canonical artifacts, calls the complete receipt verifier on the embedded receipt, and checks the recovery plan against the receipt manifest entry. The synthetic **Verify evidence packet** control exercises this complete path without a credential or network request.
+
+The same view model names the artifact type and count, then shows the relevant eight gates. A schema-valid packet with a changed receipt finding produces `CHECK FAILED`: the manifest and embedded policy replay both expose the contradiction.
 
 ### Authority form
 
@@ -1008,7 +1037,7 @@ The final view contains:
 - seven manager metrics;
 - incident brief grouped only by cited event overlap or a shared explicit action key;
 - Evidence Gap Mode with deterministic refusal reasons and a complete raw-record ledger;
-- Recovery Plan v1 export placed before the longer proposal list for a shorter judge path;
+- Recovery Plan v1 export placed before the longer proposal list for direct use;
 - proposed recovery actions with human authority and reversibility labels;
 - human action summary;
 - chronological timeline;
@@ -1018,7 +1047,7 @@ The final view contains:
 - inspectable Granite boundary with provenance, deterministic gates, omission ledger, and exact redacted projection;
 - integrity grid;
 - disposition controls;
-- export action.
+- primary Portable Evidence Packet export plus the standalone receipt action.
 
 ## 20. Deterministic human action summary
 
@@ -1168,7 +1197,7 @@ The project separates evidence layers because each answers a different question.
 
 ## 25. Automated test suite
 
-The current local source snapshot contains 335 tests across 19 files.
+The current local source snapshot contains 346 tests across 20 files.
 
 ### Test families
 
@@ -1205,9 +1234,11 @@ They include adversarial claims about unsupported systems, operations, people, b
 
 **Evidence-gap tests** cover complete raw-record accounting, gap-to-pointer linkage, complete-receipt exclusion, raw-only drill-down inputs, and the evidence-only recovery action.
 
+**Evidence-packet tests** cover strict three-artifact assembly; receipt, brief, and recovery cross-references; clean, overreaching, and incomplete verdicts; stable serialization; exact outer-byte hashing; manifest and embedded-receipt replay; recovery binding; invented citations; receipt-or-packet auto-detection; and oversize, UTF-8, and JSON failure boundaries.
+
 **Release-audit tests** cover secret patterns, personal paths, dependency license metadata, media attribution, and the narrow Next build-root allowance.
 
-**Evaluation tests** run four declared synthetic cases and adversarial checks for verdicts, seeded rules, fifteen-of-fifteen raw-record accounting, known digests, deterministic replay, citations, invalid Granite selections, material OTLP parsing gaps, and the Recovery Plan v1 receipt/execution boundaries. Focused verifier tests add exact imported-byte, boundary, schema, accounting, policy, and citation failure cases. `docs/EVALUATION.md` records the exact method and its limitations.
+**Evaluation tests** run four declared synthetic cases and adversarial checks for verdicts, seeded rules, fifteen-of-fifteen raw-record accounting, known digests, deterministic replay, citations, invalid Granite selections, material OTLP parsing gaps, and the Recovery Plan v1 receipt/execution boundaries. The same evaluation now builds a three-artifact evidence packet, replays its manifest, receipt, and recovery binding, and detects an altered finding. Focused verifier tests add exact imported-byte, boundary, schema, accounting, policy, citation, packet-cross-reference, and artifact-manifest failure cases. `docs/EVALUATION.md` records the exact method and its limitations.
 
 ## 26. The complete local gate
 
@@ -1221,16 +1252,16 @@ npm run build
 npm run release:audit
 ```
 
-For the combined Evidence Gap Mode and Portable Receipt Verifier release it passed locally with:
+For the current Portable Evidence Packet v1 candidate it passed locally on August 29 with:
 
 - ESLint: zero warnings;
 - strict TypeScript: passed;
-- 19 test files: passed;
-- 335 tests: passed;
+- 20 test files: passed;
+- 346 tests: passed;
 - Next production build: passed;
-- release audit: passed across 77 source files, 143 build files, 474 dependency entries, and 11 declared media assets.
+- release audit: passed across 80 source files, 143 build files, 474 dependency entries, and 11 declared media assets.
 
-This local result is independently reproduced by hosted CI. Product release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f` passed GitHub Actions run `33224543916` on August 28, 2026 with the same complete gate, then reached a ready Vercel production deployment and passed the focused public browser journeys described below.
+This local packet result has not been reproduced by hosted CI or deployment. The earlier baseline release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f` passed its then-current complete gate in GitHub Actions run `33224543916` on August 28, 2026, then reached a ready Vercel production deployment and passed the focused public browser journeys described below.
 
 ## 27. Release audit
 
@@ -1247,9 +1278,9 @@ This local result is independently reproduced by hosted CI. Product release `4f9
 
 Next.js includes the build root inside specific required-server metadata files. The audit masks only that exact expected root in only those allowlisted files. An unrelated personal path still fails.
 
-For the Version 1.6 release it checked:
+For the Version 1.7 local candidate it checked:
 
-- 77 release-scoped source text files;
+- 80 release-scoped source text files;
 - 143 production-build text files;
 - 474 dependency package entries;
 - 11 app-owned media assets;
@@ -1266,6 +1297,8 @@ Local rendered checks covered:
 - both evidence gaps, the complete source-record ledger, and the raw-only evidence drawer;
 - Evidence Gap Mode at 390, 840, and 1280 CSS pixels without document-level overflow;
 - valid and altered Portable Receipt Verifier reports at 390, 840, and 1280 CSS pixels without document-level overflow;
+- the Evidence Packet v1 report at 390, 840, and the default desktop viewport, with document width equal to viewport width at 390 and 840 pixels and a 46-pixel minimum measured button height;
+- the mobile complete-packet and receipt-only export controls, including visible contrast and the successful packet status;
 - all eight verifier gates, exact imported-file digest display, always-visible non-claims, and a minimum measured button height of 46 CSS pixels;
 - validation and recovery;
 - every canonical action translated once;
@@ -1279,7 +1312,7 @@ Local rendered checks covered:
 - Chromium accessibility-tree landmarks and dialog naming;
 - no document-level overflow or recorded browser console warnings/errors.
 
-The 640-pixel zoom-equivalent and accessibility-tree checks predate Evidence Gap Mode and support the unchanged core shell, not the new panels specifically. Evidence Gap Mode's keyboard drawer behavior, responsive layout, and browser logs were checked directly. The verifier's query-rendered reports and semantics were inspected locally at all three widths. On the deployed release, browser automation then activated the recovery control plus both sample controls and observed PASS and CHECK FAILED at 1280 pixels. These checks are stronger than looking at one screenshot, but they remain browser-specific and do not equal a real screen-reader or cross-browser certification.
+The 640-pixel zoom-equivalent and accessibility-tree checks predate Evidence Gap Mode and support the unchanged core shell, not the new panels specifically. Evidence Gap Mode's keyboard drawer behavior, responsive layout, and browser logs were checked directly. The packet verifier and export controls were inspected locally; browser logs contained no warning or error entries. On the deployed baseline, browser automation activated the recovery control plus both receipt-sample controls and observed PASS and CHECK FAILED at 1280 pixels. These checks are stronger than looking at one screenshot, but they remain browser-specific and do not equal a real screen-reader or cross-browser certification.
 
 ## 29. Deployment architecture
 
@@ -1367,6 +1400,8 @@ The point of the log is not to invent a percentage. It is to show material promp
 
 For the Portable Receipt Verifier, Bob produced the architecture, trust-claim matrix, acceptance cases, and implementation task plan, then began the Agent workflow. Bob's free-trial usage limit was reached before implementation files were written. Codex completed the verifier implementation, UI, tests, guide, and QA from that plan. `portable-receipt-verifier-plan.md` and `docs/AI_ASSISTANCE_LOG.md` record that boundary directly; no Codex-authored code is attributed to Bob.
 
+For Portable Evidence Packet v1, the live Bob session still displayed **Budget Exceeded** and could not accept a new implementation prompt. Codex inspected the complete current project, ranked the hackathon opportunities, implemented the packet, extended the evaluation and interface, and ran the local checks recorded in this guide. This work builds on the Bob-authored foundation but is not attributed to Bob.
+
 ## 31. License and asset status
 
 Agent Receipt is proprietary, not open source. The custom evaluation license permits narrow unmodified evaluation by judges, organizers, prospective users, and non-commercial reviewers. It restricts modification, redistribution, commercial operation, replication, competing-product use, and ML training without written permission.
@@ -1413,16 +1448,17 @@ Open `http://localhost:3000`.
 9. Inspect the external spreadsheet and email findings.
 10. Set Investigate.
 11. Open AI boundary and inspect the exact redacted projection and omission ledger.
-12. Download Recovery Plan v1 and inspect its receipt digest and execution boundary.
-13. Download the receipt JSON.
-14. Confirm the raw uploaded document is absent from both exports.
+12. Inspect the Recovery Plan v1 receipt digest and execution boundary.
+13. Download the Portable Evidence Packet and confirm the success message names all three validated artifacts.
+14. Optionally download the standalone receipt and recovery plan. Confirm the raw uploaded document is absent from every export.
 15. Start a new review with Incomplete OTLP run.
 16. Confirm the incomplete verdict, 3/3 ledger, 1/1/1 accounting split, and two evidence gaps.
 17. Open the unparsed raw-only record and confirm the missing operation remains absent rather than inferred.
-18. Start a new review and select **Verify a receipt**.
-19. Run the valid synthetic verifier demonstration and scan all eight passed gates.
-20. Run the altered demonstration and confirm deterministic policy and citation replay fail.
-21. Read the always-visible limitations: the verifier proves internal consistency, not exporter identity, trace completeness, or signed provenance.
+18. Start a new review and select **Verify an export**.
+19. Run the evidence-packet demonstration. Confirm the summary names three artifacts and all eight packet gates pass.
+20. Reset, run the valid standalone-receipt demonstration, and confirm backward compatibility.
+21. Run the altered demonstration and confirm deterministic policy and citation replay fail.
+22. Read the always-visible limitations: the verifier proves internal consistency, not exporter identity, trace completeness, tamper-proof provenance, or a digital signature.
 
 ## 33. Input format by example
 
@@ -1645,7 +1681,7 @@ Remaining risks include:
 
 ## 41. What remains before the hackathon release is fully complete
 
-At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, citation-closed Recovery Plan v1 export, Granite selection hardening, inspectable Granite boundary, narrow OTLP adapter, automated evaluation corpus, Evidence Gap Mode, Portable Receipt Verifier, screenshots, license, public repository, judge guide, exact product-release CI, Vercel deployment, and focused public journeys were complete. Public deterministic-fallback evidence remains separate from the locally verified live Granite path.
+At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, citation-closed Recovery Plan v1 export, Granite selection hardening, inspectable Granite boundary, narrow OTLP adapter, automated evaluation corpus, Evidence Gap Mode, Portable Receipt Verifier, screenshots, license, public repository, judge guide, exact product-release CI, Vercel deployment, and focused public journeys were complete in the deployed baseline. Portable Evidence Packet v1 passed the complete local gate, exact downloaded-file verification, documentation audit, and rendered-PDF inspection; it remains a local release candidate pending separate release approval. Public deterministic-fallback evidence remains separate from local packet, PDF, and live-Granite checks.
 
 Open release work included:
 
@@ -1788,11 +1824,25 @@ Raw input, output, error body, and general metadata are not copied into the cano
 | Field | Meaning |
 |---|---|
 | `status` | `pass`, `rejected`, or `inconsistent` |
-| `fileSha256` | SHA-256 of the exact imported receipt bytes, or unavailable only if hashing fails |
+| `fileSha256` | SHA-256 of the exact imported receipt or packet bytes, or unavailable only if hashing fails |
 | `byteLength` | Imported byte count before decoding |
-| `gates` | Eight ordered digest, size, UTF-8, JSON, contract, accounting, policy, and citation results |
-| `summary` | Trace ID, verdict, finding count, raw-event count, and copy provenance after strict receipt validation |
+| `gates` | Eight ordered results: receipt paths end in accounting, policy, and citation replay; packet paths end in manifest, embedded-receipt, and recovery-binding replay |
+| `summary` | Artifact type/count, trace ID, verdict, finding count, raw-event count, and copy provenance after strict validation |
 | `limitations` | Always-visible authenticity, provenance, trace-completeness, and original-byte non-claims |
+
+## A8. Portable Evidence Packet v1 fields
+
+| Field | Meaning |
+|---|---|
+| `schemaVersion` | `agent-receipt.evidence-packet.v1` |
+| `qualifier` | Fixed supplied-trace and authenticity boundary |
+| `assembledAt` | Receipt generation time; packet assembly does not invent a later review event |
+| `sourceTrace` | Trace ID, recorded input digest algorithm and value, and supplied source byte count |
+| `manifest` | Exactly three canonical artifact IDs, schema versions, byte lengths, and SHA-256 values |
+| `decisionBrief` | Deterministic task, verdict, coverage, incident, action, disposition, and generation-source summary |
+| `receipt` | Complete strict Receipt v1 artifact |
+| `recoveryPlan` | Complete strict Recovery Plan v1 artifact |
+| `limitations` | Fixed unsigned-manifest, authenticity, trace-completeness, original-byte, and non-execution boundaries |
 
 ---
 
@@ -1822,6 +1872,10 @@ Raw input, output, error body, and general metadata are not copied into the cano
 | Invented or inconsistent recovery citation | Reject recovery-plan export |
 | Invalid receipt export in portable verifier | REJECTED; dependent replay gates are not run |
 | Valid receipt that contradicts deterministic replay | CHECK FAILED with the failed gate and bounded issues |
+| Invalid packet cross-reference or invented recovery citation | REJECTED; manifest and dependent replay gates are not run |
+| Packet artifact changed without matching manifest | CHECK FAILED at artifact-manifest replay |
+| Embedded receipt changed after packet assembly | CHECK FAILED at manifest and complete receipt replay |
+| Packet recovery digest detached from canonical receipt | CHECK FAILED at recovery-plan binding |
 | Browser refresh | Uploaded trace may be lost; samples remain available |
 
 ---
@@ -1934,6 +1988,14 @@ Because a material evidence gap prevents a complete assessment. Existing finding
 
 No. PASS means the supplied export is internally consistent under the current receipt schema and deterministic rules. It does not prove who created it, whether the original trace was complete, whether the original trace bytes match the recorded digest, or whether the file has signed provenance.
 
+## What does the Portable Evidence Packet add?
+
+It keeps the decision brief, validated receipt, and citation-closed recovery plan together, then records an independently replayable byte length and SHA-256 for each canonical artifact. The receiver can test the complete handoff in one browser-only verifier flow.
+
+## Is the evidence packet tamper-proof?
+
+No. The packet has an unsigned internal-consistency manifest, not a trust anchor. Someone able to rewrite the packet can also recompute its digests. Exporter authentication, signed provenance, and key management remain separate post-hackathon problems.
+
 ## What does the Recovery Plan export actually do?
 
 It packages deterministic, evidence-cited follow-up proposals for human review. It does not reconnect to systems, change credentials, send messages, delete data, or execute a rollback.
@@ -1984,6 +2046,7 @@ It is a bounded hackathon MVP. Production use would require authentication, pers
 | How are findings/verdict computed? | `src/core/policyEngine.ts` |
 | How is a receipt assembled/exported? | `src/core/receipt.ts` |
 | How is an exported receipt replayed? | `src/core/verifyReceipt.ts`, `src/ui/verificationView.ts`, `docs/PORTABLE_RECEIPT_VERIFIER.md` |
+| How is a complete evidence packet built and replayed? | `src/core/evidencePacket.ts`, `docs/PORTABLE_EVIDENCE_PACKET.md` |
 | How is a recovery plan assembled/exported? | `src/core/recoveryPlan.ts`, `docs/RECOVERY_PLAN.md` |
 | What can reach Granite? | `src/ai/factBundle.ts`, `src/ai/redact.ts` |
 | How is model output constrained? | `src/ai/validateClaims.ts`, `src/ai/deterministicFallback.ts` |
@@ -2017,6 +2080,7 @@ This guide was cross-checked against the complete tracked repository, including 
 ## Evidence boundaries
 
 - The combined Evidence Gap Mode and Portable Receipt Verifier release is supported by source inspection, 335 tests across 19 files, a successful production build and release audit, focused local browser checks at 390, 840, and 1280 CSS pixels, exact-SHA hosted CI, and a ready Vercel production deployment.
+- The local Portable Evidence Packet v1 candidate is supported by 346 tests across 20 files, a successful production build and release audit, a strict UI scan with 0 errors and 0 warnings, 390/840/default-viewport browser checks, and an independently verified 40,064-byte downloaded packet. It has no hosted CI or deployment evidence yet.
 - Exact product-release CI, Vercel status, public repository visibility, the incomplete receipt, and both verifier states were checked live on August 28. Public browser automation activated both verifier controls: the valid shortcut passed all eight gates and the altered shortcut produced policy and citation failures. The deployed incomplete trace retained 3/3 accounting and both evidence gaps. All three journeys matched the 1280-pixel viewport and logged no browser errors.
 - Earlier public fixture checks remain the evidence for expected/overreaching Granite-boundary counts, recovery-plan placement, and 390-pixel behavior. Neither browser-created Blob file was independently captured.
 - Local live Granite success under the compact selection boundary was re-observed on August 28, 2026. Prior rejected-claim fallback, explicit fallback mode, and invalid-credential fallback remain recorded evidence. Live Granite on the exact final public release, a real screen-reader session, the public video, and final submission were not verified as complete in this guide pass.

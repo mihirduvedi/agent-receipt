@@ -15,9 +15,13 @@ export type ReceiptVerificationGateId =
   | "utf8"
   | "json"
   | "receipt_contract"
+  | "packet_contract"
+  | "artifact_manifest"
   | "accounting_replay"
   | "policy_replay"
-  | "citation_validation";
+  | "citation_validation"
+  | "embedded_receipt_replay"
+  | "recovery_plan_binding";
 
 export type ReceiptVerificationGate = {
   id: ReceiptVerificationGateId;
@@ -31,6 +35,8 @@ export type ReceiptVerificationGate = {
 };
 
 export type ReceiptVerificationSummary = {
+  artifactType: "receipt" | "evidence_packet";
+  artifactCount: number;
   traceId: string;
   verdict: ReceiptResult["verdict"];
   findingCount: number;
@@ -61,9 +67,13 @@ const GATE_LABELS: Record<ReceiptVerificationGateId, string> = {
   utf8: "UTF-8 decoding",
   json: "JSON syntax",
   receipt_contract: "Receipt contract",
+  packet_contract: "Evidence packet contract",
+  artifact_manifest: "Artifact manifest replay",
   accounting_replay: "Event accounting replay",
   policy_replay: "Deterministic policy replay",
   citation_validation: "Cited claim validation",
+  embedded_receipt_replay: "Embedded receipt replay",
+  recovery_plan_binding: "Recovery plan binding",
 };
 
 /**
@@ -300,6 +310,8 @@ export async function verifyReceipt(
     ? "pass"
     : "inconsistent";
   return report(status, fileSha256, exactBytes.byteLength, gates, {
+    artifactType: "receipt",
+    artifactCount: 1,
     traceId: receipt.run.traceId,
     verdict: receipt.verdict,
     findingCount: receipt.findings.length,

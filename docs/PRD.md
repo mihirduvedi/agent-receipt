@@ -1021,3 +1021,40 @@ A passing result establishes internal consistency only. It does not prove trace 
 - `npm run verify` passes before the candidate is described as complete.
 
 The verifier does not add signed provenance or a trust anchor. Those remain separate post-hackathon design problems that require an explicit threat model.
+
+## 27. Release amendment: Portable Evidence Packet v1
+
+**Added:** August 29, 2026
+
+The standalone receipt and recovery plan are individually useful, but a manager handoff should not require several files or lose the decision context that connects them. This amendment adds one strict, browser-generated JSON packet without changing any verdict, evidence, or execution boundary.
+
+### User value
+
+An AI operations manager can hand the next reviewer one file containing the decision brief, full receipt, and cited recovery proposal. The receiving reviewer can replay the packet locally and see whether every embedded artifact still matches its manifest and the deterministic receipt evidence.
+
+### Required behavior
+
+- Define strict Zod schemas for Evidence Packet v1, its decision brief, and every manifest entry.
+- Build the packet only from a validated receipt, validated incidents, and validated recovery actions.
+- Keep the decision brief deterministic and require its task, trace, verdict, qualifier, disposition, coverage, counts, incidents, and generation source to match the embedded receipt and recovery plan.
+- Canonically serialize the receipt, decision brief, and recovery plan as UTF-8 JSON with two-space indentation.
+- Record an independent byte length and SHA-256 for each canonical artifact.
+- Exclude the original trace, retained raw source objects, credentials, approvals, execution commands, and claims about current external state.
+- Make the packet the primary manager export while preserving the standalone receipt and recovery-plan controls.
+- Extend the browser-only verifier to auto-detect receipts and packets.
+- For packets, hash the exact outer bytes before parsing, enforce a 4 MiB limit, validate the strict cross-artifact contract, replay all three manifest entries, run the complete embedded-receipt verifier, and confirm the recovery plan is bound to the canonical receipt digest.
+- Keep the deterministic fallback and standalone verifier fully usable without credentials or network access.
+
+### Non-claims
+
+The unsigned manifest proves internal consistency only. It does not authenticate the exporter, establish trace completeness, prove that unavailable original trace bytes match the stored input digest, provide tamper-proof provenance, add a digital signature, or establish nonrepudiation.
+
+### Acceptance evidence
+
+- Focused tests cover clean, overreaching, and incomplete receipts; stable serialization; exact outer-byte hashing; manifest replay; invented citations; altered findings; strict boundaries; receipt-or-packet auto-detection; and invalid size, UTF-8, and JSON inputs.
+- The judge-facing evaluation independently checks three manifest entries, embedded receipt replay, recovery binding, deterministic packet serialization, and detection of an altered deterministic finding.
+- The local browser builds and downloads an overreaching packet, shows a success state, and the independent verifier passes all eight gates on the exact downloaded file.
+- Responsive and static UI checks remain required before the candidate is considered complete.
+- `npm run verify` must pass before any release claim.
+
+Portable Evidence Packet v1 remains a post-run review artifact. It does not add live observation, enforcement, automated remediation, compliance certification, or chain-of-thought capture.

@@ -21,6 +21,9 @@ This report records a reproducible automated evaluation of the current prototype
 | Recovery plan execution boundary | Closed: not executed, current state unknown, approval required |
 | Portable receipt verifier focused cases | 12 / 12 passed |
 | Valid / altered verifier demonstrations | PASS / CHECK FAILED |
+| Portable evidence packet manifest | 3 / 3 artifacts passed |
+| Packet receipt replay and recovery binding | Passed / Passed |
+| Altered packet finding detected | Passed |
 
 Run the evaluation with:
 
@@ -65,6 +68,7 @@ The harness also changes inputs or generated output to verify failure behavior:
 5. Building the recovery plan twice from the same validated receipt produces identical JSON, and its SHA-256 binding independently matches the exact serialized receipt.
 6. Every incident and proposed action in the exported plan resolves to retained receipt evidence. The plan carries no execution authority and makes no claim about current external state.
 7. The Portable Receipt Verifier accepts valid exports from the clean, overreaching, and incomplete fixtures; catches exact-byte changes; rejects oversize, invalid UTF-8, invalid JSON, and non-receipt input; and detects altered verdicts, findings, accounting, and citations.
+8. Portable Evidence Packet v1 deterministically serializes a manager brief, receipt, and recovery plan. The evaluation replays all three manifest entries, the full embedded receipt, and the recovery binding, then changes one deterministic finding and confirms both manifest and policy replay fail.
 
 These checks protect the product's central claim: uncertainty is exposed rather than filled in by a model.
 
@@ -75,8 +79,9 @@ These checks protect the product's central claim: uncertainty is exposed rather 
 - It does not claim universal OpenTelemetry compatibility; the OTLP adapter supports one documented JSON shape and a small GenAI/action semantic profile.
 - It does not compare Granite with other models. Granite is optional and cannot change the deterministic verdict.
 - A passing portable-verifier report establishes internal receipt consistency, not exporter identity, trace completeness, trusted capture, original trace bytes, or signed provenance.
+- The evidence-packet manifest is unsigned. A passing packet is not an authenticity, tamper-proof provenance, digital-signature, or nonrepudiation result.
 - The synthetic cases are intentionally small and known. More adapters, real consented traces, larger stress corpora, and structured user studies are future evaluation work.
 
 ## Suggested judge demo
 
-Run `npm run eval`, then open the overreaching sample in the product. After the incident and recovery path, open **Incomplete OTLP run**. The Evidence Gap Mode shows all three raw records, the two facts that stopped assessment, and the exact retained source span that could not be mapped. Finish with `/?mode=verify&sample=valid` and `/?mode=verify&sample=altered` to show that the exported artifact can replay its own deterministic evidence contract and catch a changed claim.
+Run `npm run eval`, then open the overreaching sample in the product. After the incident and recovery path, download the evidence packet. Open **Incomplete OTLP run** to show all three raw records and the two facts that stopped assessment. Finish in **Verify an export** with the evidence-packet and altered-receipt demonstrations. The first replays the complete handoff; the second catches a changed deterministic claim.

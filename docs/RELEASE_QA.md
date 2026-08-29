@@ -1,10 +1,12 @@
 # Release QA Ledger
 
-**Snapshot:** August 28, 2026
+**Snapshot:** August 29, 2026
 
-**Scope:** Deployed Evidence Gap Mode and Portable Receipt Verifier product release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f`, including the earlier Granite-boundary and Recovery Plan surfaces
+**Scope:** Deployed Evidence Gap Mode and Portable Receipt Verifier baseline at product release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f`, plus the uncommitted local Portable Evidence Packet v1 candidate
 
 **Decision:** Release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f` is committed and pushed, passed exact-SHA GitHub Actions, reached a ready Vercel production deployment, and passed the public incomplete-evidence plus valid/altered verifier journeys. Local responsive and PDF evidence remain separate from hosted behavior.
+
+Portable Evidence Packet v1 is not included in that decision. It passed the complete local code gate, exact downloaded-file verification, documentation audit, and rendered-guide inspection. It remains a local candidate until fresh commit/push/deploy approvals are recorded.
 
 This ledger separates automated evidence from browser, manual-accessibility, live-service, deployment, and submission evidence. A checked local test does not prove an unexecuted layer.
 
@@ -12,14 +14,26 @@ This ledger separates automated evidence from browser, manual-accessibility, liv
 
 | Check | Latest result | What it supports |
 |---|---|---|
-| `npm run verify` | Combined Evidence Gap Mode and Portable Receipt Verifier candidate passed locally on August 28: lint with zero warnings, strict TypeScript, 19 test files and 335 tests, production build, release audit across 77 source files, 143 build files, 474 dependency entries, and 11 media assets | The tested deterministic, UI-helper, build, and release-safety contracts pass locally |
+| `npm run verify` | Portable Evidence Packet v1 candidate passed locally on August 29: lint with zero warnings, strict TypeScript, 20 test files and 346 tests, production build, release audit across 80 source files, 143 build files, 474 dependency entries, and 11 media assets | The tested deterministic, packet, UI-helper, build, and release-safety contracts pass locally; this is not hosted evidence |
 | GitHub Actions `CI` | [Run `33224543916`](https://github.com/mihirduvedi/agent-receipt/actions/runs/33224543916) passed for exact product SHA `4f96c4b34c3336a5f4facc1fde135a1368d0e89f` on August 28 | A clean hosted install and complete `npm run verify` passed for the deployed combined release |
 | `npm run eval` | One evaluation test covering four declared cases passed on August 28 | Synthetic verdict, rule-family, accounting, deterministic replay, citation, fallback, OTLP limitation, evidence-gap, and Recovery Plan v1 assertions passed |
 | `npm audit --omit=dev --json` | Zero known production dependency vulnerabilities on August 28 | Current npm advisory data reported no production vulnerability |
-| Strict UI static scan | 50 files, 0 errors, 0 warnings | Source-level UI heuristics only; not rendered or assistive-technology proof |
-| Markdown local-link audit | 47 local links checked across 16 tracked Markdown files, 0 missing | Current judge-facing repository links resolve locally |
+| Strict UI static scan | Packet candidate scan: 31 source files, 0 errors, 0 warnings | Source-level UI heuristics only; not rendered or assistive-technology proof |
+| Markdown local-link audit | 50 local links checked across 15 repository Markdown files, 0 missing | Current judge-facing repository links resolve locally |
 
 The full suite covers exact-byte digest behavior, native and narrow OTLP adaptation/accounting, deterministic policy rules, incident grouping, recovery proposals, Recovery Plan v1 binding and citation closure, Granite fact minimization/redaction/selection validation/fallback/token caching, route media and body limits, receipt orchestration and export validation, all declared fixtures, portable-receipt replay and failure boundaries, the synthetic evaluation corpus, release-source enumeration, and deterministic UI view helpers.
+
+## Local Portable Evidence Packet v1 candidate
+
+The candidate makes one Evidence Packet v1 file the primary manager handoff. It contains a deterministic decision brief, the full validated receipt, and the citation-closed Recovery Plan v1 artifact. Each canonical embedded artifact has an independent byte length and SHA-256 manifest entry. The outer packet excludes the original trace, retained raw source, credentials, approvals, and execution commands.
+
+The local browser verifier auto-detects receipts and packets. Packet verification hashes the exact outer bytes before decoding, enforces a 4 MiB limit, validates strict cross-artifact references, replays all three manifest entries, runs the complete embedded-receipt verifier, and confirms the recovery plan is bound to the canonical receipt artifact.
+
+Focused packet tests currently cover clean, overreaching, and incomplete verdicts; stable serialization; exact-byte sensitivity; strict cross-artifact validation; manifest changes; complete receipt replay; invented recovery citations; receipt-or-packet auto-detection; and size, UTF-8, and JSON boundaries. The judge-facing evaluation independently checks all three artifact digests, receipt replay, recovery binding, deterministic packet serialization, and detection of an altered finding.
+
+In the local development browser, the overreaching receipt downloaded a 40,064-byte packet. A separate verifier invocation passed all eight gates on that exact downloaded file with SHA-256 `a429414408e39f457243a6b268ece936da54c245c7ae9108bdbab4c64def7bb3`. The synthetic packet report also displayed the three-artifact summary and eight passed gates. This is local development evidence, not production-deployment evidence.
+
+The packet manifest is unsigned. Passing establishes internal consistency only, not exporter identity, trace completeness, original-byte availability, authenticity, tamper-proof provenance, a digital signature, or nonrepudiation.
 
 ## Deployed Portable Receipt Verifier
 
@@ -116,7 +130,7 @@ The production browser journeys recorded `deterministic_fallback`. Local provide
 - `README.md` links the live demo, public repository, judge guide, complete guide, PDF, evaluation, recovery contract, submission copy, and demo script.
 - `docs/SUBMISSION.md` contains the verified public repository URL. The public-video and eligible-team fields remain intentionally unresolved.
 - `docs/JUDGE_GUIDE.md` gives a 60-second path and maps concrete evidence to the five public challenge-page lenses while noting the official rules' four-heading formulation.
-- `docs/PROJECT_GUIDE.md` and the 59-page Version 1.6 PDF document the deployed Evidence Gap Mode and Portable Receipt Verifier while preserving the earlier Granite-boundary evidence and separating local responsive checks from hosted behavior. The exact PDF has extractable text on every page, Letter dimensions throughout, no blank pages or stale candidate language, embedded custom fonts, 0 bounds errors, 0 bounds warnings, and a clean readable-page plus full-sequence inspection.
+- `docs/PROJECT_GUIDE.md` and the 62-page Version 1.7 PDF document the deployed Evidence Gap Mode and Portable Receipt Verifier plus the local Portable Evidence Packet v1 candidate while preserving the earlier Granite-boundary evidence and separating local responsive checks from hosted behavior. The exact PDF has extractable text on every page, Letter dimensions throughout, no blank pages, no replacement characters, embedded custom fonts, 0 bounds errors, 0 bounds warnings, and a clean readable-page plus full-sequence inspection. Its SHA-256 is `b3f2b77e18a79c6d9982e5216de5f6e410f3370dfd103d0875f2df275407e1fa`.
 - All application screenshots use synthetic fixture data and are declared in `docs/ASSET_LICENSES.md`.
 
 ## Open release and submission gates
@@ -135,6 +149,8 @@ The production browser journeys recorded `deterministic_fallback`. Local provide
 - [x] Run the complete local gate, static UI scan, and focused desktop/tablet/mobile browser checks for Evidence Gap Mode.
 - [x] Run the complete local gate and focused desktop/tablet/mobile browser checks for the Portable Receipt Verifier.
 - [x] Commit and push Evidence Gap Mode plus the Portable Receipt Verifier after fresh explicit approval; verify exact-SHA CI, Vercel, the incomplete receipt, and both verifier states.
+- [x] Run the complete local gate, strict UI scan, packet-file verification, local-link audit, and rendered-guide inspection for Portable Evidence Packet v1.
+- [ ] Commit and push Portable Evidence Packet v1 after fresh explicit approval, then verify exact-SHA CI, Vercel, the packet download, and the packet verifier on the deployed build.
 - [ ] Run a real screen-reader spot check if a stronger accessibility claim is desired.
 - [ ] Have the custom proprietary terms reviewed by qualified counsel before relying on them for commercial enforcement.
 - [ ] Confirm every teammate's eligibility, challenge registration, required IBM SkillsBuild Bob activity, and no conflicting prior Wildcard submission.

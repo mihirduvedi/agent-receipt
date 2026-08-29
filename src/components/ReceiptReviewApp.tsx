@@ -16,7 +16,10 @@ import {
   withReviewerDisposition,
 } from "../core/receipt";
 import { serializeRecoveryPlan } from "../core/recoveryPlan";
-import { verifyReceipt } from "../core/verifyReceipt";
+import {
+  serializeEvidencePacket,
+  verifyPortableArtifact,
+} from "../core/evidencePacket";
 import type {
   BuildReceiptResult,
   ReceiptCopyGenerator,
@@ -385,6 +388,36 @@ export function ReceiptReviewApp(props: {
     }
   }
 
+  async function downloadEvidencePacket() {
+    if (!result) return;
+    const incidents = buildManagerIncidentBrief(result.receipt);
+    const actions = buildRecoveryPlan(result.receipt, incidents);
+    try {
+      const serialized = await serializeEvidencePacket({
+        receipt: result.receipt,
+        incidents,
+        actions,
+      });
+      const blob = new Blob([serialized], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      const safeTraceId = result.receipt.run.traceId.replace(/[^a-z0-9_-]+/gi, "-");
+      anchor.href = url;
+      anchor.download = `agent-receipt-evidence-${safeTraceId}.json`;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setExportStatus(
+        "Evidence packet downloaded. Its receipt, decision brief, and recovery plan passed strict validation and received independent manifest digests.",
+      );
+    } catch {
+      setExportStatus(
+        "Export stopped because the evidence packet failed validation.",
+      );
+    }
+  }
+
   async function downloadRecoveryPlan() {
     if (!result) return;
     const incidents = buildManagerIncidentBrief(result.receipt);
@@ -503,6 +536,7 @@ export function ReceiptReviewApp(props: {
             onOpenEvidence={openEvidence}
             onDisposition={changeDisposition}
             onDownload={downloadReceipt}
+            onDownloadEvidence={downloadEvidencePacket}
             onDownloadRecovery={downloadRecoveryPlan}
           />
         ) : null}
@@ -567,7 +601,7 @@ function IntakeStep({
       file.type !== "application/json" &&
       !file.name.toLowerCase().endsWith(".json")
     ) {
-      setVerificationError("Choose an exported Agent Receipt .json file.");
+      setVerificationError("Choose an exported Agent Receipt receipt or evidence packet .json file.");
       setVerificationFile(null);
       return;
     }
@@ -584,7 +618,7 @@ function IntakeStep({
     setVerifying(true);
     setVerificationError(null);
     try {
-      const report = await verifyReceipt(bytes);
+      const report = await verifyPortableArtifact(bytes);
       setVerificationView(buildReceiptVerificationView(report));
       setVerificationSource(label);
     } catch {
@@ -601,7 +635,7 @@ function IntakeStep({
     if (verificationPaste.trim().length > 0) {
       await performVerification(
         new TextEncoder().encode(verificationPaste),
-        "Pasted receipt JSON",
+        "Pasted portable export JSON",
       );
       return;
     }
@@ -609,10 +643,10 @@ function IntakeStep({
       await performVerification(verificationFile.bytes, verificationFile.label);
       return;
     }
-    setVerificationError("Upload an exported receipt or paste its JSON first.");
+    setVerificationError("Upload an exported receipt or evidence packet, or paste its JSON first.");
   }
 
-  async function verifySyntheticReceipt(altered: boolean) {
+  async function verifySyntheticReceipt(kind: "receipt" | "altered" | "packet") {
     setVerifying(true);
     setVerificationView(null);
     setVerificationError(null);
@@ -626,21 +660,31 @@ function IntakeStep({
       );
       if (!build.ok) throw new Error(build.error.message);
       const portableReceipt = structuredClone(build.receipt);
-      if (altered) {
+      if (kind === "altered") {
         const firstFinding = portableReceipt.findings[0];
         if (!firstFinding) throw new Error("Demo receipt has no finding to alter");
         firstFinding.description = "This deterministic finding text was altered after export.";
       }
-      const json = altered
-        ? JSON.stringify(portableReceipt, null, 2)
-        : serializeReceipt(portableReceipt);
+      const json = kind === "packet"
+        ? await serializeEvidencePacket({
+            receipt: portableReceipt,
+            incidents: buildManagerIncidentBrief(portableReceipt),
+            actions: buildRecoveryPlan(portableReceipt),
+          })
+        : kind === "altered"
+          ? JSON.stringify(portableReceipt, null, 2)
+          : serializeReceipt(portableReceipt);
       const bytes = new TextEncoder().encode(`${json}\n`);
       setVerificationPaste(json);
       setVerificationFile(null);
-      const report = await verifyReceipt(bytes);
+      const report = await verifyPortableArtifact(bytes);
       setVerificationView(buildReceiptVerificationView(report));
       setVerificationSource(
-        altered ? "Altered synthetic receipt" : "Valid synthetic receipt",
+        kind === "packet"
+          ? "Valid synthetic evidence packet"
+          : kind === "altered"
+            ? "Altered synthetic receipt"
+            : "Valid synthetic receipt",
       );
     } catch {
       setVerificationError("The synthetic verifier demo could not be prepared.");
@@ -661,24 +705,24 @@ function IntakeStep({
     <div className="intake-layout">
       <section className="intro-panel" aria-labelledby="intake-title">
         <p className="kicker">
-          {mode === "trace" ? "Start with the record" : "Replay the receipt"}
+          {mode === "trace" ? "Start with the record" : "Replay the export"}
         </p>
         <h1 id="intake-title">
           {mode === "trace"
             ? "Review a completed agent run."
-            : "Check a receipt before you trust it."}
+            : "Check the handoff before you trust it."}
         </h1>
         <p className="intro-copy">
           {mode === "trace"
             ? "Add the execution trace, then compare it with the authority the manager approved. The policy rules produce the verdict. Granite can help word the receipt once those rules have finished."
-            : "Import an exported receipt. This browser hashes the exact file and replays its accounting, policy result, and cited claims without credentials or a network call."}
+              : "Import a receipt or evidence packet. This browser hashes the exact file and replays its accounting, policy result, cited claims, and packet manifest without credentials or a network call."}
         </p>
         <div className="trust-note">
           <span aria-hidden="true">{mode === "trace" ? "01" : "V1"}</span>
           <p>
             {mode === "trace"
               ? "Your source trace stays in this browser session. The server route recomputes the findings and sends Granite only the minimized, redacted facts needed to draft the receipt."
-              : "A passing report means the receipt agrees with itself. It does not prove who created it, whether the trace was complete, or whether the original trace bytes were trustworthy."}
+              : "A passing report proves internal consistency, not authenticity. It cannot establish who created the export, whether the trace was complete, or whether the original trace bytes were trustworthy."}
           </p>
         </div>
       </section>
@@ -705,7 +749,7 @@ function IntakeStep({
             onClick={() => setMode("verify")}
           >
             <span>V1</span>
-            Verify a receipt
+            Verify an export
           </button>
         </div>
 
@@ -789,7 +833,7 @@ function IntakeStep({
                 <p className="section-number">Portable verifier</p>
                 <h2 id="choose-trace-title">Replay the evidence contract</h2>
               </div>
-              <p>Browser-only · no credentials · no network · 2 MiB max</p>
+              <p>Browser-only · no credentials · no network · 4 MiB packet max</p>
             </div>
 
             {verificationError ? (
@@ -801,41 +845,49 @@ function IntakeStep({
                 <div className="verifier-demo-strip" aria-label="Synthetic verifier demonstrations">
                   <div>
                     <p className="section-number">30-second proof</p>
-                    <strong>Run both sides of the trust test.</strong>
-                    <p>A valid export passes. One altered deterministic claim is caught.</p>
+                    <strong>Run the complete handoff test.</strong>
+                    <p>Replay the three-artifact packet, then catch one altered deterministic claim.</p>
                   </div>
                   <div className="verifier-demo-actions">
                     <button
                       className="secondary-button"
                       type="button"
                       disabled={verifying}
-                      onClick={() => void verifySyntheticReceipt(false)}
+                      onClick={() => void verifySyntheticReceipt("packet")}
                     >
-                      Verify valid sample
+                      Verify evidence packet
+                    </button>
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      disabled={verifying}
+                      onClick={() => void verifySyntheticReceipt("receipt")}
+                    >
+                      Verify receipt only
                     </button>
                     <button
                       className="secondary-button verifier-altered-button"
                       type="button"
                       disabled={verifying}
-                      onClick={() => void verifySyntheticReceipt(true)}
+                      onClick={() => void verifySyntheticReceipt("altered")}
                     >
                       Catch altered sample
                     </button>
                   </div>
                 </div>
 
-                <div className="input-divider"><span>Or verify an exported receipt</span></div>
+                <div className="input-divider"><span>Or verify your own portable export</span></div>
 
                 <div className="custom-input-grid verifier-input-grid">
                   <div className="upload-field">
-                    <label htmlFor="receipt-file">Upload receipt JSON</label>
+                    <label htmlFor="receipt-file">Upload receipt or packet JSON</label>
                     <p id="receipt-file-help">The exact received bytes are hashed before parsing.</p>
                     <input
                       id="receipt-file"
                       name="receipt-file"
                       type="file"
                       accept="application/json,.json"
-                      aria-label="Upload exported receipt JSON for verification"
+                      aria-label="Upload exported receipt or evidence packet JSON for verification"
                       aria-describedby="receipt-file-help"
                       onChange={(event) => void handleVerificationFile(event)}
                     />
@@ -844,7 +896,7 @@ function IntakeStep({
                     ) : null}
                   </div>
                   <div className="paste-field">
-                    <label htmlFor="receipt-json">Paste exported receipt JSON</label>
+                    <label htmlFor="receipt-json">Paste receipt or packet JSON</label>
                     <textarea
                       id="receipt-json"
                       name="receipt-json"
@@ -856,9 +908,9 @@ function IntakeStep({
                         setVerificationFile(null);
                         setVerificationView(null);
                       }}
-                      aria-label="Paste exported receipt JSON for verification"
+                      aria-label="Paste exported receipt or evidence packet JSON for verification"
                       aria-describedby="receipt-json-help"
-                      placeholder={'{\n  "schemaVersion": "agent-receipt.receipt.v1"\n}'}
+                      placeholder={'{\n  "schemaVersion": "agent-receipt.evidence-packet.v1"\n}'}
                     />
                     <div className="field-action-row">
                       <p id="receipt-json-help">Pasted text is encoded as UTF-8 and verified locally.</p>
@@ -871,7 +923,7 @@ function IntakeStep({
                         }
                         onClick={() => void runVerification()}
                       >
-                        {verifying ? "Replaying checks…" : "Verify receipt"}
+                        {verifying ? "Replaying checks…" : "Verify export"}
                       </button>
                     </div>
                   </div>
@@ -916,10 +968,10 @@ function VerificationReportPanel(props: {
 
       {props.view.summary ? (
         <dl className="verifier-summary">
+          <div><dt>Artifact</dt><dd>{props.view.summary.artifactLabel}</dd></div>
           <div><dt>Trace</dt><dd>{props.view.summary.traceId}</dd></div>
           <div><dt>Verdict</dt><dd>{props.view.summary.verdict}</dd></div>
-          <div><dt>Evidence</dt><dd>{props.view.summary.rawEventCountLabel} · {props.view.summary.findingCountLabel}</dd></div>
-          <div><dt>Copy</dt><dd>{props.view.summary.generationSourceLabel}</dd></div>
+          <div><dt>Evidence &amp; copy</dt><dd>{props.view.summary.rawEventCountLabel} · {props.view.summary.findingCountLabel} · {props.view.summary.generationSourceLabel}</dd></div>
         </dl>
       ) : null}
 
@@ -970,7 +1022,7 @@ function VerificationReportPanel(props: {
       <div className="verifier-reset-row">
         <p>Nothing in this report was sent to Granite or any server route.</p>
         <button className="secondary-button" type="button" onClick={props.onReset}>
-          Verify another receipt
+          Verify another export
         </button>
       </div>
     </section>
@@ -1279,6 +1331,7 @@ function ReceiptStep(props: {
   onOpenEvidence: OpenEvidence;
   onDisposition: (disposition: ReviewDisposition) => void;
   onDownload: () => void;
+  onDownloadEvidence: () => void;
   onDownloadRecovery: () => void;
 }) {
   const { receipt } = props.build;
@@ -1516,8 +1569,11 @@ function ReceiptStep(props: {
           ))}
         </fieldset>
         <div className="export-panel">
-          <p>The JSON export contains the authority, canonical events, findings, receipt notes, coverage, integrity record, and your decision. The source trace stays in this browser session.</p>
-          <button className="primary-button" type="button" onClick={props.onDownload}>Download receipt JSON</button>
+          <p>The evidence packet carries a manager brief, validated receipt, and citation-closed recovery plan in one manifest-checked file. It excludes the source trace, credentials, approvals, and execution commands.</p>
+          <div className="export-actions">
+            <button className="primary-button" type="button" onClick={props.onDownloadEvidence}>Download evidence packet</button>
+            <button className="secondary-button" type="button" onClick={props.onDownload}>Receipt only</button>
+          </div>
           <p className="export-status" aria-live="polite">{props.exportStatus}</p>
         </div>
       </section>

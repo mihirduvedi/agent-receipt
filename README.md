@@ -16,6 +16,7 @@ The receipt puts the deterministic verdict, evidence scope, and manager attentio
 
 - Preserves the exact source bytes and computes their SHA-256 before normalization.
 - Accounts for every raw event as mapped, metadata-only, or unparsed.
+- Stops the assessment when material evidence is missing, shows why, and opens retained raw-only records that have no canonical event.
 - Compares observed actions with declared systems, operations, data restrictions, egress rules, volume limits, and approvals.
 - Produces a deterministic verdict, findings, coverage record, and integrity metadata.
 - Groups related findings into a concise incident brief without hiding the detailed findings.
@@ -25,6 +26,7 @@ The receipt puts the deterministic verdict, evidence scope, and manager attentio
 - Keeps the human accept/investigate/reject disposition separate from the product verdict.
 - Exports a schema-validated receipt as JSON.
 - Exports a versioned recovery plan whose citations close over retained receipt evidence and whose SHA-256 binds it to the exact receipt under review.
+- Replays an exported receipt entirely in the browser: exact-file digest, strict contract, event accounting, deterministic policy result, and cited copy all have to agree.
 - Shows the exact minimized, redacted fact bundle that Granite can receive, together with the fields held back and the deterministic gates around the model call.
 - Remains usable without credentials or network inference through a deterministic fallback.
 
@@ -34,7 +36,7 @@ Screenshots below come from the production build using the repository's syntheti
 
 ### 1. Choose an exact trace
 
-![Agent Receipt trace intake with expected and overreaching synthetic samples](docs/screenshots/agent-receipt-trace-intake.jpg)
+![Agent Receipt trace intake with expected, overreaching, and incomplete synthetic samples](docs/screenshots/agent-receipt-trace-intake.jpg)
 
 Start from a synthetic fixture, upload one Native Trace v1 or supported OTLP/JSON document, or paste one document. File bytes are preserved and hashed before parsing.
 
@@ -44,47 +46,59 @@ Start from a synthetic fixture, upload one Native Trace v1 or supported OTLP/JSO
 
 The manager confirms task, systems, operations, data restrictions, egress rule, volume limit, and approvals. Authority is never inferred from the observed actions. The overreaching run is then condensed into two related incidents with cited proposed recovery steps, while the full deterministic findings remain available.
 
-### 3. Triage incidents instead of rule hits
+### 3. Stop when the evidence cannot support a verdict
+
+![Agent Receipt Evidence Gap Mode showing a deterministic refusal and complete raw-record ledger](docs/screenshots/agent-receipt-evidence-gap.jpg)
+
+The incomplete OTLP sample accounts for all three source spans, then refuses to overclaim: one material action cannot be mapped and the trace does not establish run termination. The manager can inspect both gaps and every retained source record.
+
+### 4. Triage incidents instead of rule hits
 
 ![Agent Receipt manager incident brief grouping twelve findings into two incidents](docs/screenshots/agent-receipt-incident-brief.jpg)
 
 Related deterministic findings become a concise incident brief only when they cite the same events or share an explicit action key. The complete finding list remains available below.
 
-### 4. Plan recovery without hiding execution risk
+### 5. Plan recovery without hiding execution risk
 
 ![Agent Receipt human-approved recovery plan](docs/screenshots/agent-receipt-recovery-plan.jpg)
 
 The receipt proposes cited follow-up steps with required authority and reversibility notes. A manager can download the plan as validated JSON bound to the exact receipt. The plan records that current external state is unknown, approval is required, and nothing was executed.
 
-### 5. Translate every canonical action
+### 6. Translate every canonical action
 
 ![Agent Receipt plain-language action summary](docs/screenshots/agent-receipt-action-summary.jpg)
 
 The summary separates observed activity from carefully qualified no-observed-activity statements and keeps unknown facts visible.
 
-### 6. Inspect systems and data movement
+### 7. Inspect systems and data movement
 
 ![Agent Receipt systems and data movement view](docs/screenshots/agent-receipt-systems-data.jpg)
 
 The boundary map highlights local, internal, external, and unknown destinations, with a full text-equivalent table for accessibility and exact evidence navigation.
 
-### 7. See the model boundary, not just a model badge
+### 8. See the model boundary, not just a model badge
 
 ![Agent Receipt Granite boundary showing the minimized fact bundle and deterministic gates](docs/screenshots/agent-receipt-granite-boundary.jpg)
 
 The AI boundary panel rebuilds the same minimized, recursively redacted projection used by the server route. It shows whether Granite or fallback produced the receipt copy, which evidence IDs Granite may select, what is deliberately excluded, and the exact read-only JSON bundle.
 
-### 8. Open a claim into retained evidence
+### 9. Open a claim into retained evidence
 
 ![Agent Receipt evidence drawer linking a finding to its canonical event](docs/screenshots/agent-receipt-evidence-drawer.jpg)
 
 Every material conclusion opens into its cited finding, canonical event, and retained raw JSON object.
 
-### 9. Keep human disposition separate from the verdict
+### 10. Keep human disposition separate from the verdict
 
 ![Agent Receipt manager disposition and validated JSON export](docs/screenshots/agent-receipt-disposition-export.jpg)
 
 Accept, investigate, or reject records a manager decision without changing the deterministic verdict, findings, or evidence. The receipt then exports as validated JSON without the retained raw input.
+
+### 11. Replay an exported receipt
+
+Switch to **Verify a receipt** to check a JSON export without a server, credentials, network request, or Granite call. The verifier hashes the exact received bytes, validates the receipt contract, recomputes coverage, re-runs the deterministic policy engine, and checks every cited receipt note. Its limitations stay visible even when all eight gates pass.
+
+For the fastest local proof, open `/?mode=verify&sample=valid`, then `/?mode=verify&sample=altered`. The first receipt passes; the second has one changed deterministic finding and fails policy and citation replay. See the [verifier contract](docs/PORTABLE_RECEIPT_VERIFIER.md).
 
 ## Run the demo locally
 
@@ -104,8 +118,11 @@ Open [http://localhost:3000](http://localhost:3000), then:
 5. Start a new review with **Overreaching run**.
 6. Inspect the external spreadsheet attempt, successful retry, customer-email movement, and unapproved send.
 7. Record a reviewer disposition, download the receipt JSON, and export the citation-closed recovery plan.
+8. Start a third review with **Incomplete OTLP run**.
+9. Open **Evidence gaps**, then inspect the unparsed source record that has no canonical event.
+10. Start a new review, select **Verify a receipt**, and run the valid and altered synthetic verifier demonstrations.
 
-The samples are synthetic. The expected run contains three in-authority events. The overreaching run contains six events, including an unknown-outcome external write followed by a successful retry and an external message send.
+The samples are synthetic. The expected run contains three in-authority events. The overreaching run contains six events, including an unknown-outcome external write followed by a successful retry and an external message send. The incomplete OTLP run contains three source spans and demonstrates the third honest outcome: the supplied evidence is insufficient for a complete authority assessment.
 
 ## How it works
 
@@ -133,10 +150,10 @@ The browser retains the source snapshot for evidence drill-down. The server rout
 | Judging criterion | Agent Receipt fit |
 |---|---|
 | Technical execution | A working strict-TypeScript prototype preserves exact input bytes, accounts for every raw event, runs deterministic policy rules, validates external boundaries with Zod, and keeps a credential-free fallback usable. |
-| Innovation | Compares declared intent with observed action; generated prose cannot change the verdict and must cite retained evidence. |
-| Feasibility | Accepts bounded Native Trace v1 and documented OTLP/JSON GenAI contracts, works locally without external services, exports a validated receipt and recovery plan, and isolates the optional watsonx.ai call behind one server route. |
+| Innovation | Compares declared intent with observed action, exposes a deterministic evidence-refusal state, and prevents generated prose from changing the verdict or escaping retained citations. |
+| Feasibility | Accepts bounded Native Trace v1 and documented OTLP/JSON GenAI contracts, works locally without external services, exports a validated receipt and recovery plan, verifies receipt exports offline, and isolates the optional watsonx.ai call behind one server route. |
 | Challenge fit | Gives teams and AI operations managers decision support for reviewing work completed by AI collaborators, directly matching the future-of-work wildcard theme. |
-| Real-world impact | Helps a manager decide whether to accept, investigate, or reject a completed run while preserving unknowns and the limits of the supplied evidence. |
+| Real-world impact | Helps a manager decide whether to accept, investigate, or reject a completed run while showing where the supplied evidence cannot support any complete conclusion. |
 
 The challenge page presents five judging lenses. The official rules score four headings by combining implementation and feasibility. This evidence map covers both formulations.
 
@@ -160,11 +177,13 @@ Granite gives the prototype an IBM-native runtime explanation layer that fits th
 |---|---:|---|
 | Exact-byte capture and digest | Yes | Preserve the supplied source and its reproducible hash |
 | Adapter and event accounting | Yes | Normalize known fields and expose mapped, metadata-only, and unparsed counts |
+| Evidence Gap Mode | Yes | Stop unsupported conclusions and link gaps to canonical or raw-only source records |
 | Policy findings and verdict | Yes | Reconcile observed actions with declared authority |
 | Human action summary | Yes | Translate every canonical event without changing unknown outcomes |
 | Granite copy | No | Explain only supplied, redacted facts with citations |
 | Claim validation and fallback | Yes | Reject unsupported generated copy and keep the receipt usable |
 | AI boundary view | Yes | Rebuild and disclose the minimized, redacted projection without exposing the retained raw trace |
+| Portable Receipt Verifier | Yes | Hash the exact imported export and replay its schema, accounting, policy result, and citations entirely in the browser |
 | Recovery-plan export | Yes | Bind cited proposed actions to the exact receipt without granting execution authority |
 | Reviewer disposition | Human | Record accept, investigate, reject, or unreviewed without changing the verdict |
 
@@ -218,6 +237,7 @@ This MVP targets the IBM SkillsBuild AI Builders Challenge with IBM Bob, Wildcar
 - [IBM Bob and supporting-tools workflow](docs/IBM_BOB_WORKFLOW.md)
 - [IBM Bob build evidence](docs/BOB_BUILD_STORY.md)
 - [Reproducible evaluation](docs/EVALUATION.md)
+- [Portable Receipt Verifier contract](docs/PORTABLE_RECEIPT_VERIFIER.md)
 - [Recovery Plan v1 contract](docs/RECOVERY_PLAN.md)
 - [Paste-ready submission copy](docs/SUBMISSION.md)
 - [Three-minute judge demo script](docs/DEMO_SCRIPT.md)

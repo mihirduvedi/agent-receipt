@@ -250,6 +250,24 @@ export const otlpGenAiFixture: OtlpExportTraceServiceRequest = {
   ],
 };
 
+/**
+ * A judge-visible incomplete run. The source still contains all three spans,
+ * but the material action omits the explicit operation needed for canonical
+ * mapping and its status does not establish that the run terminated.
+ */
+export const fixtureCIncomplete: OtlpExportTraceServiceRequest = (() => {
+  const fixture = structuredClone(otlpGenAiFixture);
+  const actionSpan = fixture.resourceSpans[0]?.scopeSpans[0]?.spans[1];
+  if (!actionSpan) {
+    throw new Error("Incomplete OTLP fixture action span is missing");
+  }
+  actionSpan.attributes = actionSpan.attributes.filter(
+    (attribute) => attribute.key !== "agent.receipt.operation",
+  );
+  actionSpan.status = { code: 0 };
+  return fixture;
+})();
+
 export const otlpDemoAuthority: AuthorityEnvelopeV1 = {
   schemaVersion: "agent-receipt.authority.v1",
   policyId: "policy-otlp-demo-001",

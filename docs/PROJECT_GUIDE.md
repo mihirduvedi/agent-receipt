@@ -4,9 +4,9 @@
 
 **From first principles to architecture, code, trust boundaries, testing, and deployment**
 
-Version 1.3 - August 28, 2026
+Version 1.5 - August 28, 2026
 
-Project snapshot: the public repository and successful Vercel deployment are connected to feature-bearing product release `7b712e5df8ad781162c896ddcae0463b3160c210`. This release includes the inspectable Granite boundary, refreshed synthetic product evidence, and the shorter judge path. Exact-SHA hosted CI and both public fixture journeys passed on August 28, 2026.
+Project snapshot: public `main` is synchronized through documentation release `13f5229`, while the verified feature-bearing deployment remains product release `7b712e5`. The workspace additionally contains two locally verified candidates: Evidence Gap Mode and the Portable Receipt Verifier. Neither candidate has been committed, pushed, or deployed.
 
 > Agent Receipt gives accountable humans an evidence-linked receipt for what an AI agent did relative to what it was allowed to do.
 
@@ -79,7 +79,8 @@ It produces a receipt containing:
 - integrity metadata;
 - a separate human disposition;
 - a validated receipt JSON export;
-- a citation-closed recovery-plan JSON export bound to that receipt.
+- a citation-closed recovery-plan JSON export bound to that receipt;
+- an explicit evidence-gap view when the supplied trace cannot support a complete verdict.
 
 The word **deterministic** matters. It means the same validated evidence and authority produce the same policy result. An AI model does not decide whether a violation occurred.
 
@@ -125,11 +126,11 @@ Developers, security reviewers, and internal auditors are secondary users. They 
 
 ## 4. The reviewer's journey
 
-The product has three visible steps.
+The product has two intake modes. **Review a trace** follows three visible steps; **Verify a receipt** replays an exported artifact without starting a new trace review.
 
 ### Step 1: Choose a trace
 
-The reviewer can select one of two synthetic samples, upload one JSON file, or paste one JSON object. The limit is 2 MiB. The app accepts the versioned Native Trace v1 format and one narrow documented OTLP/JSON GenAI export shape.
+The reviewer can select one of three synthetic samples, upload one JSON file, or paste one JSON object. The limit is 2 MiB. The app accepts the versioned Native Trace v1 format and one narrow documented OTLP/JSON GenAI export shape.
 
 ![Agent Receipt trace intake](screenshots/agent-receipt-trace-intake.jpg)
 
@@ -157,24 +158,39 @@ The system never infers authority from the agent's behavior. If the agent contac
 The receipt presents:
 
 1. overview and verdict;
-2. incident brief grouped from related deterministic findings;
-3. cited recovery proposals and a versioned recovery-plan export for human approval;
-4. plain-language action summary;
-5. chronological activity;
-6. systems and data movement;
-7. deviations and evidence coverage;
-8. cited explanatory copy;
-9. integrity record;
-10. human disposition;
-11. validated receipt JSON export.
+2. an evidence-gap ledger when material source facts are missing;
+3. incident brief grouped from related deterministic findings;
+4. cited recovery proposals and a versioned recovery-plan export for human approval;
+5. plain-language action summary;
+6. chronological activity;
+7. systems and data movement;
+8. deviations and evidence coverage;
+9. cited explanatory copy;
+10. integrity record;
+11. human disposition;
+12. validated receipt JSON export.
 
-The manager can open any important statement into its canonical event and the exact retained raw object.
+The manager can open any important statement into its canonical event and exact retained raw object. When no canonical event can be created, the evidence-gap ledger opens the retained raw record directly.
 
-## 5. The two synthetic stories
+### Alternate intake: verify an exported receipt
+
+A receipt may be passed to another manager, attached to an incident record, or shown to a judge after it leaves the browser that created it. The Portable Receipt Verifier checks whether that JSON still agrees with the deterministic evidence inside it.
+
+The verifier hashes the exact imported bytes, applies the same 2 MiB boundary, requires fatal UTF-8 decoding and valid JSON, validates the strict receipt contract, recomputes event accounting, re-runs policy, and checks the exported receipt notes against their citations. It does not call Granite, the server route, or any network service.
+
+The result is one of three explicit states:
+
+- **PASS:** all eight gates agree;
+- **REJECTED:** a byte, format, schema, or cross-object boundary failed, so dependent checks were not run;
+- **CHECK FAILED:** the receipt parsed, but its stored result disagrees with deterministic replay.
+
+The report always says what it cannot prove. Internal consistency is not exporter authentication, trusted capture, trace completeness, access to the original trace bytes, a digital signature, or nonrepudiation.
+
+## 5. The three synthetic stories
 
 The fixtures are deliberately small enough to understand in a demo and complicated enough to expose real trust problems.
 
-### Shared authority
+### Shared authority for the native runs
 
 Both runs use the same authority:
 
@@ -225,6 +241,26 @@ Result:
 Why 12 findings rather than 3? One event can break multiple independent rules. The external spreadsheet attempt is an unpermitted system reference, disallowed external egress, and prohibited data movement. The send also violates the operation allowlist and approval requirement. The retry adds a separate possible-duplicate-side-effect warning.
 
 The exact formatted fixture is 3,421 bytes, and the integration test locks its SHA-256 to `19d64c62de2f63509741ff0c96e4394e35ce5fdb869e5dfc3d7f8d744f527926`.
+
+### Fixture C: Incomplete OTLP run
+
+The third sample uses the documented OTLP/JSON profile and a narrow authority envelope for one model inference followed by one local file write. Its three source spans are:
+
+1. a supported GenAI inference span that maps to one canonical event;
+2. a material write action with explicit state-change semantics but no supported explicit operation;
+3. an unrelated HTTP span that remains metadata-only.
+
+The material span also carries nonterminal source status, so the run status remains unknown. Result:
+
+- 3 of 3 raw spans accounted for;
+- 1 mapped, 1 metadata-only, and 1 unparsed;
+- 1 canonical event;
+- 2 `AR-TRACE-001` findings: material event unparsed and run termination unknown;
+- verdict: `unable_to_assess_fully`.
+
+![Agent Receipt Evidence Gap Mode](screenshots/agent-receipt-evidence-gap.jpg)
+
+The evidence-gap view names the facts needed to continue, lists every raw record, and opens the exact retained action span even though no canonical event was created. It does not infer the missing operation from the span name or tool name.
 
 ### A subtle but crucial distinction
 
@@ -399,22 +435,23 @@ receipt/
 |  |- EVALUATION.md               reproducible synthetic evaluation
 |  |- JUDGE_GUIDE.md              60-second judge path and evidence map
 |  |- OTLP_GENAI_ADAPTER.md       supported external trace contract
+|  |- PORTABLE_RECEIPT_VERIFIER.md exported-receipt replay contract
 |  |- RECOVERY_PLAN.md            Recovery Plan v1 trust contract
 |  |- SUBMISSION.md               paste-ready challenge copy
 |  |- AI_ASSISTANCE_LOG.md        honest tool provenance
 |  |- ASSET_LICENSES.md           screenshot declarations
-|  `- screenshots/                ten synthetic product captures
+|  `- screenshots/                eleven synthetic product captures
 |- scripts/release-audit.mjs      release-audit command entry point
 |- src/
 |  |- adapters/                   native + narrow OTLP canonicalization
 |  |- ai/                         minimization, Granite, validation, fallback
 |  |- app/                        Next page, layout, CSS, API route
 |  |- components/                 complete interactive review UI
-|  |- core/                       schemas, policy, coverage, receipt, recovery export
-|  |- fixtures/                   expected and overreaching traces
+|  |- core/                       schemas, policy, receipt, recovery, verification
+|  |- fixtures/                   expected, overreaching, and incomplete traces
 |  |- evaluation/                 executable judge-facing corpus
 |  |- release/                    privacy/license/media release audit
-|  `- ui/                         pure presentation derivations
+|  `- ui/                         receipt, evidence-gap, and verification views
 `- tests/
    |- unit/                       focused trust behavior
    |- golden/                     fixture expectations
@@ -923,13 +960,15 @@ The clean fixture produces a valid empty plan. The overreaching fixture produces
 
 ## 19. The frontend as a state machine
 
-`ReceiptReviewApp.tsx` is a client component with three main states:
+`ReceiptReviewApp.tsx` is a client component with two intake modes. Trace review has three main states:
 
 ```text
 intake -> authority -> receipt
 ```
 
 It also owns source bytes, paste value, authority draft, validation errors, analysis progress, successful build, evidence drawer request, receipt-export status, and recovery-export status.
+
+Receipt verification is a separate local branch with imported bytes, paste text, a running flag, a report view model, and a reset action. It never adds the imported receipt to the trace-review state.
 
 ### Intake
 
@@ -943,6 +982,16 @@ The UI validates before moving on:
 - complete Native Trace v1 schema.
 
 Invalid JSON messages report line and column when the runtime error exposes a position. They do not echo private invalid content.
+
+### Portable receipt verification
+
+`src/core/verifyReceipt.ts` takes a `Uint8Array` and returns a deterministic report. It copies the bytes immediately, hashes before decoding, and returns eight ordered gate records. Early boundary failures append explicit `not_run` gates rather than making later checks look successful.
+
+After `ReceiptResultSchema` accepts the export, the verifier calls the same `computeCoverage`, `runPolicyEngine`, `buildFactBundle`, and `validateClaims` functions used by the normal product path. Coverage, verdict, and the complete finding records must match exactly. Generated or fallback receipt notes must still be allowed deterministic projections with valid event and finding citations.
+
+`src/ui/verificationView.ts` turns that report into manager-readable status labels without changing the core result. The report UI shows the imported-file digest and byte length, receipt summary, gate ledger, bounded failures, and the required limitations. It does not render the imported JSON body.
+
+The query shortcuts `/?mode=verify&sample=valid` and `/?mode=verify&sample=altered` server-render the two judge states. The altered version changes one deterministic finding description after export, so the strict receipt still parses but policy and citation replay expose the contradiction.
 
 ### Authority form
 
@@ -958,6 +1007,7 @@ The final view contains:
 - requested task and observed outcome;
 - seven manager metrics;
 - incident brief grouped only by cited event overlap or a shared explicit action key;
+- Evidence Gap Mode with deterministic refusal reasons and a complete raw-record ledger;
 - Recovery Plan v1 export placed before the longer proposal list for a shorter judge path;
 - proposed recovery actions with human authority and reversibility labels;
 - human action summary;
@@ -987,6 +1037,8 @@ The summary has three parts:
 ![Agent Receipt action summary](screenshots/agent-receipt-action-summary.jpg)
 
 ![Agent Receipt inspectable Granite boundary](screenshots/agent-receipt-granite-boundary.jpg)
+
+![Agent Receipt Evidence Gap Mode](screenshots/agent-receipt-evidence-gap.jpg)
 
 ### Why it is derived rather than stored
 
@@ -1030,6 +1082,8 @@ The evidence drawer expands a claim in this order:
 2. canonical event;
 3. retained raw object and pointer.
 
+For a finding with no canonical event, the drawer instead shows the accounting classification, materiality, mapping status, recorded reason, and retained raw object.
+
 ![Agent Receipt evidence drawer](screenshots/agent-receipt-evidence-drawer.jpg)
 
 The drawer:
@@ -1042,7 +1096,7 @@ The drawer:
 - restores body scrolling;
 - labels whether evidence is synthetic or user-provided.
 
-The raw object is resolved only from pointers shaped like `events[index]`. If it cannot be resolved, the drawer says so rather than guessing.
+The raw object resolver accepts only the two documented pointer shapes: `events[index]` for Native Trace v1 and `resourceSpans[index].scopeSpans[index].spans[index]` for OTLP/JSON. If a pointer cannot be resolved, the drawer says so rather than guessing.
 
 ## 22. Systems and data movement
 
@@ -1114,7 +1168,7 @@ The project separates evidence layers because each answers a different question.
 
 ## 25. Automated test suite
 
-The current local source snapshot contains 315 tests across 16 files.
+The current local source snapshot contains 335 tests across 19 files.
 
 ### Test families
 
@@ -1143,15 +1197,17 @@ They include adversarial claims about unsupported systems, operations, people, b
 
 **Recovery-plan tests** cover citation closure, exact receipt binding, byte-identical replay, digest changes after disposition changes, the clean empty plan, invented evidence rejection, and exclusion of a raw-only secret.
 
-**Golden tests** assert the two fixture verdicts, accounting, findings, and evidence links.
+**Golden tests** assert the two complete fixture verdicts, accounting, findings, and evidence links.
 
 **Integration tests** lock exact fixture byte lengths, hashes, event mappings, complete finding arrays, copy, provenance, and raw-source exclusion from export.
 
 **UI view tests** cover exact fixture encoding, intake, authority drafts, metrics, movement, raw pointers, action wording, no-observed statements, and attention ordering.
 
+**Evidence-gap tests** cover complete raw-record accounting, gap-to-pointer linkage, complete-receipt exclusion, raw-only drill-down inputs, and the evidence-only recovery action.
+
 **Release-audit tests** cover secret patterns, personal paths, dependency license metadata, media attribution, and the narrow Next build-root allowance.
 
-**Evaluation tests** run three declared synthetic cases and adversarial checks for verdicts, seeded rules, raw-record accounting, known digests, deterministic replay, citations, invalid Granite selections, material OTLP parsing gaps, and the Recovery Plan v1 receipt/execution boundaries. `docs/EVALUATION.md` records the exact method and its limitations.
+**Evaluation tests** run four declared synthetic cases and adversarial checks for verdicts, seeded rules, fifteen-of-fifteen raw-record accounting, known digests, deterministic replay, citations, invalid Granite selections, material OTLP parsing gaps, and the Recovery Plan v1 receipt/execution boundaries. Focused verifier tests add exact imported-byte, boundary, schema, accounting, policy, and citation failure cases. `docs/EVALUATION.md` records the exact method and its limitations.
 
 ## 26. The complete local gate
 
@@ -1165,16 +1221,16 @@ npm run build
 npm run release:audit
 ```
 
-At the deployed release snapshot it passed with:
+At the combined local Evidence Gap Mode and Portable Receipt Verifier candidate it passed with:
 
 - ESLint: zero warnings;
 - strict TypeScript: passed;
-- 16 test files: passed;
-- 315 tests: passed;
+- 19 test files: passed;
+- 335 tests: passed;
 - Next production build: passed;
-- release audit: passed.
+- release audit: passed across 77 source files, 143 build files, 474 dependency entries, and 11 declared media assets.
 
-Product release `7b712e5df8ad781162c896ddcae0463b3160c210` passed GitHub Actions run `33196317863` on August 28, 2026 after the complete gate passed locally with 16 test files, 315 tests, zero lint warnings, strict type checking, the Next production build, and the release audit. The same feature-bearing SHA reached a ready Vercel production deployment and passed the focused public browser journeys described below.
+This local result does not replace hosted evidence. Product release `7b712e5df8ad781162c896ddcae0463b3160c210` passed GitHub Actions run `33196317863` on August 28, 2026 after its complete gate passed with 16 test files and 315 tests. The same feature-bearing SHA reached a ready Vercel production deployment and passed the focused public browser journeys described below. Evidence Gap Mode and the Portable Receipt Verifier are not part of that deployed SHA.
 
 ## 27. Release audit
 
@@ -1191,12 +1247,12 @@ Product release `7b712e5df8ad781162c896ddcae0463b3160c210` passed GitHub Actions
 
 Next.js includes the build root inside specific required-server metadata files. The audit masks only that exact expected root in only those allowlisted files. An unrelated personal path still fails.
 
-For the feature-bearing release candidate it checked:
+For the current local Version 1.5 candidate it checked:
 
-- 70 release-scoped source text files;
-- 147 production-build text files;
+- 77 release-scoped source text files;
+- 143 production-build text files;
 - 474 dependency package entries;
-- 10 app-owned media assets;
+- 11 app-owned media assets;
 - 8 allowlisted Next build-root metadata references.
 
 This is a high-signal guard, not a proof that no secret, personal datum, vulnerability, or licensing issue exists.
@@ -1205,7 +1261,12 @@ This is a high-signal guard, not a proof that no secret, personal datum, vulnera
 
 Local rendered checks covered:
 
-- both fixture journeys;
+- all three fixture journeys, including the incomplete OTLP refusal state;
+- 3/3 raw-record accounting with one mapped, one metadata-only, and one unparsed record;
+- both evidence gaps, the complete source-record ledger, and the raw-only evidence drawer;
+- Evidence Gap Mode at 390, 840, and 1280 CSS pixels without document-level overflow;
+- valid and altered Portable Receipt Verifier reports at 390, 840, and 1280 CSS pixels without document-level overflow;
+- all eight verifier gates, exact imported-file digest display, always-visible non-claims, and a minimum measured button height of 46 CSS pixels;
 - validation and recovery;
 - every canonical action translated once;
 - unknown attempt and successful retry kept separate;
@@ -1218,7 +1279,7 @@ Local rendered checks covered:
 - Chromium accessibility-tree landmarks and dialog naming;
 - no document-level overflow or recorded browser console warnings/errors.
 
-These checks are stronger than looking at one screenshot, but they remain browser-specific and do not equal a real screen-reader or cross-browser certification.
+The 640-pixel zoom-equivalent and accessibility-tree checks predate Evidence Gap Mode and support the unchanged core shell, not the new panels specifically. Evidence Gap Mode's keyboard drawer behavior, responsive layout, and browser logs were checked directly. The verifier's query-rendered reports and semantics were inspected at all three widths; browser-automation clicks did not update either the new intake controls or an unchanged original sample control in this session, so human pointer activation remains unexecuted evidence rather than an implied pass. These checks are stronger than looking at one screenshot, but they remain browser-specific and do not equal a real screen-reader or cross-browser certification.
 
 ## 29. Deployment architecture
 
@@ -1304,6 +1365,8 @@ Codex and associated design/QA skills contributed:
 
 The point of the log is not to invent a percentage. It is to show material prompts, artifacts, human review, and executed verification without attributing one tool's work to another. `docs/BOB_BUILD_STORY.md` points judges to the two large Bob-authored foundation commits and the bounded workflow that produced them.
 
+For the Portable Receipt Verifier, Bob produced the architecture, trust-claim matrix, acceptance cases, and implementation task plan, then began the Agent workflow. Bob's free-trial usage limit was reached before implementation files were written. Codex completed the verifier implementation, UI, tests, guide, and QA from that plan. `portable-receipt-verifier-plan.md` and `docs/AI_ASSISTANCE_LOG.md` record that boundary directly; no Codex-authored code is attributed to Bob.
+
 ## 31. License and asset status
 
 Agent Receipt is proprietary, not open source. The custom evaluation license permits narrow unmodified evaluation by judges, organizers, prospective users, and non-commercial reviewers. It restricts modification, redistribution, commercial operation, replication, competing-product use, and ML training without written permission.
@@ -1314,7 +1377,7 @@ Important qualifications:
 - The license is not legal advice.
 - It has not been reviewed by qualified counsel.
 - Third-party packages retain their own licenses.
-- The ten project screenshots are declared as project-owned synthetic captures in `docs/ASSET_LICENSES.md`.
+- The eleven project screenshots are declared as project-owned synthetic captures in `docs/ASSET_LICENSES.md`.
 
 ---
 
@@ -1353,6 +1416,13 @@ Open `http://localhost:3000`.
 12. Download Recovery Plan v1 and inspect its receipt digest and execution boundary.
 13. Download the receipt JSON.
 14. Confirm the raw uploaded document is absent from both exports.
+15. Start a new review with Incomplete OTLP run.
+16. Confirm the incomplete verdict, 3/3 ledger, 1/1/1 accounting split, and two evidence gaps.
+17. Open the unparsed raw-only record and confirm the missing operation remains absent rather than inferred.
+18. Start a new review and select **Verify a receipt**.
+19. Run the valid synthetic verifier demonstration and scan all eight passed gates.
+20. Run the altered demonstration and confirm deterministic policy and citation replay fail.
+21. Read the always-visible limitations: the verifier proves internal consistency, not exporter identity, trace completeness, or signed provenance.
 
 ## 33. Input format by example
 
@@ -1431,7 +1501,7 @@ WATSONX_MODEL_ID=ibm/granite-4-h-small
 
 Never use a `NEXT_PUBLIC_` prefix. Never paste values into chat, issues, screenshots, source, logs, or this guide.
 
-Start a fresh dev server so Next.js reloads the environment. The server calls `/ml/v1/text/chat?version=2025-10-25` and reads `choices[0].message.content`. Run both fixtures. A successfully accepted model response shows `generationSource: granite` plus model and API metadata. Fallback still means the review path succeeded safely; it means the live response was unavailable or rejected.
+Start a fresh dev server so Next.js reloads the environment. The server calls `/ml/v1/text/chat?version=2025-10-25` and reads `choices[0].message.content`. Run the expected, overreaching, and incomplete fixtures. A successfully accepted model response shows `generationSource: granite` plus model and API metadata. Fallback still means the review path succeeded safely; it means the live response was unavailable or rejected.
 
 After one successful live run, start a separate local process with a deliberately invalid process-only API key override and verify that the same receipt completes with deterministic fallback. Do not overwrite the real `.env.local`, and restore the normal process immediately.
 
@@ -1575,10 +1645,11 @@ Remaining risks include:
 
 ## 41. What remains before the hackathon release is fully complete
 
-At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, citation-closed Recovery Plan v1 export, Granite selection hardening, inspectable Granite boundary, narrow OTLP adapter, automated evaluation corpus, screenshots, license, public repository, judge guide, exact product-release CI, Vercel deployment, and both public fixture journeys were complete. Product release `7b712e5df8ad781162c896ddcae0463b3160c210` includes the shorter judge path and the inspectable boundary. Its public deterministic-fallback evidence remains separate from the locally verified live Granite path.
+At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, citation-closed Recovery Plan v1 export, Granite selection hardening, inspectable Granite boundary, narrow OTLP adapter, automated evaluation corpus, screenshots, license, public repository, judge guide, exact product-release CI, Vercel deployment, and both original public fixture journeys were complete. Evidence Gap Mode and the Portable Receipt Verifier are implemented and locally verified in the current workspace, but neither is committed or deployed. Public deterministic-fallback evidence remains separate from the locally verified live Granite path.
 
 Open release work included:
 
+- obtain fresh approval for the combined candidate commit and push, then verify exact-SHA hosted CI, deployment, all three receipt journeys, and both verifier shortcuts;
 - decide whether to configure encrypted live watsonx.ai credentials in Vercel, then verify that deployment if approved;
 - complete a real screen-reader spot check only if a stronger accessibility claim is desired;
 - recheck challenge rules, eligibility, learning requirements, and deadline;
@@ -1592,14 +1663,15 @@ These are release and external-state gates. They do not erase the completed dete
 
 The safest order is:
 
-1. finish video, eligibility, and submission evidence;
-2. add broader accessibility verification only if the team chooses to make stronger accessibility claims;
-3. keep documentation synchronized with deployed state;
-4. validate the narrow OTLP adapter against larger, consented external fixtures;
-5. prototype a separate recovery executor only with read-before-write checks, dry runs, explicit approval, rollback, idempotency, and its own evidence trail;
-6. add signed capture or provenance only with a real threat model;
-7. consider persistence, accounts, and team workflows;
-8. consider production integrations and comparative model evaluation only after the deterministic contract remains stable.
+1. release and verify the current local candidate only after fresh approval;
+2. finish video, eligibility, and submission evidence;
+3. add broader accessibility verification only if the team chooses to make stronger accessibility claims;
+4. keep documentation synchronized with deployed state;
+5. validate the narrow OTLP adapter against larger, consented external fixtures;
+6. prototype a separate recovery executor only with read-before-write checks, dry runs, explicit approval, rollback, idempotency, and its own evidence trail;
+7. add signed capture or provenance only with a real threat model;
+8. consider persistence, accounts, and team workflows;
+9. consider production integrations and comparative model evaluation only after the deterministic contract remains stable.
 
 Avoid widening immediately into enforcement, universal observability, compliance certification, or generalized policy authoring. Those are different products with different safety and legal burdens.
 
@@ -1713,6 +1785,17 @@ Raw input, output, error body, and general metadata are not copied into the cano
 | `evidence.events` | Canonical events cited by incidents |
 | `evidence.findings` | Deterministic findings cited by incidents |
 
+## A7. Portable verifier report fields
+
+| Field | Meaning |
+|---|---|
+| `status` | `pass`, `rejected`, or `inconsistent` |
+| `fileSha256` | SHA-256 of the exact imported receipt bytes, or unavailable only if hashing fails |
+| `byteLength` | Imported byte count before decoding |
+| `gates` | Eight ordered digest, size, UTF-8, JSON, contract, accounting, policy, and citation results |
+| `summary` | Trace ID, verdict, finding count, raw-event count, and copy provenance after strict receipt validation |
+| `limitations` | Always-visible authenticity, provenance, trace-completeness, and original-byte non-claims |
+
 ---
 
 # Appendix B - Failure behavior
@@ -1739,6 +1822,8 @@ Raw input, output, error body, and general metadata are not copied into the cano
 | Unsupported model claim | One repair, then fallback |
 | Tampered receipt before export | Recompute/revalidate and reject export |
 | Invented or inconsistent recovery citation | Reject recovery-plan export |
+| Invalid receipt export in portable verifier | REJECTED; dependent replay gates are not run |
+| Valid receipt that contradicts deterministic replay | CHECK FAILED with the failed gate and bounded issues |
 | Browser refresh | Uploaded trace may be lost; samples remain available |
 
 ---
@@ -1778,6 +1863,8 @@ Raw input, output, error body, and general metadata are not copied into the cano
 **Integrity metadata** - Digest, byte length, schema versions, adapter, policy, time, and generation source.
 
 **Native trace** - The project's bounded versioned input format.
+
+**Portable receipt verifier** - Browser-only replay of an exported receipt's exact-file digest, strict contract, accounting, policy result, and citations; not authentication or signed provenance.
 
 **No observed activity** - No supplied event referenced the item; not proof of real-world inactivity.
 
@@ -1845,6 +1932,10 @@ It accepts one narrow documented OTLP/JSON `resourceSpans` profile for GenAI inf
 
 Because a material evidence gap prevents a complete assessment. Existing findings still remain visible.
 
+## Does a passing Portable Receipt Verifier report prove the file is authentic?
+
+No. PASS means the supplied export is internally consistent under the current receipt schema and deterministic rules. It does not prove who created it, whether the original trace was complete, whether the original trace bytes match the recorded digest, or whether the file has signed provenance.
+
 ## What does the Recovery Plan export actually do?
 
 It packages deterministic, evidence-cited follow-up proposals for human review. It does not reconnect to systems, change credentials, send messages, delete data, or execute a rollback.
@@ -1865,9 +1956,13 @@ Yes. The receipt's AI boundary section rebuilds the same minimized, recursively 
 
 The same receipt remains usable with deterministic fallback copy. The verdict, findings, coverage, evidence links, disposition, receipt export, and Recovery Plan do not depend on model availability.
 
+## What happens when a raw record has no canonical event?
+
+If the record is material and cannot be mapped safely, deterministic policy stops the full assessment. Evidence Gap Mode keeps its accounting reason visible and opens the retained raw source object directly. It does not invent a canonical operation.
+
 ## Are the screenshots real customer data?
 
-No. All ten use the committed synthetic overreaching fixture.
+No. All eleven use committed or candidate synthetic fixtures.
 
 ## Is the project open source?
 
@@ -1890,6 +1985,7 @@ It is a bounded hackathon MVP. Production use would require authentication, pers
 | How is coverage enforced? | `src/core/coverage.ts` |
 | How are findings/verdict computed? | `src/core/policyEngine.ts` |
 | How is a receipt assembled/exported? | `src/core/receipt.ts` |
+| How is an exported receipt replayed? | `src/core/verifyReceipt.ts`, `src/ui/verificationView.ts`, `docs/PORTABLE_RECEIPT_VERIFIER.md` |
 | How is a recovery plan assembled/exported? | `src/core/recoveryPlan.ts`, `docs/RECOVERY_PLAN.md` |
 | What can reach Granite? | `src/ai/factBundle.ts`, `src/ai/redact.ts` |
 | How is model output constrained? | `src/ai/validateClaims.ts`, `src/ai/deterministicFallback.ts` |
@@ -1922,8 +2018,10 @@ This guide was cross-checked against the complete tracked repository, including 
 
 ## Evidence boundaries
 
-- Current feature-bearing behavior is supported by source inspection, 315 tests across 16 files, a successful production build and release audit, exact-SHA hosted CI, and the public browser checks reported in this guide.
+- The combined local Evidence Gap Mode and Portable Receipt Verifier candidate is supported by source inspection, 335 tests across 19 files, a successful production build and release audit, and focused local browser checks at 390, 840, and 1280 CSS pixels. It is not committed, pushed, or deployed.
+- The public feature-bearing baseline remains product release `7b712e5df8ad781162c896ddcae0463b3160c210`, supported by 315 tests across 16 files, exact-SHA hosted CI, and the public browser checks reported in this guide.
 - Exact product-release CI, Vercel status, public repository visibility, and both deployed fixture journeys were checked live on August 28. The inspectable boundary exposed the expected reduced counts and citation allowlists while excluding raw and policy-comparison fields. The Recovery Plan export preceded the overreaching proposal list, both fixture states were correct, and neither browser-created Blob file was independently captured.
+- The local verifier's valid shortcut passed all eight gates. Its altered shortcut changed one deterministic finding and produced policy and citation failures. These query-rendered states were inspected at all three target widths; human pointer activation, hosted behavior, and deployment remain unverified.
 - Local live Granite success under the compact selection boundary was re-observed on August 28, 2026. Prior rejected-claim fallback, explicit fallback mode, and invalid-credential fallback remain recorded evidence. Live Granite on the exact final public release, a real screen-reader session, the public video, and final submission were not verified as complete in this guide pass.
 - Challenge and provider details can change; recheck official pages before release action.
 

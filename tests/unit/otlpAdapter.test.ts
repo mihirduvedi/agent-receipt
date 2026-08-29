@@ -8,6 +8,7 @@ import {
 } from "../../src/adapters/otlpGenAi.js";
 import { buildReceipt } from "../../src/core/receipt.js";
 import {
+  fixtureCIncomplete,
   otlpDemoAuthority,
   otlpGenAiFixture,
 } from "../../src/fixtures/index.js";
@@ -141,14 +142,8 @@ describe("narrow OTLP/JSON GenAI adapter", () => {
   });
 
   it("forces an incomplete verdict when a material action span is unparsed", async () => {
-    const incomplete = structuredClone(otlpGenAiFixture);
-    incomplete.resourceSpans[0]!.scopeSpans[0]!.spans[1]!.attributes =
-      incomplete.resourceSpans[0]!.scopeSpans[0]!.spans[1]!.attributes.filter(
-        (attribute) => attribute.key !== "agent.receipt.operation",
-      );
-
     const result = await buildReceipt({
-      rawBytes: bytes(incomplete),
+      rawBytes: bytes(fixtureCIncomplete),
       authority: otlpDemoAuthority,
     });
     expect(result.ok, result.ok ? undefined : JSON.stringify(result.error)).toBe(true);
@@ -156,7 +151,12 @@ describe("narrow OTLP/JSON GenAI adapter", () => {
     expect(result.receipt.verdict).toBe("unable_to_assess_fully");
     expect(result.receipt.coverage.unparsed).toBe(1);
     expect(
-      result.receipt.findings.some((finding) => finding.ruleId === "AR-TRACE-001"),
-    ).toBe(true);
+      result.receipt.findings
+        .filter((finding) => finding.ruleId === "AR-TRACE-001")
+        .map((finding) => finding.label),
+    ).toEqual([
+      "Material event could not be parsed",
+      "Run termination is unknown",
+    ]);
   });
 });

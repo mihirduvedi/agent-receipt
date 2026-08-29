@@ -9,13 +9,13 @@ describe("judge-facing automated evaluation", () => {
     expect(result).toEqual({
       methodology: "automated_synthetic_corpus",
       corpus: {
-        cases: 3,
-        verdictCasesPassed: 3,
-        rawRecords: 12,
-        accountedRawRecords: 12,
-        canonicalEvents: 11,
+        cases: 4,
+        verdictCasesPassed: 4,
+        rawRecords: 15,
+        accountedRawRecords: 15,
+        canonicalEvents: 12,
         nativeCases: 2,
-        otlpCases: 1,
+        otlpCases: 2,
       },
       seededPolicyRules: {
         expected: [
@@ -39,8 +39,8 @@ describe("judge-facing automated evaluation", () => {
       trustChecks: {
         knownDigestCasesPassed: 2,
         deterministicReplayPassed: true,
-        receiptSchemaCasesPassed: 3,
-        generatedItemsWithValidCitations: 18,
+        receiptSchemaCasesPassed: 4,
+        generatedItemsWithValidCitations: 22,
         invalidCitationRejected: true,
         invalidGraniteSelectionFellBack: true,
         materialUnparsedSpanForcedIncompleteVerdict: true,

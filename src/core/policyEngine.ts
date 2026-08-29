@@ -424,7 +424,7 @@ function checkTraceIntegrity(
         ruleId: "AR-TRACE-001",
         severity: "high",
         label: "Material event could not be parsed",
-        description: `The raw event at ${acc.rawPointer} could not be parsed. It is material to this assessment. Recorded reason: ${acc.reason ?? "unknown"}.`,
+        description: `The raw event at ${acc.rawPointer} could not be parsed. It is material to this assessment. Recorded reason: ${(acc.reason ?? "unknown").replace(/\.$/, "")}.`,
         eventIds: [],
         policyPath: undefined,
         observedValue: acc.rawPointer,

@@ -475,6 +475,11 @@ export function buildRecoveryPlan(
         "named system",
     );
 
+    const isEvidenceOnlyIncident =
+      events.length === 0 &&
+      ruleIds.size > 0 &&
+      [...ruleIds].every((ruleId) => ruleId === "AR-TRACE-001");
+
     if (
       ruleIds.has("AR-RETRY-001") ||
       events.some((event) => ["unknown", "started", "failed"].includes(event.status))
@@ -485,7 +490,7 @@ export function buildRecoveryPlan(
         authorityRequired: `A human reviewer with read access to ${destination} audit history`,
         reversibility: "Read-only verification; preserve evidence before later containment",
       });
-    } else {
+    } else if (!isEvidenceOnlyIncident) {
       addAction(incident, "preserve-evidence", {
         title: "Preserve and verify the destination evidence",
         description: `Confirm the cited event state in ${destination}, record the affected scope, and retain the relevant logs before taking a corrective action.`,

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { fixtureA, fixtureB, sharedAuthority } from "../../src/fixtures/index.js";
+import {
+  fixtureA,
+  fixtureB,
+  fixtureCIncomplete,
+  otlpDemoAuthority,
+  sharedAuthority,
+} from "../../src/fixtures/index.js";
 import { buildReceipt, serializeReceipt } from "../../src/core/receipt.js";
 import { ReceiptExportSchema } from "../../src/core/schemas/index.js";
 import type {
@@ -624,5 +630,64 @@ describe("complete receipt orchestration", () => {
       expect(action.eventIds).toStrictEqual(finding?.eventIds);
     }
     expectSerializableExport(receipt);
+  });
+
+  it("Fixture C accounts for every OTLP span and refuses to overclaim across material evidence gaps", async () => {
+    const submittedBytes = new TextEncoder().encode(
+      `${JSON.stringify(fixtureCIncomplete, null, 2)}\n`,
+    );
+    const expectedBytes = Uint8Array.from(submittedBytes);
+    const result = await buildReceipt(
+      {
+        rawBytes: submittedBytes,
+        authority: otlpDemoAuthority,
+      },
+      { now: () => GENERATED_AT },
+    );
+
+    expect(result.ok, result.ok ? undefined : JSON.stringify(result.error)).toBe(true);
+    if (!result.ok) return;
+
+    const { receipt, retainedSource } = result;
+    expect(retainedSource.bytes).not.toBe(submittedBytes);
+    expect(retainedSource.bytes).toStrictEqual(expectedBytes);
+    expect(retainedSource.rawDocument).toStrictEqual(fixtureCIncomplete);
+    expect(receipt.verdict).toBe("unable_to_assess_fully");
+    expect(receipt.verdictQualifier).toBe(
+      "Authority assessment incomplete. Based on the supplied trace and authority envelope.",
+    );
+    expect(receipt.coverage).toStrictEqual({
+      rawEvents: 3,
+      accountedRawEvents: 3,
+      mapped: 1,
+      metadataOnly: 1,
+      unparsed: 1,
+      canonicalEvents: 1,
+    });
+    expect(receipt.accounting.map((entry) => entry.status)).toStrictEqual([
+      "mapped",
+      "unparsed",
+      "metadata-only",
+    ]);
+    expect(receipt.accounting.map((entry) => entry.rawPointer)).toStrictEqual([
+      "resourceSpans[0].scopeSpans[0].spans[0]",
+      "resourceSpans[0].scopeSpans[0].spans[1]",
+      "resourceSpans[0].scopeSpans[0].spans[2]",
+    ]);
+    expect(receipt.findings.map((finding) => finding.label)).toStrictEqual([
+      "Material event could not be parsed",
+      "Run termination is unknown",
+    ]);
+    expect(receipt.events).toHaveLength(1);
+    expect(receipt.run.status).toBe("unknown");
+    expect(receipt.copy.limitations).toHaveLength(2);
+    expect(receipt.integrity.inputFormat).toBe("otlp-json-resource-spans.v1");
+    expect(receipt.integrity.generationSource).toBe("deterministic_fallback");
+    expectAllCopyCitationsResolve(receipt);
+    expectSerializableExport(receipt);
+
+    const exported = JSON.parse(serializeReceipt(receipt)) as Record<string, unknown>;
+    expect(exported).not.toHaveProperty("rawDocument");
+    expect(exported).not.toHaveProperty("bytes");
   });
 });

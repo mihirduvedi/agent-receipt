@@ -2,9 +2,9 @@
 
 **Snapshot:** August 28, 2026
 
-**Scope:** Deployed Granite-boundary product release `7b712e5df8ad781162c896ddcae0463b3160c210` and its refreshed submission evidence
+**Scope:** Deployed Granite-boundary product release `7b712e5df8ad781162c896ddcae0463b3160c210`, plus the separate local Evidence Gap Mode and Portable Receipt Verifier candidate
 
-**Decision:** Release `7b712e5df8ad781162c896ddcae0463b3160c210` is the verified feature-bearing baseline. It is committed and pushed on `main`, passed hosted CI, reached a ready Vercel production deployment, and passed both public fixture journeys plus the focused desktop/mobile Granite-boundary checks.
+**Decision:** Release `7b712e5df8ad781162c896ddcae0463b3160c210` remains the verified public product baseline. Documentation release `13f5229` is the current public `main`. Both are committed and pushed, their hosted checks passed, and the product release reached a ready Vercel deployment. Evidence Gap Mode and the Portable Receipt Verifier are verified locally but are not committed, pushed, or deployed.
 
 This ledger separates automated evidence from browser, manual-accessibility, live-service, deployment, and submission evidence. A checked local test does not prove an unexecuted layer.
 
@@ -12,14 +12,41 @@ This ledger separates automated evidence from browser, manual-accessibility, liv
 
 | Check | Latest result | What it supports |
 |---|---|---|
-| `npm run verify` | Release candidate passed locally on August 28: lint with zero warnings, strict TypeScript, 16 test files and 315 tests, production build, release audit across 70 source files | The tested deterministic, UI-helper, build, and release-safety contracts pass locally |
+| `npm run verify` | Combined Evidence Gap Mode and Portable Receipt Verifier candidate passed locally on August 28: lint with zero warnings, strict TypeScript, 19 test files and 335 tests, production build, release audit across 77 source files, 143 build files, 474 dependency entries, and 11 media assets | The tested deterministic, UI-helper, build, and release-safety contracts pass locally |
 | GitHub Actions `CI` | [Run `33196317863`](https://github.com/mihirduvedi/agent-receipt/actions/runs/33196317863) passed for exact product SHA `7b712e5df8ad781162c896ddcae0463b3160c210` on August 28 | A clean hosted install and complete `npm run verify` passed for the deployed Granite-boundary product release |
-| `npm run eval` | One declared evaluation test passed on August 28 | Synthetic verdict, rule-family, accounting, deterministic replay, citation, fallback, OTLP limitation, and Recovery Plan v1 assertions passed |
+| `npm run eval` | One evaluation test covering four declared cases passed on August 28 | Synthetic verdict, rule-family, accounting, deterministic replay, citation, fallback, OTLP limitation, evidence-gap, and Recovery Plan v1 assertions passed |
 | `npm audit --omit=dev --json` | Zero known production dependency vulnerabilities on August 28 | Current npm advisory data reported no production vulnerability |
-| Strict UI static scan | 27 source files, 0 errors, 0 warnings | Source-level UI heuristics only; not rendered or assistive-technology proof |
-| Markdown local-link audit | 41 local links checked across 15 tracked Markdown files, 0 missing | Current judge-facing repository links resolve locally |
+| Strict UI static scan | 50 files, 0 errors, 0 warnings | Source-level UI heuristics only; not rendered or assistive-technology proof |
+| Markdown local-link audit | 59 local links checked across 17 current product/project Markdown files, 0 missing | Current judge-facing repository links resolve locally |
 
-The full suite covers exact-byte digest behavior, native and narrow OTLP adaptation/accounting, deterministic policy rules, incident grouping, recovery proposals, Recovery Plan v1 binding and citation closure, Granite fact minimization/redaction/selection validation/fallback/token caching, route media and body limits, receipt orchestration and export validation, both golden fixtures, the synthetic evaluation corpus, release-source enumeration, and deterministic UI view helpers.
+The full suite covers exact-byte digest behavior, native and narrow OTLP adaptation/accounting, deterministic policy rules, incident grouping, recovery proposals, Recovery Plan v1 binding and citation closure, Granite fact minimization/redaction/selection validation/fallback/token caching, route media and body limits, receipt orchestration and export validation, all declared fixtures, portable-receipt replay and failure boundaries, the synthetic evaluation corpus, release-source enumeration, and deterministic UI view helpers.
+
+## Local Portable Receipt Verifier candidate
+
+The verifier accepts an exported receipt as exact file bytes or pasted UTF-8 text and runs entirely in the browser. It computes the imported-file SHA-256 before decoding, enforces the 2 MiB limit, validates UTF-8, JSON, the strict receipt contract and cross-object references, recomputes accounting, replays the deterministic policy verdict and complete findings, then validates the exported copy against its citations. A boundary failure is rejected; a valid receipt that contradicts replay reports CHECK FAILED.
+
+Focused automated checks covered twelve cases: passing exports from the expected, overreaching, and incomplete outcomes; exact-byte digest sensitivity; oversize, invalid UTF-8, invalid JSON, and non-receipt inputs; altered verdict and deterministic finding records; changed coverage; and invented citations.
+
+Focused browser checks covered the valid and altered query shortcuts at 1280 × 720, 840 × 900, and 390 × 844. At 840 and 390 CSS pixels the document width equaled the viewport width, and the minimum measured button height was 46 CSS pixels. The passing report showed all eight successful gates; the altered report showed policy and citation failures with the required limitations. Query-rendered states were inspected because browser-automation clicks did not update either the new intake controls or an unchanged original sample control in this session. No browser-console error was observed during the earlier desktop checks.
+
+This is local, browser-specific evidence. It does not establish pointer activation in a human session, cross-browser behavior, physical-device behavior, a screen-reader result, hosted CI, or a public deployment. A pass also does not prove receipt authenticity, trace completeness, exporter identity, original trace bytes, or signed provenance.
+
+## Local Evidence Gap Mode candidate
+
+The local candidate adds a third, intentionally incomplete OTLP journey. One material action span lacks the supported operation field, so the adapter accounts for all three raw spans as one mapped, one metadata-only, and one unparsed. The deterministic result is `unable_to_assess_fully`, with separate findings for the material parse gap and unknown run termination. The UI links both gaps to retained evidence and asks for the missing facts instead of inferring them.
+
+Focused production-build and development-browser checks covered:
+
+- the three-sample intake and prefilled OTLP authority envelope;
+- 3/3 raw-record accounting, the 1/1/1 classification split, two trace findings, and an unknown termination status;
+- a complete raw-record ledger and exact raw-only drawer view for the unparsed action span;
+- the single evidence-collection recovery action, without generic remediation that assumes a known operation;
+- Escape close and focus return from the raw-only evidence drawer;
+- fallback provenance in the production build and accepted local Granite provenance through the unchanged server-only boundary;
+- 390 × 844, 840 × 900, and 1280 × 720 layouts with document width equal to viewport width;
+- no browser warning or error entries in the tested development or production tabs.
+
+This is local evidence only. It does not establish a public deployment, hosted CI, cross-browser behavior, a physical-device result, or a screen-reader experience for Evidence Gap Mode.
 
 ## Current public deployment
 
@@ -58,14 +85,14 @@ These checks establish the tested public deployment path, but not cross-browser 
 
 The current implementation also has recorded browser evidence for:
 
-- expected and overreaching intake, authority, and receipt flows;
+- expected, overreaching, and incomplete intake, authority, and receipt flows;
 - OTLP paste intake;
 - long task, system, and agent names at 390 px, 640 px, and 1280 px;
 - 640 CSS-pixel reflow as a 200% zoom equivalent;
 - evidence-drawer focus entry, Tab/Shift+Tab containment, Escape close, focus restoration, and body-scroll restoration;
 - human disposition and receipt JSON status;
 - explicit text labels for unknown and succeeded outcomes;
-- ten README screenshots at 1280 × 720 using only synthetic data;
+- eleven README screenshots at 1280 × 720 using only synthetic data;
 - the complete project-guide PDF with bounds, font, page-grid, and readable-page inspection.
 
 The focused 390-pixel rerun was completed on deployed product release `7b712e5df8ad781162c896ddcae0463b3160c210`. Earlier evidence remains useful for the unchanged wider responsive, long-content, keyboard-dialog, and accessibility-tree checks.
@@ -89,7 +116,7 @@ The production browser journeys recorded `deterministic_fallback`. Local provide
 - `README.md` links the live demo, public repository, judge guide, complete guide, PDF, evaluation, recovery contract, submission copy, and demo script.
 - `docs/SUBMISSION.md` contains the verified public repository URL. The public-video and eligible-team fields remain intentionally unresolved.
 - `docs/JUDGE_GUIDE.md` gives a 60-second path and maps concrete evidence to the five public challenge-page lenses while noting the official rules' four-heading formulation.
-- `docs/PROJECT_GUIDE.md` and the 57-page Version 1.3 PDF document the now-deployed inspectable Granite boundary and keep local live-Granite evidence separate from credential-free production fallback evidence. The exact PDF contains text on every page, reports Version 1.3 with no stale Version 1.2 cover text, passes bounds validation with 0 errors and 0 warnings, and passed readable four-page-sheet inspection across all 57 pages.
+- `docs/PROJECT_GUIDE.md` and the 59-page Version 1.5 PDF document Evidence Gap Mode and the Portable Receipt Verifier while preserving the deployed Granite-boundary baseline and keeping local verification separate from public evidence. The exact final PDF has extractable text on every page, uses Letter dimensions throughout, contains no blank pages, passed the bounds validator with 0 errors and 0 warnings, and passed full readable-page plus document-sequence inspection.
 - All application screenshots use synthetic fixture data and are declared in `docs/ASSET_LICENSES.md`.
 
 ## Open release and submission gates
@@ -105,6 +132,9 @@ The production browser journeys recorded `deterministic_fallback`. Local provide
 - [x] Verify exact-SHA CI/Vercel status and repeat both public fixture journeys after the product push. At 390 px, the export preceded the proposal list, its descriptive/status references resolved, both fixture activations displayed their correct success states, and document width equaled viewport width. Browser automation did not independently capture either Blob file event.
 - [x] Run the complete local gate, static UI scan, and desktop/mobile browser checks for the Granite-boundary release.
 - [x] Commit and push the Granite-boundary release after fresh approval, verify exact-SHA hosted CI/Vercel status, and repeat both public fixture journeys.
+- [x] Run the complete local gate, static UI scan, and focused desktop/tablet/mobile browser checks for Evidence Gap Mode.
+- [x] Run the complete local gate and focused desktop/tablet/mobile browser checks for the Portable Receipt Verifier.
+- [ ] Commit, push, and verify Evidence Gap Mode plus the Portable Receipt Verifier only after fresh explicit approval; a push to `main` can trigger deployment.
 - [ ] Run a real screen-reader spot check if a stronger accessibility claim is desired.
 - [ ] Have the custom proprietary terms reviewed by qualified counsel before relying on them for commercial enforcement.
 - [ ] Confirm every teammate's eligibility, challenge registration, required IBM SkillsBuild Bob activity, and no conflicting prior Wildcard submission.

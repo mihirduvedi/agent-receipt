@@ -15,6 +15,7 @@ import type { ReceiptResult, Verdict } from "../core/schemas/index";
 import {
   fixtureA,
   fixtureB,
+  fixtureCIncomplete,
   otlpDemoAuthority,
   otlpGenAiFixture,
   sharedAuthority,
@@ -91,6 +92,15 @@ export async function runHackathonEvaluation(): Promise<HackathonEvaluationResul
       { now: () => EVALUATION_TIME },
     ),
   );
+  const incompleteReceipt = await requireReceipt(
+    buildReceipt(
+      {
+        rawBytes: formattedBytes(fixtureCIncomplete),
+        authority: otlpDemoAuthority,
+      },
+      { now: () => EVALUATION_TIME },
+    ),
+  );
 
   const cases: EvaluationCase[] = [
     {
@@ -107,6 +117,11 @@ export async function runHackathonEvaluation(): Promise<HackathonEvaluationResul
       name: "narrow OTLP GenAI export",
       receipt: otlp,
       expectedVerdict: "within_declared_authority",
+    },
+    {
+      name: "incomplete OTLP evidence",
+      receipt: incompleteReceipt,
+      expectedVerdict: "unable_to_assess_fully",
     },
   ];
 
@@ -152,20 +167,6 @@ export async function runHackathonEvaluation(): Promise<HackathonEvaluationResul
       apiVersion: "2025-10-25",
     }),
   });
-
-  const incompleteOtlp = structuredClone(otlpGenAiFixture);
-  const actionSpan =
-    incompleteOtlp.resourceSpans[0]?.scopeSpans[0]?.spans[1];
-  if (!actionSpan) throw new Error("Evaluation fixture action span is missing");
-  actionSpan.attributes = actionSpan.attributes.filter(
-    (attribute) => attribute.key !== "agent.receipt.operation",
-  );
-  const incompleteReceipt = await requireReceipt(
-    buildReceipt({
-      rawBytes: formattedBytes(incompleteOtlp),
-      authority: otlpDemoAuthority,
-    }),
-  );
 
   const incidents = buildManagerIncidentBrief(nativeB);
   const recoveryInput = {

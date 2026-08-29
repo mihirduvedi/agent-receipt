@@ -5,6 +5,8 @@ import type { Finding } from "../../src/core/schemas/index.js";
 import {
   fixtureA,
   fixtureB,
+  fixtureCIncomplete,
+  otlpDemoAuthority,
   otlpGenAiFixture,
   sharedAuthority,
 } from "../../src/fixtures/index.js";
@@ -303,6 +305,35 @@ describe("receipt UI view helpers", () => {
     if (!expected.ok) return;
     expect(buildManagerIncidentBrief(expected.receipt)).toEqual([]);
     expect(buildRecoveryPlan(expected.receipt)).toEqual([]);
+  });
+
+  it("proposes evidence collection only when an incomplete run has no canonical incident event", async () => {
+    const result = await buildReceipt({
+      rawBytes: new TextEncoder().encode(
+        `${JSON.stringify(fixtureCIncomplete, null, 2)}\n`,
+      ),
+      authority: otlpDemoAuthority,
+    });
+    expect(result.ok, result.ok ? undefined : JSON.stringify(result.error)).toBe(true);
+    if (!result.ok) return;
+
+    expect(
+      resolveRawPointer(
+        result.retainedSource.rawDocument,
+        "resourceSpans[0].scopeSpans[0].spans[1]",
+      ),
+    ).toEqual(fixtureCIncomplete.resourceSpans[0]!.scopeSpans[0]!.spans[1]);
+
+    const incidents = buildManagerIncidentBrief(result.receipt);
+    const actions = buildRecoveryPlan(result.receipt, incidents);
+    expect(actions).toHaveLength(1);
+    expect(actions[0]).toMatchObject({
+      title: "Close the evidence gap before accepting the run",
+      eventIds: [],
+      status: "proposed",
+    });
+    expect(actions[0]?.findingIds.length).toBeGreaterThan(0);
+    expect(actions[0]?.title).not.toContain("named system");
   });
 
   it("orders attention items by severity and then event sequence", () => {

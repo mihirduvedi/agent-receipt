@@ -16,22 +16,38 @@ import {
   withReviewerDisposition,
 } from "../core/receipt";
 import { serializeRecoveryPlan } from "../core/recoveryPlan";
+import { verifyReceipt } from "../core/verifyReceipt";
 import type {
   BuildReceiptResult,
   ReceiptCopyGenerator,
 } from "../core/receipt";
 import type {
+  AuthorityEnvelopeV1,
   CanonicalEvent,
   CanonicalOperation,
   Finding,
   ReceiptResult,
   ReviewDisposition,
 } from "../core/schemas/index";
-import { fixtureA, fixtureB, sharedAuthority } from "../fixtures";
+import {
+  fixtureA,
+  fixtureB,
+  fixtureCIncomplete,
+  otlpDemoAuthority,
+  sharedAuthority,
+} from "../fixtures";
+import {
+  buildEvidenceGapView,
+  type EvidenceGapView,
+} from "../ui/evidenceGapView";
 import {
   buildGraniteBoundaryView,
   type GraniteBoundaryView,
 } from "../ui/graniteBoundaryView";
+import {
+  buildReceiptVerificationView,
+  type ReceiptVerificationView,
+} from "../ui/verificationView";
 import {
   ALL_OPERATIONS,
   authorityToDraft,
@@ -70,6 +86,7 @@ type EvidenceRequest = {
   title: string;
   eventIds: string[];
   findingIds: string[];
+  rawPointers: string[];
   trigger: HTMLButtonElement;
 };
 
@@ -114,7 +131,11 @@ const DISPOSITIONS: Array<{
   },
 ];
 
-export function ReceiptReviewApp() {
+export function ReceiptReviewApp(props: {
+  initialIntakeMode?: "trace" | "verify";
+  initialVerificationView?: ReceiptVerificationView;
+  initialVerificationSource?: string;
+}) {
   const [step, setStep] = useState<Step>("intake");
   const [source, setSource] = useState<TraceSource | null>(null);
   const [pasteValue, setPasteValue] = useState("");
@@ -200,7 +221,7 @@ export function ReceiptReviewApp() {
     bytes: Uint8Array,
     label: string,
     kind: TraceSourceKind,
-    useSampleAuthority: boolean,
+    presetAuthority?: AuthorityEnvelopeV1,
   ) {
     const validation = validateTraceBytes(bytes, MAX_TRACE_BYTES);
     if (!validation.ok) {
@@ -216,19 +237,30 @@ export function ReceiptReviewApp() {
     setRecoveryExportStatus("");
     setSource({ bytes: Uint8Array.from(bytes), label, kind });
     setAuthorityDraft(
-      useSampleAuthority ? authorityToDraft(sharedAuthority) : blankAuthorityDraft(),
+      presetAuthority ? authorityToDraft(presetAuthority) : blankAuthorityDraft(),
     );
     setResult(null);
     setStep("authority");
   }
 
-  function selectSample(kind: "expected" | "overreaching") {
+  function selectSample(kind: "expected" | "overreaching" | "incomplete") {
+    if (kind === "incomplete") {
+      beginWithSource(
+        new TextEncoder().encode(
+          `${JSON.stringify(fixtureCIncomplete, null, 2)}\n`,
+        ),
+        "Incomplete OTLP run",
+        "synthetic",
+        otlpDemoAuthority,
+      );
+      return;
+    }
     const trace = kind === "expected" ? fixtureA : fixtureB;
     beginWithSource(
       exactFixtureBytes(trace),
       kind === "expected" ? "Expected run" : "Overreaching run",
       "synthetic",
-      true,
+      sharedAuthority,
     );
   }
 
@@ -251,7 +283,7 @@ export function ReceiptReviewApp() {
       return;
     }
     const bytes = new Uint8Array(await file.arrayBuffer());
-    beginWithSource(bytes, file.name, "upload", false);
+    beginWithSource(bytes, file.name, "upload");
   }
 
   function usePastedTrace() {
@@ -263,7 +295,6 @@ export function ReceiptReviewApp() {
       new TextEncoder().encode(pasteValue),
       "Pasted trace",
       "paste",
-      false,
     );
   }
 
@@ -311,11 +342,13 @@ export function ReceiptReviewApp() {
     title: string,
     eventIds: string[],
     findingIds: string[] = [],
+    rawPointers: string[] = [],
   ) {
     setEvidence({
       title,
       eventIds: [...new Set(eventIds)],
       findingIds: [...new Set(findingIds)],
+      rawPointers: [...new Set(rawPointers)],
       trigger: event.currentTarget,
     });
   }
@@ -435,6 +468,9 @@ export function ReceiptReviewApp() {
       <main id="top" className={`app-main step-${step}`}>
         {step === "intake" ? (
           <IntakeStep
+            initialMode={props.initialIntakeMode ?? "trace"}
+            initialVerificationView={props.initialVerificationView}
+            initialVerificationSource={props.initialVerificationSource}
             error={intakeError}
             pasteValue={pasteValue}
             fileInputRef={fileInputRef}
@@ -486,16 +522,22 @@ export function ReceiptReviewApp() {
 }
 
 type IntakeStepProps = {
+  initialMode: "trace" | "verify";
+  initialVerificationView?: ReceiptVerificationView;
+  initialVerificationSource?: string;
   error: { message: string; issues?: Array<{ path: string; message: string }> } | null;
   pasteValue: string;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onPasteChange: (value: string) => void;
-  onSelectSample: (kind: "expected" | "overreaching") => void;
+  onSelectSample: (kind: "expected" | "overreaching" | "incomplete") => void;
   onFile: (event: ChangeEvent<HTMLInputElement>) => void;
   onUsePaste: () => void;
 };
 
 function IntakeStep({
+  initialMode,
+  initialVerificationView,
+  initialVerificationSource,
   error,
   pasteValue,
   fileInputRef,
@@ -504,27 +546,171 @@ function IntakeStep({
   onFile,
   onUsePaste,
 }: IntakeStepProps) {
+  const [mode, setMode] = useState<"trace" | "verify">(initialMode);
+  const [verificationPaste, setVerificationPaste] = useState("");
+  const [verificationFile, setVerificationFile] = useState<{
+    bytes: Uint8Array;
+    label: string;
+  } | null>(null);
+  const [verificationSource, setVerificationSource] = useState(
+    initialVerificationSource ?? "",
+  );
+  const [verificationView, setVerificationView] =
+    useState<ReceiptVerificationView | null>(initialVerificationView ?? null);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+
+  async function handleVerificationFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (
+      file.type !== "application/json" &&
+      !file.name.toLowerCase().endsWith(".json")
+    ) {
+      setVerificationError("Choose an exported Agent Receipt .json file.");
+      setVerificationFile(null);
+      return;
+    }
+    setVerificationFile({
+      bytes: new Uint8Array(await file.arrayBuffer()),
+      label: file.name,
+    });
+    setVerificationPaste("");
+    setVerificationView(null);
+    setVerificationError(null);
+  }
+
+  async function performVerification(bytes: Uint8Array, label: string) {
+    setVerifying(true);
+    setVerificationError(null);
+    try {
+      const report = await verifyReceipt(bytes);
+      setVerificationView(buildReceiptVerificationView(report));
+      setVerificationSource(label);
+    } catch {
+      setVerificationView(null);
+      setVerificationError(
+        "The local verifier could not finish. The source bytes were not sent anywhere.",
+      );
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  async function runVerification() {
+    if (verificationPaste.trim().length > 0) {
+      await performVerification(
+        new TextEncoder().encode(verificationPaste),
+        "Pasted receipt JSON",
+      );
+      return;
+    }
+    if (verificationFile) {
+      await performVerification(verificationFile.bytes, verificationFile.label);
+      return;
+    }
+    setVerificationError("Upload an exported receipt or paste its JSON first.");
+  }
+
+  async function verifySyntheticReceipt(altered: boolean) {
+    setVerifying(true);
+    setVerificationView(null);
+    setVerificationError(null);
+    try {
+      const build = await buildReceipt(
+        {
+          rawBytes: exactFixtureBytes(fixtureB),
+          authority: sharedAuthority,
+        },
+        { now: () => "2026-08-28T22:00:00.000Z" },
+      );
+      if (!build.ok) throw new Error(build.error.message);
+      const portableReceipt = structuredClone(build.receipt);
+      if (altered) {
+        const firstFinding = portableReceipt.findings[0];
+        if (!firstFinding) throw new Error("Demo receipt has no finding to alter");
+        firstFinding.description = "This deterministic finding text was altered after export.";
+      }
+      const json = altered
+        ? JSON.stringify(portableReceipt, null, 2)
+        : serializeReceipt(portableReceipt);
+      const bytes = new TextEncoder().encode(`${json}\n`);
+      setVerificationPaste(json);
+      setVerificationFile(null);
+      const report = await verifyReceipt(bytes);
+      setVerificationView(buildReceiptVerificationView(report));
+      setVerificationSource(
+        altered ? "Altered synthetic receipt" : "Valid synthetic receipt",
+      );
+    } catch {
+      setVerificationError("The synthetic verifier demo could not be prepared.");
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  function resetVerification() {
+    setVerificationPaste("");
+    setVerificationFile(null);
+    setVerificationSource("");
+    setVerificationView(null);
+    setVerificationError(null);
+  }
+
   return (
     <div className="intake-layout">
       <section className="intro-panel" aria-labelledby="intake-title">
-        <p className="kicker">Start with the record</p>
-        <h1 id="intake-title">Review a completed agent run.</h1>
+        <p className="kicker">
+          {mode === "trace" ? "Start with the record" : "Replay the receipt"}
+        </p>
+        <h1 id="intake-title">
+          {mode === "trace"
+            ? "Review a completed agent run."
+            : "Check a receipt before you trust it."}
+        </h1>
         <p className="intro-copy">
-          Add the execution trace, then compare it with the authority the manager approved. The
-          policy rules produce the verdict. Granite can help word the receipt once those rules
-          have finished.
+          {mode === "trace"
+            ? "Add the execution trace, then compare it with the authority the manager approved. The policy rules produce the verdict. Granite can help word the receipt once those rules have finished."
+            : "Import an exported receipt. This browser hashes the exact file and replays its accounting, policy result, and cited claims without credentials or a network call."}
         </p>
         <div className="trust-note">
-          <span aria-hidden="true">01</span>
+          <span aria-hidden="true">{mode === "trace" ? "01" : "V1"}</span>
           <p>
-            Your source trace stays in this browser session. The server route recomputes the
-            findings and sends Granite only the minimized, redacted facts needed to draft the
-            receipt.
+            {mode === "trace"
+              ? "Your source trace stays in this browser session. The server route recomputes the findings and sends Granite only the minimized, redacted facts needed to draft the receipt."
+              : "A passing report means the receipt agrees with itself. It does not prove who created it, whether the trace was complete, or whether the original trace bytes were trustworthy."}
           </p>
         </div>
       </section>
 
       <section className="intake-workbench" aria-labelledby="choose-trace-title">
+        <div className="intake-mode-tabs" role="tablist" aria-label="Start a review">
+          <button
+            id="trace-mode-tab"
+            role="tab"
+            type="button"
+            aria-selected={mode === "trace"}
+            aria-controls="trace-mode-panel"
+            onClick={() => setMode("trace")}
+          >
+            <span>01</span>
+            Review a trace
+          </button>
+          <button
+            id="verify-mode-tab"
+            role="tab"
+            type="button"
+            aria-selected={mode === "verify"}
+            aria-controls="verify-mode-panel"
+            onClick={() => setMode("verify")}
+          >
+            <span>V1</span>
+            Verify a receipt
+          </button>
+        </div>
+
+        {mode === "trace" ? (
+          <div id="trace-mode-panel" role="tabpanel" aria-labelledby="trace-mode-tab">
         <div className="section-heading">
           <div>
             <p className="section-number">Step 01</p>
@@ -549,6 +735,13 @@ function IntakeStep({
             detail="6 events: external spreadsheet, retry, customer message"
             tone="alert"
             onClick={() => onSelectSample("overreaching")}
+          />
+          <SampleButton
+            label="Incomplete OTLP run"
+            verdict="Refuses to overclaim"
+            detail="3 source spans: 1 mapped, 1 metadata-only, 1 material gap"
+            tone="gap"
+            onClick={() => onSelectSample("incomplete")}
           />
         </div>
 
@@ -588,8 +781,199 @@ function IntakeStep({
             </div>
           </div>
         </div>
+          </div>
+        ) : (
+          <div id="verify-mode-panel" role="tabpanel" aria-labelledby="verify-mode-tab">
+            <div className="section-heading verifier-heading">
+              <div>
+                <p className="section-number">Portable verifier</p>
+                <h2 id="choose-trace-title">Replay the evidence contract</h2>
+              </div>
+              <p>Browser-only · no credentials · no network · 2 MiB max</p>
+            </div>
+
+            {verificationError ? (
+              <ErrorSummary error={{ message: verificationError }} />
+            ) : null}
+
+            {!verificationView ? (
+              <>
+                <div className="verifier-demo-strip" aria-label="Synthetic verifier demonstrations">
+                  <div>
+                    <p className="section-number">30-second proof</p>
+                    <strong>Run both sides of the trust test.</strong>
+                    <p>A valid export passes. One altered deterministic claim is caught.</p>
+                  </div>
+                  <div className="verifier-demo-actions">
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      disabled={verifying}
+                      onClick={() => void verifySyntheticReceipt(false)}
+                    >
+                      Verify valid sample
+                    </button>
+                    <button
+                      className="secondary-button verifier-altered-button"
+                      type="button"
+                      disabled={verifying}
+                      onClick={() => void verifySyntheticReceipt(true)}
+                    >
+                      Catch altered sample
+                    </button>
+                  </div>
+                </div>
+
+                <div className="input-divider"><span>Or verify an exported receipt</span></div>
+
+                <div className="custom-input-grid verifier-input-grid">
+                  <div className="upload-field">
+                    <label htmlFor="receipt-file">Upload receipt JSON</label>
+                    <p id="receipt-file-help">The exact received bytes are hashed before parsing.</p>
+                    <input
+                      id="receipt-file"
+                      name="receipt-file"
+                      type="file"
+                      accept="application/json,.json"
+                      aria-label="Upload exported receipt JSON for verification"
+                      aria-describedby="receipt-file-help"
+                      onChange={(event) => void handleVerificationFile(event)}
+                    />
+                    {verificationFile ? (
+                      <p className="selected-verification-file">Selected: {verificationFile.label}</p>
+                    ) : null}
+                  </div>
+                  <div className="paste-field">
+                    <label htmlFor="receipt-json">Paste exported receipt JSON</label>
+                    <textarea
+                      id="receipt-json"
+                      name="receipt-json"
+                      rows={9}
+                      spellCheck={false}
+                      value={verificationPaste}
+                      onChange={(event) => {
+                        setVerificationPaste(event.target.value);
+                        setVerificationFile(null);
+                        setVerificationView(null);
+                      }}
+                      aria-label="Paste exported receipt JSON for verification"
+                      aria-describedby="receipt-json-help"
+                      placeholder={'{\n  "schemaVersion": "agent-receipt.receipt.v1"\n}'}
+                    />
+                    <div className="field-action-row">
+                      <p id="receipt-json-help">Pasted text is encoded as UTF-8 and verified locally.</p>
+                      <button
+                        className="primary-button"
+                        type="button"
+                        disabled={
+                          verifying ||
+                          (verificationPaste.trim().length === 0 && !verificationFile)
+                        }
+                        onClick={() => void runVerification()}
+                      >
+                        {verifying ? "Replaying checks…" : "Verify receipt"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <VerificationReportPanel
+                source={verificationSource}
+                view={verificationView}
+                onReset={resetVerification}
+              />
+            )}
+          </div>
+        )}
       </section>
     </div>
+  );
+}
+
+function VerificationReportPanel(props: {
+  source: string;
+  view: ReceiptVerificationView;
+  onReset: () => void;
+}) {
+  return (
+    <section
+      className={`verifier-report verifier-report-${props.view.status}`}
+      role="region"
+      aria-label="Verification report"
+    >
+      <div className="verifier-status" role="status" aria-live="polite">
+        <div className="verifier-stamp" aria-hidden="true">
+          <span>{props.view.statusCode}</span>
+          <strong>{props.view.status === "pass" ? "✓" : "!"}</strong>
+        </div>
+        <div>
+          <p className="section-number">{props.source}</p>
+          <h2>{props.view.statusLabel}</h2>
+          <p>{props.view.statusDescription}</p>
+        </div>
+      </div>
+
+      {props.view.summary ? (
+        <dl className="verifier-summary">
+          <div><dt>Trace</dt><dd>{props.view.summary.traceId}</dd></div>
+          <div><dt>Verdict</dt><dd>{props.view.summary.verdict}</dd></div>
+          <div><dt>Evidence</dt><dd>{props.view.summary.rawEventCountLabel} · {props.view.summary.findingCountLabel}</dd></div>
+          <div><dt>Copy</dt><dd>{props.view.summary.generationSourceLabel}</dd></div>
+        </dl>
+      ) : null}
+
+      <div className="verifier-digest">
+        <div>
+          <p className="section-number">Exact imported file</p>
+          <strong>{props.view.byteLengthLabel}</strong>
+        </div>
+        <code>{props.view.fileSha256}</code>
+      </div>
+
+      <ol className="verifier-gates" aria-label="Verification gates">
+        {props.view.gates.map((gate, index) => (
+          <li
+            key={gate.id}
+            className={`verifier-gate verifier-gate-${gate.status}`}
+            aria-label={gate.ariaLabel}
+          >
+            <span className="verifier-gate-number">{String(index + 1).padStart(2, "0")}</span>
+            <span className="verifier-gate-marker" aria-hidden="true">{gate.marker}</span>
+            <div>
+              <strong>{gate.label}</strong>
+              <p>{gate.detail}</p>
+              {gate.issues.length > 0 ? (
+                <ul>
+                  {gate.issues.map((issue, issueIndex) => (
+                    <li key={`${issue.path}-${issueIndex}`}>
+                      <code>{issue.path}</code> {issue.message}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <aside className="verifier-limitations" aria-labelledby="verifier-limitations-title">
+        <p className="section-number">Required qualifier</p>
+        <h3 id="verifier-limitations-title">What this cannot verify</h3>
+        <ul>
+          {props.view.limitations.map((limitation) => (
+            <li key={limitation}>{limitation}</li>
+          ))}
+        </ul>
+      </aside>
+
+      <div className="verifier-reset-row">
+        <p>Nothing in this report was sent to Granite or any server route.</p>
+        <button className="secondary-button" type="button" onClick={props.onReset}>
+          Verify another receipt
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -597,7 +981,7 @@ function SampleButton(props: {
   label: string;
   verdict: string;
   detail: string;
-  tone: "calm" | "alert";
+  tone: "calm" | "alert" | "gap";
   onClick: () => void;
 }) {
   return (
@@ -884,6 +1268,7 @@ type OpenEvidence = (
   title: string,
   eventIds: string[],
   findingIds?: string[],
+  rawPointers?: string[],
 ) => void;
 
 function ReceiptStep(props: {
@@ -902,6 +1287,7 @@ function ReceiptStep(props: {
   const incidents = buildManagerIncidentBrief(receipt);
   const recoveryPlan = buildRecoveryPlan(receipt, incidents);
   const graniteBoundary = buildGraniteBoundaryView(receipt);
+  const evidenceGap = buildEvidenceGapView(receipt);
   const findingsByEvent = new Map<string, Finding[]>();
   for (const finding of receipt.findings) {
     for (const eventId of finding.eventIds) {
@@ -920,6 +1306,7 @@ function ReceiptStep(props: {
         <a href="#activity">Timeline</a>
         <a href="#movement">Systems and data</a>
         <a href="#deviations">Findings</a>
+        {evidenceGap ? <a href="#evidence-gaps">Evidence gaps</a> : null}
         <a href="#ai-boundary">AI boundary</a>
         <a href="#integrity">Integrity</a>
         <a href="#disposition">Decision</a>
@@ -952,7 +1339,9 @@ function ReceiptStep(props: {
         <div className="verdict-attention">
           <span className="attention-count">{receipt.findings.length.toString().padStart(2, "0")}</span>
           <p>{receipt.findings.length === 0 ? "No findings to review" : receipt.findings.length === 1 ? "Finding to review" : "Findings to review"}</p>
-          <a href="#deviations">Go to findings ↓</a>
+          <a href={evidenceGap ? "#evidence-gaps" : "#deviations"}>
+            {evidenceGap ? "Review evidence gaps ↓" : "Go to findings ↓"}
+          </a>
         </div>
       </section>
 
@@ -990,6 +1379,10 @@ function ReceiptStep(props: {
           <div key={label}><strong>{value}</strong><span>{label}</span></div>
         ))}
       </section>
+
+      {evidenceGap ? (
+        <EvidenceGapPanel view={evidenceGap} onOpen={props.onOpenEvidence} />
+      ) : null}
 
       <IncidentBriefPanel incidents={incidents} onOpen={props.onOpenEvidence} />
 
@@ -1129,6 +1522,102 @@ function ReceiptStep(props: {
         </div>
       </section>
     </div>
+  );
+}
+
+function EvidenceGapPanel(props: {
+  view: EvidenceGapView;
+  onOpen: OpenEvidence;
+}) {
+  return (
+    <section
+      id="evidence-gaps"
+      className="evidence-gap-section"
+      aria-labelledby="evidence-gap-title"
+    >
+      <div className="evidence-gap-heading">
+        <div>
+          <p className="section-number">Assessment stopped</p>
+          <h2 id="evidence-gap-title">The trace stops the verdict here.</h2>
+        </div>
+        <p>
+          Every submitted record remains in the ledger. Trust-critical evidence is
+          missing, so a clean or deviation verdict would overstate what this trace
+          can prove.
+        </p>
+      </div>
+
+      <dl className="evidence-gap-counts" aria-label="Raw-record accounting">
+        <div><dt>Accounted</dt><dd>{props.view.accounted}/{props.view.total}</dd></div>
+        <div><dt>Mapped</dt><dd>{props.view.mapped}</dd></div>
+        <div><dt>Metadata-only</dt><dd>{props.view.metadataOnly}</dd></div>
+        <div><dt>Unparsed</dt><dd>{props.view.unparsed}</dd></div>
+      </dl>
+
+      <div className="evidence-gap-layout">
+        <ol className="gap-list" aria-label="Evidence gaps that stopped assessment">
+          {props.view.gaps.map((gap, index) => (
+            <li key={gap.findingId}>
+              <article>
+                <div className="gap-index">
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <code>{gap.findingId}</code>
+                </div>
+                <div>
+                  <h3>{gap.label}</h3>
+                  <p>{gap.description}</p>
+                  <p className="gap-next-step"><strong>Evidence needed</strong>{gap.nextStep}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={(event) => props.onOpen(
+                    event,
+                    gap.label,
+                    gap.eventIds,
+                    [gap.findingId],
+                    gap.rawPointers,
+                  )}
+                >Open source evidence ↗</button>
+              </article>
+            </li>
+          ))}
+        </ol>
+
+        <aside className="raw-record-ledger" aria-labelledby="raw-record-ledger-title">
+          <div className="raw-ledger-heading">
+            <p className="section-number">Source ledger</p>
+            <h3 id="raw-record-ledger-title">Every raw record</h3>
+          </div>
+          <ol>
+            {props.view.records.map((record, index) => (
+              <li key={record.rawPointer} className={`raw-record-${record.status}`}>
+                <div className="raw-record-topline">
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <strong>{record.status.replace("-", " ")}</strong>
+                  <span>{record.material ? "material" : "nonmaterial"}</span>
+                </div>
+                <code>{record.rawPointer}</code>
+                <p>
+                  {record.canonicalEventIds.length > 0
+                    ? `Canonical: ${record.canonicalEventIds.join(", ")}`
+                    : record.reason ?? "No canonical event was created."}
+                </p>
+                <button
+                  type="button"
+                  onClick={(event) => props.onOpen(
+                    event,
+                    `Source record ${index + 1}`,
+                    record.canonicalEventIds,
+                    record.findingIds,
+                    [record.rawPointer],
+                  )}
+                >Inspect retained record ↗</button>
+              </li>
+            ))}
+          </ol>
+        </aside>
+      </div>
+    </section>
   );
 }
 
@@ -1710,6 +2199,21 @@ function EvidenceDrawer({
   const citedEvents = expandedEventIds
     .map((eventId) => receipt.events.find((event) => event.eventId === eventId))
     .filter((event): event is CanonicalEvent => Boolean(event));
+  const canonicalPointers = new Set(
+    citedEvents.map((event) => event.rawPointer),
+  );
+  const rawOnlyRecords = [...new Set(request.rawPointers)]
+    .filter((rawPointer) => !canonicalPointers.has(rawPointer))
+    .map((rawPointer) => ({
+      rawPointer,
+      accounting: receipt.accounting.find(
+        (entry) => entry.rawPointer === rawPointer,
+      ),
+      rawObject: resolveRawPointer(
+        build.retainedSource.rawDocument,
+        rawPointer,
+      ),
+    }));
 
   return (
     <div className="drawer-backdrop" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
@@ -1743,7 +2247,7 @@ function EvidenceDrawer({
               ))}
             </section>
           ) : null}
-          {citedEvents.length === 0 ? <p>This statement does not contain a resolvable event citation.</p> : citedEvents.map((event) => {
+          {citedEvents.length === 0 && rawOnlyRecords.length === 0 ? <p>This statement does not contain a resolvable event or source-record citation.</p> : citedEvents.map((event) => {
             const rawObject = resolveRawPointer(build.retainedSource.rawDocument, event.rawPointer);
             return (
               <section className="evidence-pair" key={event.eventId} aria-labelledby={`canonical-${event.eventId}`}>
@@ -1764,6 +2268,32 @@ function EvidenceDrawer({
               </section>
             );
           })}
+          {rawOnlyRecords.map(({ rawPointer, accounting, rawObject }) => (
+            <section className="evidence-pair raw-only-pair" key={rawPointer}>
+              <div className="evidence-record-heading raw-heading">
+                <div>
+                  <span>Retained source record</span>
+                  <h3>{accounting?.sourceEventId ?? "Source ID not supplied"}</h3>
+                </div>
+                <code>{rawPointer}</code>
+              </div>
+              {accounting ? (
+                <dl className="raw-accounting-summary">
+                  <div><dt>Classification</dt><dd>{accounting.status.replace("-", " ")}</dd></div>
+                  <div><dt>Material</dt><dd>{accounting.material ? "Yes" : "No"}</dd></div>
+                  <div><dt>Canonical mapping</dt><dd>{accounting.canonicalEventIds.join(", ") || "None"}</dd></div>
+                  {accounting.reason ? <div><dt>Recorded reason</dt><dd>{accounting.reason}</dd></div> : null}
+                </dl>
+              ) : (
+                <p className="raw-missing">This pointer is not present in the validated accounting ledger.</p>
+              )}
+              {rawObject === undefined ? (
+                <p className="raw-missing">The retained pointer did not resolve to a source object.</p>
+              ) : (
+                <pre tabIndex={0}>{JSON.stringify(rawObject, null, 2)}</pre>
+              )}
+            </section>
+          ))}
         </div>
       </aside>
     </div>

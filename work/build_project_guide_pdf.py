@@ -246,7 +246,7 @@ def draw_cover(canvas, doc) -> None:
     canvas.rect(0, 0, PAGE_W, 16, fill=1, stroke=0)
     canvas.setFillColor(colors.white)
     canvas.setFont("Arial", 7.8)
-    canvas.drawString(42, 58, "VERSION 1.3  |  AUGUST 28, 2026")
+    canvas.drawString(42, 58, "VERSION 1.5  |  AUGUST 28, 2026")
     canvas.drawRightString(PAGE_W - 42, 58, "EDITABLE SOURCE: docs/PROJECT_GUIDE.md")
     canvas.restoreState()
 
@@ -811,7 +811,10 @@ def parse_markdown(lines: list[str]) -> list[Flowable]:
                 continue
             if level == 1:
                 if not first_part:
-                    story.append(PageBreak())
+                    # Start every Part/Appendix on a fresh body page without
+                    # emitting an extra blank page when the preceding block
+                    # has already filled its frame exactly.
+                    story.append(CondPageBreak(650))
                 first_part = False
                 current_part = title
                 part_items = part_block(title)

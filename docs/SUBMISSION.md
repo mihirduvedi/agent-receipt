@@ -22,7 +22,11 @@ AI agents can finish useful work while leaving a manager with an accountability 
 
 Agent Receipt reviews one completed run. It preserves the exact supplied bytes, accounts for every raw event, converts supported records into canonical actions, and compares those actions with a manager-confirmed authority envelope. Deterministic rules produce the findings and verdict. Every material conclusion opens into retained evidence.
 
+When the supplied trace cannot support a complete conclusion, Evidence Gap Mode refuses to guess. It shows the exact missing semantics, keeps every mapped, metadata-only, and unparsed source record visible, and opens raw-only records even when no canonical event exists.
+
 When a run needs attention, the interface groups related findings into incidents and proposes cited recovery steps for human approval. The manager can export both the validated receipt and a Recovery Plan v1 file bound to that exact receipt by SHA-256. The recovery plan says that current state is unknown, approval is required, and no action was executed.
+
+The Portable Receipt Verifier makes that export useful after handoff. A manager or judge can import the JSON in the browser and replay eight deterministic gates: exact-file digest, size, UTF-8, JSON, strict receipt contract, event accounting, policy result, and cited copy. A valid sample passes; one changed deterministic finding fails. No receipt data is sent to Granite or a server route.
 
 ## AI and technical architecture
 
@@ -40,16 +44,19 @@ Agent Receipt gives people a practical review surface for work completed by AI c
 
 ## Reproducible evidence
 
-- Three declared synthetic cases produce three expected deterministic verdicts.
-- All twelve raw corpus records are explicitly accounted for.
+- Four declared synthetic cases produce four expected deterministic verdicts.
+- All fifteen raw corpus records are explicitly accounted for; twelve become canonical events.
 - The overreaching fixture activates all six seeded authority-rule families.
 - Invented generated citations and invalid Granite selections are rejected.
 - The AI boundary preview uses the same minimized, redacted bundle builder as the server route and excludes retained raw fields.
-- A material unparsed OTLP span forces `unable_to_assess_fully`.
+- A material unparsed OTLP span plus unknown termination forces `unable_to_assess_fully`; the UI exposes both gaps and all three source-span classifications.
 - Recovery Plan v1 closes two incidents and six proposed actions over three events and twelve findings, with an independently checked receipt digest.
+- The browser-only Portable Receipt Verifier passes valid exports from all three receipt outcomes and catches byte, format, schema, accounting, policy, and citation failures across twelve focused trust cases.
 - `npm run verify` runs lint, strict type checking, the full tests, a production build, and release-safety scans.
 
 These are synthetic-prototype results, not claims about universal policy coverage, production scale, legal compliance, or real-world false-positive rates.
+
+A passing verifier report means the supplied receipt agrees with itself under the current schema and rules. It does not prove trace completeness, exporter identity, original trace bytes, authenticity, or signed provenance.
 
 ## Links
 
@@ -65,4 +72,5 @@ These are synthetic-prototype results, not claims about universal policy coverag
 - Open the repository, live demo, and video links while signed out.
 - Confirm the video duration is at or below three minutes.
 - Confirm GitHub Actions remains successful for current `main`. The feature-bearing Granite-boundary release `7b712e5df8ad781162c896ddcae0463b3160c210` passed run `33196317863` and reached the public production alias.
+- Commit and push the local Evidence Gap Mode and Portable Receipt Verifier candidate only after fresh approval, then repeat hosted CI, public fixture, and both verifier-shortcut checks on the exact release SHA.
 - Submit before August 31, 2026 at 11:59 PM ET / 8:59 PM PT, unless the live challenge page shows a newer deadline.

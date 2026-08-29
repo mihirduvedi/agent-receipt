@@ -954,3 +954,70 @@ An AI operations manager or judge can inspect the exact read-only projection tha
 - Add focused tests for raw-field exclusion and a detected credential value.
 
 The panel is post-run transparency, not model observability, chain-of-thought access, live monitoring, or a claim that heuristic redaction can detect every possible secret.
+
+## 25. Release amendment: Evidence Gap Mode
+
+**Added:** August 28, 2026
+
+The original P1 scope already required a third incomplete fixture with one material unsupported record and no terminal evidence. This amendment makes that trust behavior judge-visible and usable without widening the post-run MVP.
+
+### User value
+
+An AI operations manager can distinguish three outcomes: the supplied trace supports a within-authority verdict, supports a material-deviation verdict, or cannot support a complete assessment. The incomplete state explains exactly what stopped the verdict and which source evidence is still retained.
+
+### Required behavior
+
+- Add one synthetic OTLP sample with three source spans: one mapped, one metadata-only, and one material unparsed action.
+- Preserve and hash the exact sample bytes before normalization.
+- Supply nonterminal source status so deterministic policy emits a separate unknown-termination finding.
+- Keep the verdict `unable_to_assess_fully` even if Granite is available.
+- Show mapped, metadata-only, and unparsed counts from the validated accounting ledger.
+- Link each evidence gap to canonical events when available and to raw pointers when no canonical event exists.
+- Let the evidence drawer open a retained raw-only record with its classification, materiality, reason, and exact JSON.
+- Propose evidence collection only; never infer the missing operation, rewrite the trace, or execute remediation.
+- Keep expected and overreaching journeys unchanged.
+
+### Acceptance evidence
+
+- Unit tests cover the evidence-gap view, raw-pointer links, full ledger accounting, complete-receipt exclusion, and evidence-only recovery proposal.
+- Integration tests cover exact-byte retention, the 1/1/1 accounting split, two `AR-TRACE-001` findings, incomplete verdict, validated export, and raw-source exclusion.
+- The declared evaluation corpus expands to four cases, fifteen accounted raw records, twelve canonical events, and four expected verdicts.
+- Browser QA covers the incomplete journey, raw-only drawer, Escape and focus restoration, and 390/840/1280-pixel layouts without document-level overflow.
+
+Evidence Gap Mode is not a completeness guarantee. It exposes gaps the supported adapter and supplied status can identify; it cannot prove that the source trace captured every real-world action.
+
+## 26. Release amendment: Portable Receipt Verifier
+
+**Added:** August 28, 2026
+
+The receipt export already carries normalized evidence, event accounting, deterministic findings, a verdict, cited copy, and integrity metadata. This amendment lets the next reviewer replay that evidence contract after the JSON changes hands.
+
+### User value
+
+An AI operations manager can import a receipt export and determine whether it is internally self-consistent under the current Agent Receipt schema and deterministic rules. A judge can run a valid and altered synthetic receipt side by side in roughly thirty seconds.
+
+### Required behavior
+
+- Copy the exact received bytes and compute their SHA-256 before decoding or parsing.
+- Enforce the same 2 MiB boundary and require fatal UTF-8 decoding, valid JSON, and the strict receipt schema.
+- Recompute coverage from the retained accounting and canonical events.
+- Re-run deterministic policy using the stored authority envelope, event records, accounting, and trace-completion status.
+- Require the stored verdict and complete finding records to match the fresh policy result exactly.
+- Rebuild the minimized fact bundle and validate every exported receipt note and citation.
+- Run entirely in the browser. Do not call Granite, a server route, or any external service.
+- Keep the imported JSON body out of the rendered report.
+- Distinguish a rejected boundary from an internally inconsistent receipt, and mark dependent checks as not run after an early failure.
+- Always show the exact limitations, including on a passing result.
+
+### Non-claims
+
+A passing result establishes internal consistency only. It does not prove trace completeness, trusted capture, exporter identity, original trace bytes, authenticity, tamper-proof provenance, a digital signature, nonrepudiation, or any event beyond the supplied receipt and authority envelope.
+
+### Acceptance evidence
+
+- Focused tests cover all three declared receipt outcomes, exact-byte sensitivity, size, UTF-8, JSON, strict-schema, accounting, policy, and citation failures.
+- The valid judge shortcut passes all eight gates. The altered shortcut changes one deterministic finding and fails policy and citation replay.
+- Browser QA covers 390, 840, and 1280 CSS pixels without document-level overflow and keeps report controls at least 44 CSS pixels high.
+- `npm run verify` passes before the candidate is described as complete.
+
+The verifier does not add signed provenance or a trust anchor. Those remain separate post-hackathon design problems that require an explicit threat model.

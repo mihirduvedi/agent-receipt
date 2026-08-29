@@ -206,8 +206,8 @@ def draw_cover(canvas, doc) -> None:
     canvas.setFillColor(colors.HexColor("#DADFD9"))
     canvas.setFont("Arial", 10.4)
     pitch = (
-        "An evidence-linked receipt for what an AI agent did relative to "
-        "what it was allowed to do."
+        "Upload a completed agent JSON log and turn it into an evidence-linked "
+        "receipt for what happened relative to declared authority."
     )
     Paragraph(
         html.escape(pitch),
@@ -246,7 +246,7 @@ def draw_cover(canvas, doc) -> None:
     canvas.rect(0, 0, PAGE_W, 16, fill=1, stroke=0)
     canvas.setFillColor(colors.white)
     canvas.setFont("Arial", 7.8)
-    canvas.drawString(42, 58, "VERSION 1.9  |  AUGUST 29, 2026")
+    canvas.drawString(42, 58, "VERSION 2.0  |  AUGUST 29, 2026")
     canvas.drawRightString(PAGE_W - 42, 58, "EDITABLE SOURCE: docs/PROJECT_GUIDE.md")
     canvas.restoreState()
 

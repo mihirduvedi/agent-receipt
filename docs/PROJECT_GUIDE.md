@@ -4,9 +4,9 @@
 
 **From first principles to architecture, code, trust boundaries, testing, and deployment**
 
-Version 1.9 - August 29, 2026
+Version 2.0 - August 29, 2026
 
-Project snapshot: Portable Evidence Packet v1 was the last separately verified deployment at release `2dee60545e18bea965afd2bb381eb9d918af8a98`. GitHub Actions run `33227804643`, Vercel's exact-SHA deployment status, the public packet download, packet replay, standalone-receipt replay, and altered-receipt failure passed on August 28, 2026. Version 1.9 documents the Policy Decision Ledger release candidate and two presentation repairs. Its local responsive and rendered-PDF evidence is recorded here; exact hosted status remains a mutable external fact that must be verified against the release commit after a push.
+Project snapshot: the deployed Generic JSON Adapter release is `8fdf2adae455c09073a847f66959d13fb73779ec`. GitHub Actions run `33239296527`, Vercel's exact-commit deployment status, the public custom-log walkthrough, and the public alias check passed on August 29, 2026. The browser upload mapped all 10 records in the included vendor-shaped example and produced a qualified clean receipt. Version 2.0 explains how a reviewer can bring another compatible JSON export into that same live workflow. The bundled files remain repeatable evidence, not the product's only inputs.
 
 > Agent Receipt gives accountable humans an evidence-linked receipt for what an AI agent did relative to what it was allowed to do.
 
@@ -60,13 +60,13 @@ That answer is not enough. A manager still needs to know:
 
 Most developer tracing tools answer a different question: "What calls happened, and how long did they take?" That is useful for debugging, but a timeline alone does not compare the run against the authority a human declared.
 
-Agent Receipt is built around that comparison.
+Teams often already have a JSON export from the agent or workflow runner. Agent Receipt is built around turning that file into a reviewable comparison rather than asking the team to adopt a showcase-only fixture format.
 
 ### The shortest possible explanation
 
 Agent Receipt takes two inputs:
 
-1. a trace, which is a structured record of the agent's observed actions; and
+1. an uploaded or pasted trace, which is a structured JSON record of the agent's observed actions; and
 2. an authority envelope, which is a structured statement of what the agent was allowed to do.
 
 It produces a receipt containing:
@@ -83,7 +83,7 @@ It produces a receipt containing:
 - a single Portable Evidence Packet v1 handoff containing a manager brief, receipt, and recovery plan with a replayable three-artifact manifest;
 - an explicit evidence-gap view when the supplied trace cannot support a complete verdict.
 
-The word **deterministic** matters. It means the same validated evidence and authority produce the same policy result. An AI model does not decide whether a violation occurred.
+The trace can use the native schema, the documented OTLP/JSON profile, or another record-oriented JSON structure. For an unfamiliar structure, the reviewer explicitly maps the action array, fields, and observed values before policy review. The word **deterministic** matters. The same validated evidence, mapping, and authority produce the same policy result. An AI model does not decide whether a violation occurred or what a source field means.
 
 ## 2. Why call it a receipt?
 
@@ -127,11 +127,11 @@ Developers, security reviewers, and internal auditors are secondary users. They 
 
 ## 4. The reviewer's journey
 
-The product has two intake modes. **Review a trace** follows three visible steps for built-in formats and adds an explicit mapping step for generic JSON; **Verify an export** replays a standalone receipt or complete evidence packet without starting a new trace review.
+The product has two intake modes. **Review a trace** accepts a completed JSON file and adds an explicit mapping step when its record structure is unfamiliar. **Verify an export** replays a standalone receipt or complete evidence packet without starting a new trace review.
 
 ### Step 1: Choose a trace
 
-The reviewer can select one of three synthetic samples, upload one JSON file, or paste one JSON object or array. The limit is 2 MiB. The app accepts Native Trace v1, one narrow documented OTLP/JSON GenAI export, and non-empty generic JSON record arrays through an explicit reviewer-confirmed mapping.
+The normal path is to upload one JSON file or paste one JSON object or array. The limit is 2 MiB. The app accepts Native Trace v1, one narrow documented OTLP/JSON GenAI export, and non-empty record arrays from unfamiliar JSON through an explicit reviewer-confirmed mapping. Three bundled samples are available when a reviewer wants a fast, reproducible demonstration.
 
 ![Agent Receipt trace intake](screenshots/agent-receipt-trace-intake.jpg)
 
@@ -139,7 +139,15 @@ The word **exact** is important. File bytes are copied and hashed before the JSO
 
 ### Conditional step 2: Map unfamiliar JSON
 
-Generic JSON does not receive guessed semantics. The reviewer selects one record array, enters run facts, confirms JSON Pointer field paths, translates observed scalar values into the canonical operation/status/state-change vocabulary, and previews mapped versus material-unparsed accounting. Optional system, boundary, category, quantity, and approval fields remain unknown unless explicitly mapped. The validated mapping manifest is retained in receipt integrity. See `docs/GENERIC_JSON_ADAPTER.md`.
+Generic JSON does not receive guessed semantics. Agent Receipt inventories candidate record arrays up to four object levels deep. The reviewer selects one action array, enters run facts, confirms JSON Pointer field paths, translates observed scalar values into the canonical operation, status, actor, and state-change vocabulary, and previews mapped versus material-unparsed accounting. Optional system, boundary, category, quantity, and approval fields remain unknown unless explicitly mapped. The validated mapping manifest is retained in receipt integrity. See `docs/GENERIC_JSON_ADAPTER.md`.
+
+### What a custom-log review looks like
+
+Suppose an exporter stores actions under `/activity_log` and names its fields `record.at`, `action_name`, `result_code`, and `side_effect`. The reviewer uploads the file, selects `/activity_log`, and maps those documented meanings to timestamp, operation, status, and state change. Distinct source values such as `file.write` or `ok` are translated through typed lookup tables, so the mapping is reviewable and reproducible.
+
+Before continuing, the app reports how many selected records mapped and why any record did not. Every selected item becomes one canonical event or one material-unparsed accounting entry. A primitive item, missing timestamp, duplicate mapped ID, or untranslated operation cannot disappear. If a material fact is absent, the final result becomes incomplete rather than quietly optimistic.
+
+The mapping changes structure, not evidence. It cannot reconstruct an action that was never logged, infer authority from behavior, or turn a free-form transcript into reliable policy facts. JSONL, binary telemetry, mixed multi-run bundles, and formats that hide action semantics in prose need preprocessing or a dedicated adapter.
 
 ### Step 2 or 3: Confirm the authority envelope
 
@@ -194,9 +202,9 @@ The result is one of three explicit states:
 
 The report always says what it cannot prove. Internal consistency is not exporter authentication, trusted capture, trace completeness, access to the original trace bytes, tamper-proof provenance, a digital signature, or nonrepudiation. Anyone who can rewrite an unsigned packet can also recompute its manifest.
 
-## 5. The three synthetic stories
+## 5. Built-in stories for repeatable proof
 
-The fixtures are deliberately small enough to understand in a demo and complicated enough to expose real trust problems.
+The bundled fixtures keep judge walkthroughs and automated tests stable. They are deliberately small enough to understand in a demo and complicated enough to expose real trust problems. They do not define the upload contract; a compatible user-provided log reaches the same capture, adaptation, accounting, policy, receipt, and export pipeline.
 
 ### Shared authority for the native runs
 
@@ -382,7 +390,7 @@ Agent Receipt is not:
 - an authentication, account, database, or multi-tenant system;
 - a production connector to CRM, email, SIEM, identity, or storage systems.
 
-The current MVP is file-based, synthetic, post-run, and single-reviewer. Those limits are part of the trust story, not fine print to hide.
+The current MVP is file-based, post-run, and single-reviewer. Its bundled demonstrations are synthetic, while the upload and paste path accepts compatible user-provided JSON. Those limits are part of the trust story, not fine print to hide.
 
 ---
 
@@ -694,6 +702,8 @@ Every raw span is mapped, metadata-only, or unparsed. A material action-like spa
 
 ### Explicit generic JSON adaptation
 
+This is the live compatibility path for JSON exports from another agent or workflow. The UI discovers likely record arrays and scalar paths, but those suggestions do nothing until the reviewer confirms their meaning. That separation lets the product support different field structures without pretending that a field name proves an operation or policy fact.
+
 `src/adapters/genericJson.ts` accepts a selected JSON record array only alongside `agent-receipt.generic-json-mapping.v1`. RFC 6901 pointers identify source fields, typed value maps translate only reviewer-confirmed scalar semantics, and RFC 3339 or declared epoch timestamp formats normalize deterministically. Every selected item is material: it maps to one canonical event or becomes unparsed with a reason. Duplicate mapped IDs, primitive items, missing required facts, and unmapped values cannot disappear. `src/ui/genericMappingView.ts` supplies structural suggestions and the pre-authority preview, while `src/components/GenericMappingStep.tsx` exposes the full mapping contract in the browser. The validated manifest is stored under receipt integrity for later inspection. See `docs/GENERIC_JSON_ADAPTER.md` for the complete contract and example.
 
 ## 15. Coverage and event accounting
@@ -930,7 +940,11 @@ The preview is a transparency surface, not a second model call. It keeps the hos
 
 ### Current live status
 
-The production alias and successful Vercel commit status are connected to product release `2dee60545e18bea965afd2bb381eb9d918af8a98`, and both the demo and repository were publicly reachable on August 28, 2026. GitHub Actions run `33227804643` passed the complete gate and Vercel target `54zjcRQwWTDw66vdRGrSaCE7yaed` reported **Deployment has completed**. Public browser automation built the deterministic-fallback overreaching receipt, downloaded a 42,376-byte packet, passed all eight packet gates, passed the standalone receipt path, and failed the altered receipt at deterministic policy and cited-claim validation. A separate local verifier passed all eight gates on the exact downloaded packet at SHA-256 `4755bdf819bc5f966d1ad2725f4c855ed113a64527f7956a1b7d522f89a93f7d`. The tested verifier page matched the 1280-pixel viewport width. Browser-console diagnostics were not independently captured in this release pass. Earlier public checks remain the evidence for the incomplete OTLP journey, 390-pixel Granite-boundary layout, recovery-plan placement, and evidence-drawer behavior. This does not establish that live Granite is configured in Vercel.
+The production alias and successful Vercel commit status are connected to Generic JSON Adapter release `8fdf2adae455c09073a847f66959d13fb73779ec`. GitHub Actions run `33239296527` passed the complete gate, Vercel target `8X1ScdmL7QcNBBnDwByMA9veSqMv` reported **Deployment has completed**, and the public alias returned HTTP 200 on August 29, 2026.
+
+Public browser automation uploaded the 5,363-byte vendor-shaped example at SHA-256 `e5648722f62afccffcd40274f3b9c72a5c5c927f751c5b6ced7173003d90d0e1`, selected `/activity_log`, and completed the explicit mapping path with 10 selected, 10 mapped, and 0 unparsed records. The receipt reported `generic-json-records.v1`, `genericJsonExplicitMapping` version `1.0.0`, 10 events, 6 systems, 4 state changes, 1 external event, 1 human approval, 0 findings, and the qualified verdict **Within declared authority**. Raw evidence opened at `/activity_log/0`; the drawer restored focus on close; the page matched the 1280 by 720 viewport; and browser warning and error logs were empty.
+
+The public deployment used deterministic fallback. Earlier public checks remain the evidence for the packet verifier, incomplete OTLP journey, mobile Granite-boundary layout, recovery-plan placement, and evidence-drawer behavior. None of these checks establish that live Granite is configured in Vercel, that every exporter is compatible, or that a supplied trace is complete.
 
 Local live-service verification was repeated on August 28, 2026. IAM authentication and the Dallas watsonx.ai Chat API succeeded with `ibm/granite-4-h-small` through the compact finding-selection boundary. Earlier checks also covered rejected open-ended paraphrases, an invalid process-only key, and explicit fallback mode. These results prove the bounded local success and failure paths. They do not prove that the production deployment has working live credentials or that future provider behavior will be identical.
 
@@ -1229,7 +1243,7 @@ The project separates evidence layers because each answers a different question.
 
 ## 25. Automated test suite
 
-The Policy Decision Ledger release candidate contains 351 tests across 21 files. The previously verified Portable Evidence Packet v1 baseline contained 346 tests across 20 files.
+The deployed Generic JSON Adapter product snapshot contains 364 tests across 24 files. The previously verified Portable Evidence Packet v1 baseline contained 346 tests across 20 files.
 
 ### Test families
 
@@ -1237,7 +1251,7 @@ The Policy Decision Ledger release candidate contains 351 tests across 21 files.
 
 **Integrity tests** verify SHA-256 format, repeatability, byte sensitivity, and known hash values.
 
-**Adapter tests** cover native and OTLP mapping, IDs, ordering, unknown defaults, duplicate IDs, metadata-only and unparsed accounting, multi-trace rejection, and schema version rejection.
+**Adapter tests** cover native, OTLP, and explicitly mapped generic JSON; IDs; ordering; unknown defaults; duplicate IDs; metadata-only and unparsed accounting; array discovery; pointer and value translation; multi-trace rejection; and schema version rejection.
 
 **Hardening tests** cover RFC 3339 calendar validity, timezone offsets, sub-millisecond ordering, integrity metadata, unknown volume quantities, overflow-safe totals, approval linkage, and approval ordering.
 
@@ -1272,9 +1286,9 @@ They include adversarial claims about unsupported systems, operations, people, b
 
 **Release-audit tests** cover secret patterns, personal paths, dependency license metadata, media attribution, and the narrow Next build-root allowance.
 
-**Evaluation tests** run four declared synthetic cases and adversarial checks for verdicts, seeded rules, fifteen-of-fifteen raw-record accounting, known digests, deterministic replay, citations, invalid Granite selections, material OTLP parsing gaps, and the Recovery Plan v1 receipt/execution boundaries. The same evaluation now builds a three-artifact evidence packet, replays its manifest, receipt, and recovery binding, and detects an altered finding. Focused verifier tests add exact imported-byte, boundary, schema, accounting, policy, citation, packet-cross-reference, and artifact-manifest failure cases. `docs/EVALUATION.md` records the exact method and its limitations.
+**Evaluation tests** run five declared cases and adversarial checks for verdicts, seeded rules, 25-of-25 raw-record accounting, known digests, deterministic replay, citations, invalid Granite selections, material OTLP parsing gaps, the explicit generic mapping path, and the Recovery Plan v1 receipt and execution boundaries. The same evaluation builds a three-artifact evidence packet, replays its manifest, receipt, and recovery binding, and detects an altered finding. Focused verifier tests add exact imported-byte, boundary, schema, accounting, policy, citation, packet-cross-reference, and artifact-manifest failure cases. `docs/EVALUATION.md` records the exact method and its limitations.
 
-The evaluation also derives the Policy Decision Ledger for all four corpus cases. It requires 36 decisions in total: six deviations, 25 no-finding outcomes, one unable-to-assess outcome, and four inactive outcomes. These are declared synthetic-fixture assertions, not a measurement of universal policy coverage.
+The evaluation also derives the Policy Decision Ledger for all five corpus cases. It requires 45 decisions in total: six deviations, 31 no-finding outcomes, one unable-to-assess outcome, and seven inactive outcomes. These are declared example assertions, not a measurement of universal policy coverage or exporter compatibility.
 
 ## 26. The complete local gate
 
@@ -1297,16 +1311,16 @@ For the Portable Evidence Packet v1 release it passed locally and in exact-SHA h
 - Next production build: passed;
 - release audit: passed across 80 source files, 143 build files, 474 dependency entries, and 11 declared media assets.
 
-For the Policy Decision Ledger release candidate on August 29, the same gate passed with:
+For the deployed Generic JSON Adapter release on August 29, the same gate passed with:
 
 - ESLint: zero warnings;
 - strict TypeScript: passed;
-- 21 test files: passed;
-- 351 tests: passed;
+- 24 test files: passed;
+- 364 tests: passed;
 - Next production build: passed;
-- release audit: passed across 83 source files, 143 build files, 474 dependency entries, and 11 declared media assets.
+- release audit: passed across 90 source files, 143 build files, 474 dependency entries, and 11 declared media assets.
 
-GitHub Actions run `33227804643` reproduced the complete gate for exact release `2dee60545e18bea965afd2bb381eb9d918af8a98`. Vercel then reported a successful exact-SHA deployment, and the focused public packet and verifier journeys described below passed.
+GitHub Actions run `33239296527` reproduced the complete gate for exact release `8fdf2adae455c09073a847f66959d13fb73779ec`. Vercel then reported a successful exact-commit deployment, and the focused public custom-log journey described below passed.
 
 ## 27. Release audit
 
@@ -1323,9 +1337,9 @@ GitHub Actions run `33227804643` reproduced the complete gate for exact release 
 
 Next.js includes the build root inside specific required-server metadata files. The audit masks only that exact expected root in only those allowlisted files. An unrelated personal path still fails.
 
-For the Version 1.9 local-candidate documentation snapshot it checked:
+For the deployed Generic JSON Adapter product snapshot it checked:
 
-- 83 release-scoped source text files;
+- 90 release-scoped source text files;
 - 143 production-build text files;
 - 474 dependency package entries;
 - 11 app-owned media assets;
@@ -1394,7 +1408,7 @@ The public URL is:
 
 `https://receipt-one-flax.vercel.app`
 
-The URL completed the packet download, packet replay, standalone-receipt replay, and altered-receipt failure during this guide's August 28, 2026 release pass. The production alias and successful Vercel commit status were connected to product release `2dee60545e18bea965afd2bb381eb9d918af8a98`; Vercel target `54zjcRQwWTDw66vdRGrSaCE7yaed` reported **Deployment has completed**. Evidence Gap Mode, Recovery Plan v1, and the inspectable Granite boundary remain present from the earlier release.
+The production alias and successful Vercel commit status are connected to Generic JSON Adapter product release `8fdf2adae455c09073a847f66959d13fb73779ec`; Vercel target `8X1ScdmL7QcNBBnDwByMA9veSqMv` reported **Deployment has completed**. The public workflow accepted the vendor-shaped JSON example through upload and explicit mapping, then built its qualified receipt. The packet verifier, Evidence Gap Mode, Recovery Plan v1, and inspectable Granite boundary remain present from the earlier releases.
 
 Why Vercel?
 
@@ -1407,7 +1421,17 @@ The deployment is connected to `main`, so an approved future push can also chang
 
 ### Deployed evidence boundary
 
-The August 28 public release validation showed:
+The August 29 custom-log validation showed:
+
+- the public alias returned HTTP 200 on the feature-bearing release;
+- the 5,363-byte uploaded file matched SHA-256 `e5648722f62afccffcd40274f3b9c72a5c5c927f751c5b6ced7173003d90d0e1`;
+- `/activity_log` produced 10 selected, 10 mapped, and 0 unparsed records;
+- the receipt identified `generic-json-records.v1` and `genericJsonExplicitMapping` version `1.0.0`;
+- the deterministic receipt showed 10 events, 6 systems, 4 state changes, 1 external event, 1 human approval, 0 findings, and **Within declared authority**;
+- the raw evidence drawer opened at `/activity_log/0` and restored focus after closing;
+- the page had no document-level overflow at 1280 by 720, and the browser recorded no warning or error logs.
+
+Earlier public release validation also showed:
 
 - expected run: clean verdict, 3/3 coverage, deterministic fallback with no model metadata;
 - overreaching run: material deviations, two incidents, 12 findings, 6/6 coverage, deterministic fallback;
@@ -1491,6 +1515,21 @@ Open `http://localhost:3000`.
 
 ### Recommended first walkthrough
 
+Begin with the input path a real reviewer would use:
+
+1. Choose **Upload JSON** and open `examples/codex-policy-ledger-release-generic-log.json`.
+2. Select `/activity_log` as the action-record array.
+3. Follow the paths and translations in `docs/GENERIC_JSON_ADAPTER.md`.
+4. Expand **Additional policy evidence** and map systems, boundaries, categories, quantities, approval references, action keys, retry numbers, and tool names.
+5. Confirm **Selected 10 · Mapped 10 · Unparsed 0** before continuing.
+6. Enter the declared release authority from the same guide and build the receipt.
+7. Confirm `generic-json-records.v1`, the retained mapping manifest, 10 accounted events, zero findings, and the qualified clean verdict.
+8. Open raw evidence at `/activity_log/0` and compare it with the canonical event.
+
+This included file makes the walkthrough repeatable. To review another export, use its documented action array, paths, and value meanings. Do not copy the example mapping onto an unrelated schema.
+
+Then use the fixtures to inspect known clean, overreaching, incomplete, and altered states:
+
 1. Choose Expected run.
 2. Read the preset authority.
 3. Select Build receipt.
@@ -1518,7 +1557,31 @@ Open `http://localhost:3000`.
 
 ## 33. Input format by example
 
-A minimal educational trace still needs at least one event:
+The live app accepts a root array or an object containing a non-empty action-record array up to four object levels deep. A small unfamiliar export might look like this:
+
+```json
+{
+  "activity_log": [
+    {
+      "record": {
+        "uid": "action-1",
+        "at": "2026-08-29T03:00:01Z"
+      },
+      "principal": {
+        "id": "release-agent",
+        "kind": "automation"
+      },
+      "action_name": "file.write",
+      "result_code": "ok",
+      "side_effect": true
+    }
+  ]
+}
+```
+
+The reviewer selects `/activity_log`, maps the six source paths, and translates `file.write`, `ok`, `true`, and `automation` into the canonical vocabulary. The file does not need to be rewritten into Native Trace v1 first. It does need enough explicit fields for the reviewer to make those translations honestly.
+
+Native Trace v1 remains useful when an exporter can produce the receipt schema directly. A minimal educational trace still needs at least one event:
 
 ```json
 {
@@ -1568,6 +1631,9 @@ The matching authority might allow `internal-docs` and `read`, forbid external e
 | Invalid timestamp | Trace validation failure |
 | Duplicate native event IDs | Trace validation failure |
 | Zero events | Receipt build failure |
+| No non-empty record array in an unfamiliar JSON object | Unsupported format |
+| Unmapped generic operation, status, actor, or state-change value | Selected record stays material-unparsed |
+| Zero mapped generic action records | Receipt build is blocked |
 | Missing optional boundary | Canonical boundary becomes unknown |
 | Duplicate JSON object keys | JavaScript `JSON.parse` keeps the last value; inputs should not rely on this |
 
@@ -1737,7 +1803,7 @@ Remaining risks include:
 
 ## 41. What remains before the hackathon release is fully complete
 
-At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, citation-closed Recovery Plan v1 export, Granite selection hardening, inspectable Granite boundary, narrow OTLP adapter, automated evaluation corpus, Evidence Gap Mode, Portable Receipt Verifier, Portable Evidence Packet v1, screenshots, license, public repository, judge guide, exact product-release CI, Vercel deployment, and focused public journeys were complete in the deployed release. Public deterministic-fallback evidence remains separate from local responsive, rendered-PDF, and live-Granite checks.
+At the guide snapshot, the P0 implementation, live custom-JSON upload and explicit mapping workflow, Policy Decision Ledger, incident grouping, human-approved recovery proposals, citation-closed Recovery Plan v1 export, Granite selection hardening, inspectable Granite boundary, narrow OTLP adapter, automated evaluation corpus, Evidence Gap Mode, Portable Receipt Verifier, Portable Evidence Packet v1, screenshots, license, public repository, judge guide, exact product-release CI, Vercel deployment, and focused public journeys were complete in the deployed release. Public deterministic-fallback evidence remains separate from local responsive, rendered-PDF, and live-Granite checks.
 
 Open release work included:
 
@@ -2017,6 +2083,12 @@ Raw input, output, error body, and general metadata are not copied into the cano
 
 No. The MVP reviews one completed uploaded trace after the run.
 
+## Can I upload a JSON log from another agent?
+
+Yes, when the file contains a root or nested array of action records with explicit fields that can be mapped to timestamps, operations, outcomes, actors, and state-change semantics. Upload or paste the document, select the action array, confirm the field paths and observed-value translations, review the mapped and unparsed counts, then declare authority and build the receipt. The live product retains the mapping manifest with the receipt.
+
+This is not automatic understanding of every possible log. Free-form transcripts, JSONL, binary telemetry, mixed multi-run bundles, and logs that omit the required meanings need preprocessing or a format-specific adapter.
+
 ## Can it stop a dangerous action?
 
 No. It is not an enforcement proxy.
@@ -2095,7 +2167,7 @@ If the record is material and cannot be mapped safely, deterministic policy stop
 
 ## Are the screenshots real customer data?
 
-No. All eleven use committed or candidate synthetic fixtures.
+No. All eleven use committed synthetic fixtures so the walkthrough can be reproduced without exposing a private log.
 
 ## Is the project open source?
 
@@ -2116,6 +2188,7 @@ It is a bounded hackathon MVP. Production use would require authentication, pers
 | What data is valid? | `src/core/schemas/index.ts` |
 | How are events normalized? | `src/adapters/nativeTrace.ts`, `src/adapters/otlpGenAi.ts` |
 | How is coverage enforced? | `src/core/coverage.ts` |
+| How does a custom JSON upload map into canonical events? | `src/adapters/genericJson.ts`, `src/ui/genericMappingView.ts`, `docs/GENERIC_JSON_ADAPTER.md` |
 | How are findings/verdict computed? | `src/core/policyEngine.ts` |
 | How are fired and non-fired checks recorded? | `src/core/policyLedger.ts`, `docs/POLICY_DECISION_LEDGER.md` |
 | How is a receipt assembled/exported? | `src/core/receipt.ts` |
@@ -2148,16 +2221,16 @@ This guide was cross-checked against the complete tracked repository, including 
 
 ## Current external evidence used
 
-- The public Agent Receipt URL and repository were reachable, and GitHub Actions run `33227804643` plus Vercel target `54zjcRQwWTDw66vdRGrSaCE7yaed` reported successful status for product release `2dee60545e18bea965afd2bb381eb9d918af8a98` during the August 28, 2026 guide pass: `https://receipt-one-flax.vercel.app` and `https://github.com/mihirduvedi/agent-receipt`.
+- The public Agent Receipt URL and repository were reachable, and GitHub Actions run `33239296527` plus Vercel target `8X1ScdmL7QcNBBnDwByMA9veSqMv` reported successful status for Generic JSON Adapter release `8fdf2adae455c09073a847f66959d13fb73779ec` during the August 29, 2026 guide pass: `https://receipt-one-flax.vercel.app` and `https://github.com/mihirduvedi/agent-receipt`.
 - The current challenge page describes the August 31, 2026 11:59 PM ET submission deadline, public repository, clear README, working prototype, IBM Bob primary-development requirement, SkillsBuild activity, and public video up to three minutes: `https://aibuilderschallenge-bobhub.bemyapp.com/`.
 
 ## Evidence boundaries
 
 - The combined Evidence Gap Mode and Portable Receipt Verifier release is supported by source inspection, 335 tests across 19 files, a successful production build and release audit, focused local browser checks at 390, 840, and 1280 CSS pixels, exact-SHA hosted CI, and a ready Vercel production deployment.
 - The deployed Portable Evidence Packet v1 release is supported by 346 tests across 20 files, a successful production build and release audit, exact-SHA hosted CI, Vercel's successful deployment status, a strict local UI scan with 0 errors and 0 warnings, 390/840/default-viewport local browser checks, and an independently verified 42,376-byte production download. The deployed packet and receipt-only demonstrations passed all eight relevant gates; the altered receipt failed deterministic policy and cited-claim validation.
-- The Policy Decision Ledger release candidate is separate from that previously verified deployment baseline. It is supported by 351 tests across 21 files, the four-case synthetic evaluation, a successful production build and release audit, a strict UI scan with 0 errors and 0 warnings, and responsive browser checks at 390, 840, and 1280 CSS pixels. The Version 1.9 guide passed structural, bounds, changed-page, closing-sequence, and full contact-sheet inspection. Exact hosted status must be verified against the release commit after a push; this guide does not infer deployment from local evidence.
+- The deployed Generic JSON Adapter release is supported by 364 tests across 24 files, the five-case declared evaluation, a successful production build and release audit, a strict UI scan with 0 errors and 0 warnings, responsive mapping checks, exact-SHA hosted CI, Vercel's completed deployment status, and the public 10-of-10 custom-log workflow described above.
 - The earlier combined product release's exact-SHA CI, Vercel status, public repository visibility, incomplete receipt, and both standalone-verifier states were checked live on August 28. Public browser automation activated both verifier controls: the valid shortcut passed all eight gates and the altered shortcut produced policy and citation failures. The deployed incomplete trace retained 3/3 accounting and both evidence gaps. Those three earlier journeys matched the 1280-pixel viewport and logged no browser errors.
-- Earlier public fixture checks remain the evidence for expected/overreaching Granite-boundary counts, recovery-plan placement, and 390-pixel behavior. Neither browser-created Blob file was independently captured.
+- Earlier public fixture checks remain the evidence for expected and overreaching Granite-boundary counts, recovery-plan placement, and 390-pixel behavior. Neither browser-created Blob file was independently captured.
 - Local live Granite success under the compact selection boundary was re-observed on August 28, 2026. Prior rejected-claim fallback, explicit fallback mode, and invalid-credential fallback remain recorded evidence. Live Granite on the exact final public release, a real screen-reader session, the public video, and final submission were not verified as complete in this guide pass.
 - Challenge and provider details can change; recheck official pages before release action.
 

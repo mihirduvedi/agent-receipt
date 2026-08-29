@@ -7,7 +7,7 @@
 **Deadline:** August 31, 2026, 11:59 PM ET / 8:59 PM PT
 **Track:** IBM SkillsBuild AI Builders Challenge with IBM Bob — Wildcard: Build Intelligent Systems for the Future of Work
 
-**August 28 extension:** Add a deterministic, reviewer-confirmed mapping path for generic JSON record arrays. This broadens post-run ingestion without changing the product into a collector or observability platform and without allowing a model to infer missing action semantics.
+**August 28 extension:** Add a deterministic, reviewer-confirmed mapping path for uploaded or pasted generic JSON record arrays. This is a live product workflow for compatible exports from other agents, not a test-only converter. It broadens post-run ingestion without changing the product into a collector or observability platform and without allowing a model to infer missing action semantics.
 
 ## 1. Executive summary
 
@@ -25,7 +25,7 @@ Agent Receipt gives accountable humans a verifiable receipt for what an AI agent
 
 ### Six-day outcome
 
-By the deadline, a judge must be able to open a deployed prototype, select either a compliant or overreaching synthetic run, review its authority envelope, generate a receipt, and click from every significant conclusion to the canonical event and original JSON. The same flow must remain usable if watsonx.ai is unavailable.
+By the deadline, a judge must be able to open a deployed prototype, upload a compatible record-oriented JSON log, explicitly map its source structure, review its authority envelope, generate a receipt, and click from every significant conclusion to the canonical event and original JSON. Bundled compliant, overreaching, and incomplete runs provide faster repeatable demonstrations. Every path must remain usable if watsonx.ai is unavailable.
 
 ## 2. Product judgment and scope revision
 
@@ -37,7 +37,7 @@ This PRD locks five revisions:
 2. The central object is an authority-versus-action receipt, not a trace dashboard.
 3. Findings, verdicts, event accounting, and integrity metadata are deterministic.
 4. Granite explains a verified fact bundle and must cite known evidence IDs.
-5. The MVP is file-based, synthetic, and post-run; live interception and enforcement are deferred.
+5. The MVP is file-based and post-run. Its bundled fixtures are synthetic, while the intake also accepts compatible user-provided JSON. Live interception and enforcement are deferred.
 
 The product must never claim legal compliance, tamper-proof provenance, hidden reasoning access, or safety beyond the observable trace.
 
@@ -46,6 +46,7 @@ The product must never claim legal compliance, tamper-proof provenance, hidden r
 ### Product goals
 
 - Help a reviewer reach an accept, investigate, or reject decision in under one minute for the two demo fixtures.
+- Let a reviewer upload or paste a compatible record-oriented JSON export and confirm its mapping without model inference.
 - Make every material conclusion traceable to retained source evidence in two clicks or fewer.
 - Account visibly for every raw event as mapped, metadata-only, or unparsed.
 - Detect the seeded authority violations without relying on a model.
@@ -532,8 +533,8 @@ P0 requirements:
 
 - Opens from every generated claim and finding
 - Shows canonical event first, then exact raw object and pointer
-- Indicates synthetic data
-- Copy buttons exclude secrets if non-synthetic input is ever used
+- Labels whether evidence is synthetic or user-provided
+- Copy controls preserve visible privacy warnings for user-provided input
 - Keyboard focus moves into drawer and returns to trigger on close
 
 ### H. Export
@@ -851,7 +852,7 @@ See `docs/IBM_BOB_WORKFLOW.md` for the exact daily protocol.
 
 - Team size is 1–5 under the live rules; this plan is optimized for 2–3.
 - The submission is the August Wildcard entry and the team did not already submit a Wildcard project in July.
-- Only synthetic data is used.
+- All committed fixtures, screenshots, evaluation files, and recorded demo inputs use synthetic data. The live local intake may accept a reviewer-provided file, but no private or proprietary log may be committed, recorded, or used in the public demonstration.
 - A public GitHub repository and public demo/video are acceptable to all teammates.
 
 ### Must verify by August 26

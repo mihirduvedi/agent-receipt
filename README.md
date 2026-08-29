@@ -1,6 +1,8 @@
 # Agent Receipt
 
-Agent Receipt turns a completed AI-agent trace and a manager-declared authority envelope into an evidence-linked review receipt. It helps an AI operations manager answer one question quickly:
+Agent Receipt is a working post-run reviewer for agent logs. Upload or paste a completed JSON export, tell the app where its action records and fields live, declare what the agent was allowed to do, and receive an evidence-linked receipt.
+
+It helps an AI operations manager answer one question quickly:
 
 > Can I accept this run from the supplied evidence, or should I investigate or reject it?
 
@@ -10,12 +12,36 @@ The product rule is simple: deterministic rules establish what happened relative
 
 The receipt puts the deterministic verdict, evidence scope, and manager attention queue first.
 
-**Live demo (deployed baseline):** [receipt-one-flax.vercel.app](https://receipt-one-flax.vercel.app) · **60-second judge path:** [judge guide](docs/JUDGE_GUIDE.md) · **Public repository:** [GitHub](https://github.com/mihirduvedi/agent-receipt) · **Full guide:** [project guide](docs/PROJECT_GUIDE.md) ([PDF](output/pdf/agent-receipt-complete-project-guide.pdf))
+**Live app:** [receipt-one-flax.vercel.app](https://receipt-one-flax.vercel.app) · **60-second judge path:** [judge guide](docs/JUDGE_GUIDE.md) · **Public repository:** [GitHub](https://github.com/mihirduvedi/agent-receipt) · **Full guide:** [project guide](docs/PROJECT_GUIDE.md) ([PDF](output/pdf/agent-receipt-complete-project-guide.pdf))
 
-## What the prototype does
+## Bring your own agent log
+
+The files bundled with the site are demonstration and regression fixtures. They make the public walkthrough repeatable, but they are not the only inputs the product can review. The deployed app accepts a JSON export from another agent or workflow through **Upload JSON** or **Paste JSON**.
+
+For an unfamiliar record-oriented file, the live workflow is:
+
+1. Upload or paste one UTF-8 JSON document up to 2 MiB.
+2. Choose the root or nested array that contains the action records. Agent Receipt searches candidate arrays up to four object levels deep.
+3. Confirm JSON Pointer paths for fields such as timestamp, operation, outcome, actor, and state change.
+4. Translate the exporter’s observed values into the receipt vocabulary. Optional system, boundary, data-category, quantity, and approval fields can be mapped when the log records them.
+5. Check the deterministic preview. Every selected record must be mapped or shown as material-unparsed before the authority review begins.
+6. Declare the systems, operations, data rules, egress, volume, and approvals that applied to the run, then build the receipt.
+
+The mapping is explicit because field names alone do not establish meaning. Agent Receipt never asks Granite to guess whether `op: "dispatch"` means a send, whether `ok: 1` means success, or whether a destination is external. The confirmed mapping manifest is validated, versioned, and retained with the receipt.
+
+| Input | Live behavior |
+|---|---|
+| Agent Receipt Native Trace v1 | Opens directly in authority review |
+| Documented OTLP/JSON GenAI profile | Uses the built-in narrow adapter |
+| Root or nested array of JSON action records | Opens the explicit mapping workflow |
+| JSONL, YAML, archives, binary telemetry, remote URLs, or mixed multi-run bundles | Requires conversion or a format-specific adapter first |
+
+A custom log still needs enough explicit facts to support a review. If required meanings are missing or ambiguous, those records remain unparsed and the product reports that the run cannot be assessed fully. That is a deliberate evidence boundary, not silent parser failure. See the [generic JSON adapter guide](docs/GENERIC_JSON_ADAPTER.md) for the complete contract and a reproducible ten-record example.
+
+## What the product does
 
 - Preserves the exact source bytes and computes their SHA-256 before normalization.
-- Accepts unfamiliar JSON record arrays through a reviewer-confirmed field and value mapping, then retains that manifest with the receipt.
+- Accepts live user-uploaded or pasted JSON record arrays through a reviewer-confirmed field and value mapping, then retains that manifest with the receipt.
 - Accounts for every raw event as mapped, metadata-only, or unparsed.
 - Stops the assessment when material evidence is missing, shows why, and opens retained raw-only records that have no canonical event.
 - Compares observed actions with declared systems, operations, data restrictions, egress rules, volume limits, and approvals.
@@ -35,17 +61,17 @@ The receipt puts the deterministic verdict, evidence scope, and manager attentio
 
 ## Product tour
 
-Screenshots below come from the production build using the repository's synthetic overreaching fixture.
+Screenshots below use the repository's synthetic fixtures so the walkthrough can be reproduced exactly. The upload and mapping screens run in the same deployed product path for a reviewer’s own JSON file.
 
 ### 1. Choose an exact trace
 
 ![Agent Receipt trace intake with expected, overreaching, and incomplete synthetic samples](docs/screenshots/agent-receipt-trace-intake.jpg)
 
-Start from a synthetic fixture, upload Native Trace v1, supported OTLP/JSON, or another JSON record array, or paste one document. File bytes are preserved and hashed before parsing.
+Upload Native Trace v1, supported OTLP/JSON, or another JSON record array, paste one document, or use a fixture for a quick demonstration. File bytes are preserved and hashed before parsing.
 
 ### 1A. Map an unfamiliar JSON log without guessing
 
-If the JSON is not a built-in format, Agent Receipt finds candidate record arrays and opens an explicit mapping step. The reviewer confirms run facts, JSON Pointer field paths, and translations from observed operation/outcome/state-change values into the canonical vocabulary. A deterministic preview shows mapped and material-unparsed counts before authority review. The mapping manifest is retained in the exported receipt; Granite never participates in ingestion. See the [generic JSON adapter contract](docs/GENERIC_JSON_ADAPTER.md).
+If the JSON is not a built-in format, Agent Receipt finds candidate record arrays and opens an explicit mapping step in the live app. The reviewer confirms run facts, JSON Pointer field paths, and translations from observed operation, outcome, and state-change values into the canonical vocabulary. A deterministic preview shows mapped and material-unparsed counts before authority review. The mapping manifest is retained in the exported receipt; Granite never participates in ingestion. See the [generic JSON adapter contract](docs/GENERIC_JSON_ADAPTER.md).
 
 ### 2. Declare authority before judging the run
 
@@ -87,7 +113,7 @@ The summary separates observed activity from carefully qualified no-observed-act
 
 The boundary map highlights local, internal, external, and unknown destinations, with a full text-equivalent table for accessibility and exact evidence navigation.
 
-### 9. See the model boundary, not just a model badge
+### 9. Inspect the model boundary
 
 ![Agent Receipt Granite boundary showing the minimized fact bundle and deterministic gates](docs/screenshots/agent-receipt-granite-boundary.jpg)
 
@@ -111,7 +137,7 @@ Switch to **Verify an export** to check either Receipt v1 or Evidence Packet v1 
 
 For the fastest local proof, select **Verify evidence packet**, then reset and select **Catch altered sample**. The packet passes all eight gates; the changed receipt fails policy and citation replay. Existing `/?mode=verify&sample=valid` and `/?mode=verify&sample=altered` receipt shortcuts remain backward-compatible. See the [Evidence Packet contract](docs/PORTABLE_EVIDENCE_PACKET.md) and [standalone receipt-verifier contract](docs/PORTABLE_RECEIPT_VERIFIER.md).
 
-## Run the demo locally
+## Try a custom JSON file locally
 
 Requirements: Node.js 24 and npm 11.
 
@@ -120,7 +146,13 @@ npm ci
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000), then:
+Open [http://localhost:3000](http://localhost:3000), then upload [`examples/codex-policy-ledger-release-generic-log.json`](examples/codex-policy-ledger-release-generic-log.json). It has a deliberately unrelated field structure and exercises the same mapping UI used for another exporter. Follow the companion [mapping recipe](docs/GENERIC_JSON_ADAPTER.md#test-the-example-in-the-ui) and confirm **Selected 10 · Mapped 10 · Unparsed 0** before building the receipt.
+
+To use a different agent export, choose its action-record array and map the meanings documented by that exporter. Do not map a field based only on a plausible name. If the file does not contain explicit timestamps, operations, outcomes, actors, or state-change semantics, preprocess it into a clearer record array or add a dedicated adapter.
+
+## Run the repeatable fixture demo locally
+
+In the same local app:
 
 1. Choose **Expected run**.
 2. Review the preset authority and select **Build receipt**.
@@ -134,7 +166,7 @@ Open [http://localhost:3000](http://localhost:3000), then:
 10. Open **Evidence gaps**, then compare the explicit unable-to-assess check with the inactive authority constraints and inspect the raw-only source record.
 11. Start a new review, select **Verify an export**, replay the valid evidence packet, then run the altered-receipt demonstration.
 
-The samples are synthetic. The expected run contains three in-authority events. The overreaching run contains six events, including an unknown-outcome external write followed by a successful retry and an external message send. The incomplete OTLP run contains three source spans and demonstrates the third honest outcome: the supplied evidence is insufficient for a complete authority assessment.
+The samples are synthetic by design. They lock known verdicts and edge cases for judges and automated tests. The expected run contains three in-authority events. The overreaching run contains six events, including an unknown-outcome external write followed by a successful retry and an external message send. The incomplete OTLP run contains three source spans and demonstrates the third honest outcome: the supplied evidence is insufficient for a complete authority assessment. Custom uploads travel through the same exact-byte capture, accounting, policy, receipt, and export pipeline after adaptation.
 
 ## How it works
 
@@ -164,7 +196,7 @@ The browser retains the source snapshot for evidence drill-down. The server rout
 |---|---|
 | Technical execution | A working strict-TypeScript prototype preserves exact input bytes, accounts for every raw event, records every manager-facing policy check, validates external boundaries with Zod, and replays a three-artifact evidence packet without a service dependency. |
 | Innovation | Compares declared intent with observed action, makes fired, non-fired, unknown, and inactive checks inspectable, prevents generated prose from changing the verdict, and turns the manager handoff into a self-checking evidence contract. |
-| Feasibility | Accepts bounded Native Trace v1, documented OTLP/JSON GenAI, and explicitly mapped generic JSON record arrays; works locally without external services; exports one complete evidence packet; verifies receipts and packets offline; and isolates the optional watsonx.ai call behind one server route. |
+| Feasibility | Accepts live uploaded or pasted Native Trace v1, documented OTLP/JSON GenAI, and explicitly mapped record-oriented JSON; works locally without external services; exports one complete evidence packet; verifies receipts and packets offline; and isolates the optional watsonx.ai call behind one server route. |
 | Challenge fit | Gives teams and AI operations managers decision support for reviewing work completed by AI collaborators, directly matching the future-of-work wildcard theme. |
 | Real-world impact | Helps a manager decide whether to accept, investigate, or reject a completed run while showing where the supplied evidence cannot support any complete conclusion. |
 
@@ -221,7 +253,7 @@ The full gate runs lint, strict TypeScript, the complete test suite, a productio
 
 ## Input contract
 
-The MVP accepts one UTF-8 Agent Receipt Native Trace v1 document, one [narrow documented OTLP/JSON GenAI export](docs/OTLP_GENAI_ADAPTER.md), or one JSON document containing a reviewer-selected action-record array through the [explicit generic JSON adapter](docs/GENERIC_JSON_ADAPTER.md), up to 2 MiB via sample selection, file upload, or paste. It rejects JSONL, archives, remote URLs, binary formats, documents without a non-empty record array, and multiple runs in one receipt.
+The MVP accepts one UTF-8 Agent Receipt Native Trace v1 document, one [narrow documented OTLP/JSON GenAI export](docs/OTLP_GENAI_ADAPTER.md), or one JSON document containing a reviewer-selected action-record array through the [explicit generic JSON adapter](docs/GENERIC_JSON_ADAPTER.md), up to 2 MiB by file upload or paste. The bundled samples enter through the same intake boundary. It rejects JSONL, archives, remote URLs, binary formats, documents without a non-empty record array, and multiple runs in one receipt.
 
 ## Test live Granite
 

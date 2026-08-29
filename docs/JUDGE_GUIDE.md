@@ -1,14 +1,22 @@
 # Judge guide
 
-Agent Receipt is a post-run review tool for an AI operations manager. It compares a completed agent trace with the authority a manager declared before review, then produces a deterministic, evidence-linked receipt.
+Agent Receipt is a working post-run reviewer for agent logs. An AI operations manager can upload or paste a completed JSON export, map an unfamiliar record structure in the browser, declare what the agent was allowed to do, and produce a deterministic, evidence-linked receipt.
 
 **Live demo:** <https://receipt-one-flax.vercel.app>
 
 **Public repository:** <https://github.com/mihirduvedi/agent-receipt>
 
-**Current codebase:** The Generic JSON Adapter extends post-run review to record-oriented JSON logs through an explicit, retained mapping manifest. The exact hosted SHA and post-deployment checks belong in `docs/RELEASE_QA.md`; repository code alone is not deployment evidence.
+**Current deployed product:** Generic JSON Adapter release `8fdf2adae455c09073a847f66959d13fb73779ec` passed [GitHub Actions run `33239296527`](https://github.com/mihirduvedi/agent-receipt/actions/runs/33239296527), Vercel's exact-commit deployment check, and a public ten-record custom-log walkthrough on August 29, 2026. Full evidence is recorded in `docs/RELEASE_QA.md`.
 
-**Previously verified hosted baseline:** The Policy Decision Ledger release at product commit `27e740cfafd31a0e5f07162ddf79dd4b9ba86aea` passed exact-SHA CI and Vercel deployment checks before this adapter release.
+## Use a log from your own agent
+
+The three bundled runs are quick, repeatable demonstrations. They are not the product's input boundary. In the deployed app, choose **Upload JSON** or **Paste JSON** to review a file produced by another agent or workflow.
+
+For a record-oriented JSON file, Agent Receipt finds candidate arrays up to four object levels deep. The reviewer selects the action array, confirms JSON Pointer paths, and translates the exporter's operation, outcome, actor, state-change, and optional policy fields into the receipt vocabulary. The screen previews how many records will map and how many will remain material-unparsed before authority review begins. The confirmed mapping manifest stays with the receipt, and Granite is never used to interpret the source log.
+
+This works live for root arrays and nested action-record arrays with explicit semantic fields. It is intentionally not a universal transcript parser. JSONL, binary telemetry, mixed multi-run bundles, free-form conversations, and logs that omit required meanings need preprocessing or a dedicated adapter. Missing facts remain unknown.
+
+For a reproducible proof, upload [`examples/codex-policy-ledger-release-generic-log.json`](../examples/codex-policy-ledger-release-generic-log.json) and follow the [mapping recipe](GENERIC_JSON_ADAPTER.md#test-the-example-in-the-ui). The public deployment mapped all ten selected records, retained `/activity_log/0` as raw evidence, and produced the qualified verdict **Within declared authority** with zero unparsed records and zero findings. Another exporter follows the same live workflow with its own documented paths and values.
 
 ## If you have 30 seconds
 
@@ -32,12 +40,6 @@ The same deployed verifier retains the standalone receipt proof through **Verify
 
 The seeded run records six events. Three stay inside the declared authority. The other three capture an external spreadsheet attempt with an unknown result, its successful retry, and an unapproved customer-email send. Deterministic rules produce 12 findings and group them into two incidents without hiding the underlying queue.
 
-## If a judge brings a different JSON log
-
-Upload a JSON file whose actions are stored in an array of records. Agent Receipt inventories candidate arrays and scalar paths, but the reviewer must explicitly select the action array and translate the log's identifiers, timestamps, operations, statuses, state-change values, and actor fields. Each selected record is then mapped or retained as material-unparsed; nothing is silently dropped and no model supplies missing semantics. The reviewed manifest travels with the receipt. The bundled `examples/codex-policy-ledger-release-generic-log.json` and [mapping recipe](GENERIC_JSON_ADAPTER.md) provide a reproducible proof.
-
-This is broad structural interoperability, not a claim of universal zero-configuration parsing. Text transcripts, mixed multi-stream bundles, and logs without explicit semantic fields require a future format-specific adapter or user-authored preprocessing.
-
 ## What makes the project different
 
 Most trace tools show activity. Agent Receipt asks whether that activity stayed inside a specific authority envelope and gives the accountable human a bounded decision: accept, investigate, or reject.
@@ -60,13 +62,13 @@ Portable Evidence Packet v1 completes that handoff. One file carries the manager
 |---|---|
 | Technical execution | Exact-byte SHA-256, complete raw-event accounting, a strict four-status policy-decision contract, deterministic policy and verdict, three-artifact manifest replay, full embedded-receipt verification, server-only Granite route, full tests, production build, and release audit |
 | Innovation | Intent-versus-action reconciliation, a complete fired/non-fired/unknown/inactive policy register, deterministic evidence refusal, an inspectable AI boundary, and a self-checking manager handoff that catches altered deterministic claims |
-| Feasibility | Native Trace v1, documented OTLP/JSON, and an explicit adapter for record-oriented generic JSON; credential-free fallback; one complete evidence-packet export; and browser-only receipt or packet verification with no service dependency |
+| Feasibility | Live upload or paste for Native Trace v1, documented OTLP/JSON, and explicitly mapped record-oriented JSON; credential-free fallback; one complete evidence-packet export; and browser-only receipt or packet verification with no service dependency |
 | Challenge fit | Decision support for managers reviewing work completed by AI collaborators, under the Future of Work wildcard theme |
 | Real-world impact | A manager can see what happened, what crossed authority, why the evidence may be insufficient, and what a controlled response workflow should review next |
 
 The challenge page presents five lenses. The official rules use four scored headings and combine implementation with feasibility; the evidence above covers both versions.
 
-These are prototype results from synthetic fixtures. They do not establish legal compliance, trusted trace capture, production-scale performance, or universal policy coverage.
+The declared evaluation cases are synthetic so their expected results can be reproduced. The deployed upload and mapping path also accepts a reviewer's own record-oriented JSON, but the current evidence does not establish legal compliance, trusted trace capture, production-scale performance, or universal policy coverage.
 
 ## Reproduce the evidence
 

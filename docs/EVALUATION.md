@@ -1,6 +1,6 @@
 # Agent Receipt Evaluation
 
-This report records a reproducible automated evaluation of the current prototype. It is deliberately narrow: the corpus is synthetic, the expected outcomes are declared in code, and every result below can be regenerated locally.
+This report records a reproducible automated evaluation of the current prototype. The corpus uses declared examples so every expected outcome can be regenerated locally. That choice makes the evidence repeatable; it does not limit the product to those files. The deployed app also accepts a reviewer-uploaded or pasted record-oriented JSON log through the explicit mapping workflow described in `docs/GENERIC_JSON_ADAPTER.md`.
 
 ## Result at a glance
 
@@ -46,7 +46,7 @@ The executable corpus and assertions live in `src/evaluation/hackathonEvaluation
 | Incomplete OTLP evidence | OTLP/JSON `resourceSpans`, 3 raw spans | `unable_to_assess_fully` | Confirms that a material unmapped action and unknown run termination stop the assessment without dropping source records. |
 | Explicit generic JSON release log | Vendor-shaped `activity_log`, 10 raw records + versioned mapping manifest | `within_declared_authority` | Confirms that an unrelated field structure reaches the same deterministic authority result when its semantics are explicitly mapped. |
 
-Across the corpus, all 25 raw records are classified as mapped, metadata-only, or unparsed. Twenty-two become canonical events. The incomplete case still accounts for all three source spans: one maps, one stays metadata-only, and one material action remains unparsed. The generic case maps all ten vendor-shaped records and retains the exact mapping manifest with receipt integrity.
+Across the corpus, all 25 raw records are classified as mapped, metadata-only, or unparsed. Twenty-two become canonical events. The incomplete case still accounts for all three source spans: one maps, one stays metadata-only, and one material action remains unparsed. The generic case enters through the same adapter and receipt pipeline used by the browser upload flow, maps all ten vendor-shaped records, and retains the exact mapping manifest with receipt integrity.
 
 ## Seeded rule coverage
 
@@ -87,9 +87,9 @@ These checks protect the product's central claim: uncertainty is exposed rather 
 - It does not compare Granite with other models. Granite is optional and cannot change the deterministic verdict.
 - A passing portable-verifier report establishes internal receipt consistency, not exporter identity, trace completeness, trusted capture, original trace bytes, or signed provenance.
 - The evidence-packet manifest is unsigned. A passing packet is not an authenticity, tamper-proof provenance, digital-signature, or nonrepudiation result.
-- The synthetic cases are intentionally small and known. More adapters, real consented traces, larger stress corpora, and structured user studies are future evaluation work.
+- The cases are intentionally small and known. The live mapper can accept a compatible custom export, but more exporters, consented real traces, larger stress corpora, and structured user studies are future evaluation work.
 - A ledger status of `no_finding` means the current deterministic check produced no deviation from explicit supplied facts. It is not evidence that the trace is complete or that the run is safe or compliant.
 
 ## Suggested judge demo
 
-Run `npm run eval`, then open the overreaching sample and select **Policy checks** to show six fired checks beside three non-fired checks. After the incident and recovery path, download the evidence packet. Open **Incomplete OTLP run** to contrast one unable-to-assess check with two inactive constraints and to show all three raw records. Finish in **Verify an export** with the evidence-packet and altered-receipt demonstrations. The first replays the complete handoff; the second catches a changed deterministic claim.
+Start by uploading `examples/codex-policy-ledger-release-generic-log.json` and follow the mapping recipe in `docs/GENERIC_JSON_ADAPTER.md`. Show the **10 mapped / 0 unparsed** preview and explain that another record-oriented export uses its own reviewed paths and value translations. Then run `npm run eval`, open the overreaching sample, and select **Policy checks** to show six fired checks beside three non-fired checks. After the incident and recovery path, download the evidence packet. Open **Incomplete OTLP run** to contrast one unable-to-assess check with two inactive constraints and to show all three raw records. Finish in **Verify an export** with the evidence-packet and altered-receipt demonstrations. The first replays the complete handoff; the second catches a changed deterministic claim.

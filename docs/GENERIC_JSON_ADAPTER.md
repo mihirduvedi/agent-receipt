@@ -1,8 +1,16 @@
-# Explicit Generic JSON Adapter
+# Use a JSON export from another agent
 
-Agent Receipt can review agent logs that do not use Native Trace v1 or the documented OTLP/JSON profile. It does this through a reviewer-confirmed mapping manifest, not by asking Granite or any other model to guess what vendor-specific fields mean.
+Agent Receipt can review a completed log even when it does not use Native Trace v1 or the documented OTLP/JSON profile. Upload or paste a record-oriented JSON document in the live app, select the array that represents actions, and confirm how the exporter's fields and values should map into the receipt.
 
-This makes the ingestion layer structurally general while preserving the product's evidence boundary. It does **not** make every arbitrary log sufficient for an authority verdict. A log still needs explicit facts such as time, operation, outcome, and state-change semantics. Missing facts remain unknown or material-unparsed.
+The mapping step is part of the working product, not a test-only conversion script. It lets the same review pipeline handle different field names and nesting without asking Granite or another model to guess what vendor-specific fields mean. The confirmed mapping is validated, versioned, and retained with the receipt.
+
+A log still needs explicit facts such as time, operation, outcome, actor, and state-change semantics. Changing the structure cannot recover facts that the exporter did not record. Missing or ambiguous meanings remain unknown or material-unparsed.
+
+## When this is useful
+
+Use this path when an agent platform, workflow runner, or internal tool exports a JSON object or array with one record per action, but its schema differs from Agent Receipt's native format. For example, `action_name`, `result_code`, and `side_effect` can be mapped to canonical operation, status, and state-change fields after the reviewer checks the exporter's documentation.
+
+Use preprocessing or a dedicated adapter when the source is JSONL, binary telemetry, a free-form conversation transcript, a mixed bundle of several runs, or a format that hides important semantics in prose. The generic adapter generalizes record structure; it does not claim universal log understanding.
 
 ## Accepted generic shape
 
@@ -102,14 +110,14 @@ The exported receipt records:
 
 The standalone receipt export does not include the original log. A later reviewer needs both the receipt and the exact source file to independently repeat source-to-canonical adaptation. Evidence-packet verification proves internal packet consistency, not trusted capture, authorship, or real-world completeness.
 
-## Included real-shaped example
+## Included record-oriented example
 
-Two files demonstrate the same ten-action Codex release run without using Agent Receipt's native event shape:
+Two files demonstrate the same ten-action Codex release run without using Agent Receipt's native event shape. They make the workflow repeatable for tests and judges; the live upload screen accepts another compatible exporter in the same way.
 
 - [`examples/codex-policy-ledger-release-generic-log.json`](../examples/codex-policy-ledger-release-generic-log.json) — vendor-shaped raw log;
 - [`examples/codex-policy-ledger-release-generic-mapping.json`](../examples/codex-policy-ledger-release-generic-mapping.json) — exact mapping manifest.
 
-The focused test loads both files through the real `buildReceipt` pipeline. With the declared release authority, all 10 records map and the deterministic result is `within_declared_authority` with zero findings. This demonstrates equivalence for the supplied facts; it is not a claim that all agent exporters contain those facts.
+The focused test loads both files through the real `buildReceipt` pipeline. The public deployment was also exercised through the browser upload and mapping flow. With the declared release authority, all 10 records map and the deterministic result is `within_declared_authority` with zero findings. This establishes the included example and the live custom-log path. It does not establish that every agent exporter records the facts needed for an authority review.
 
 ### Test the example in the UI
 

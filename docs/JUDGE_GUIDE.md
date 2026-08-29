@@ -6,18 +6,16 @@ Agent Receipt is a post-run review tool for an AI operations manager. It compare
 
 **Public repository:** <https://github.com/mihirduvedi/agent-receipt>
 
-**Current public release:** Evidence Gap Mode plus the Portable Receipt Verifier at product commit `4f96c4b34c3336a5f4facc1fde135a1368d0e89f`. Exact-SHA CI and Vercel deployment passed on August 28, 2026.
-
-**Current local candidate:** Portable Evidence Packet v1. It is implemented and under local release verification; it is not yet claimed as committed, pushed, or deployed.
+**Current public release:** Portable Evidence Packet v1 at product commit `2dee60545e18bea965afd2bb381eb9d918af8a98`. Exact-SHA GitHub Actions run `33227804643`, Vercel deployment status, the packet download, both verifier formats, and the altered-artifact failure passed on August 28, 2026.
 
 ## If you have 30 seconds
 
-1. Run the local candidate, switch to **Verify an export**, and select **Verify evidence packet**.
+1. Open the live demo, switch to **Verify an export**, and select **Verify evidence packet**.
 2. Read **PASS** and scan the eight gates, especially the three-artifact manifest, complete embedded-receipt replay, and recovery-plan binding.
 3. Select **Verify another export**, then **Catch altered sample**. One deterministic receipt finding was changed after export, so policy and citation replay fail with **CHECK FAILED**.
 4. Point to **What this cannot verify**. The unsigned manifest proves internal consistency, not exporter identity, trace completeness, or signed provenance.
 
-For the currently deployed baseline, `/?mode=verify&sample=valid` and `/?mode=verify&sample=altered` provide the standalone receipt proof.
+The same deployed verifier retains the standalone receipt proof through **Verify receipt only** and the altered receipt through **Catch altered sample**. The direct `/?mode=verify&sample=valid` and `/?mode=verify&sample=altered` shortcuts remain available.
 
 ## If you have 60 seconds
 

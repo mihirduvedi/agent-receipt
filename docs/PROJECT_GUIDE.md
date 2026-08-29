@@ -4,9 +4,9 @@
 
 **From first principles to architecture, code, trust boundaries, testing, and deployment**
 
-Version 1.7 - August 29, 2026
+Version 1.8 - August 28, 2026
 
-Project snapshot: the deployed product baseline contains Evidence Gap Mode and the Portable Receipt Verifier at release `4f96c4b`; GitHub Actions run `33224543916` and Vercel deployment `dpl_8H1hpRVHXgXmZhJBapPcKKYNk3kZ` passed for that exact product SHA. Portable Evidence Packet v1 is implemented in the current local candidate and remains uncommitted, unpushed, and undeployed until a fresh release approval. Local responsive, packet, PDF, and live-Granite evidence are qualified separately from the hosted fallback deployment.
+Project snapshot: Portable Evidence Packet v1 is deployed at release `2dee60545e18bea965afd2bb381eb9d918af8a98`. GitHub Actions run `33227804643`, Vercel's exact-SHA deployment status, the public packet download, packet replay, standalone-receipt replay, and altered-receipt failure passed on August 28, 2026. Local responsive, rendered-PDF, and live-Granite evidence remain qualified separately from the hosted deterministic-fallback deployment.
 
 > Agent Receipt gives accountable humans an evidence-linked receipt for what an AI agent did relative to what it was allowed to do.
 
@@ -899,7 +899,7 @@ The preview is a transparency surface, not a second model call. It keeps the hos
 
 ### Current live status
 
-The production alias and successful Vercel commit status are connected to product release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f`, and both the demo and repository were publicly reachable without authentication on August 28, 2026. GitHub Actions run `33224543916` passed the complete gate and Vercel deployment `dpl_8H1hpRVHXgXmZhJBapPcKKYNk3kZ` reached **Ready**. Public browser automation activated both verifier samples: the valid export passed all eight gates, while the altered export failed exactly policy and citation replay. The incomplete OTLP journey produced an authority-assessment-incomplete receipt with 3/3 raw-record accounting and the 1 mapped, 1 metadata-only, 1 unparsed split. All three deployed journeys used deterministic fallback, matched the 1280-pixel viewport width, and logged no browser errors. Earlier public checks still support the expected and overreaching fixture details, 390-pixel Granite-boundary layout, recovery-plan placement, and evidence-drawer behavior. Browser automation did not independently capture either Blob download. This does not establish that live Granite is configured in Vercel.
+The production alias and successful Vercel commit status are connected to product release `2dee60545e18bea965afd2bb381eb9d918af8a98`, and both the demo and repository were publicly reachable on August 28, 2026. GitHub Actions run `33227804643` passed the complete gate and Vercel target `54zjcRQwWTDw66vdRGrSaCE7yaed` reported **Deployment has completed**. Public browser automation built the deterministic-fallback overreaching receipt, downloaded a 42,376-byte packet, passed all eight packet gates, passed the standalone receipt path, and failed the altered receipt at deterministic policy and cited-claim validation. A separate local verifier passed all eight gates on the exact downloaded packet at SHA-256 `4755bdf819bc5f966d1ad2725f4c855ed113a64527f7956a1b7d522f89a93f7d`. The tested verifier page matched the 1280-pixel viewport width. Browser-console diagnostics were not independently captured in this release pass. Earlier public checks remain the evidence for the incomplete OTLP journey, 390-pixel Granite-boundary layout, recovery-plan placement, and evidence-drawer behavior. This does not establish that live Granite is configured in Vercel.
 
 Local live-service verification was repeated on August 28, 2026. IAM authentication and the Dallas watsonx.ai Chat API succeeded with `ibm/granite-4-h-small` through the compact finding-selection boundary. Earlier checks also covered rejected open-ended paraphrases, an invalid process-only key, and explicit fallback mode. These results prove the bounded local success and failure paths. They do not prove that the production deployment has working live credentials or that future provider behavior will be identical.
 
@@ -1252,7 +1252,7 @@ npm run build
 npm run release:audit
 ```
 
-For the current Portable Evidence Packet v1 candidate it passed locally on August 29 with:
+For the Portable Evidence Packet v1 release it passed locally and in exact-SHA hosted CI on August 28 with:
 
 - ESLint: zero warnings;
 - strict TypeScript: passed;
@@ -1261,7 +1261,7 @@ For the current Portable Evidence Packet v1 candidate it passed locally on Augus
 - Next production build: passed;
 - release audit: passed across 80 source files, 143 build files, 474 dependency entries, and 11 declared media assets.
 
-This local packet result has not been reproduced by hosted CI or deployment. The earlier baseline release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f` passed its then-current complete gate in GitHub Actions run `33224543916` on August 28, 2026, then reached a ready Vercel production deployment and passed the focused public browser journeys described below.
+GitHub Actions run `33227804643` reproduced the complete gate for exact release `2dee60545e18bea965afd2bb381eb9d918af8a98`. Vercel then reported a successful exact-SHA deployment, and the focused public packet and verifier journeys described below passed.
 
 ## 27. Release audit
 
@@ -1278,7 +1278,7 @@ This local packet result has not been reproduced by hosted CI or deployment. The
 
 Next.js includes the build root inside specific required-server metadata files. The audit masks only that exact expected root in only those allowlisted files. An unrelated personal path still fails.
 
-For the Version 1.7 local candidate it checked:
+For the Version 1.8 release documentation snapshot it checked:
 
 - 80 release-scoped source text files;
 - 143 production-build text files;
@@ -1343,7 +1343,7 @@ The public URL is:
 
 `https://receipt-one-flax.vercel.app`
 
-The URL completed the incomplete-evidence receipt and both portable-verifier journeys during this guide's August 28, 2026 release pass. The production alias and successful Vercel commit status were connected to product release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f`; Vercel deployment `dpl_8H1hpRVHXgXmZhJBapPcKKYNk3kZ` reached **Ready**. Recovery Plan v1 and the inspectable Granite boundary remain present from the earlier release, with the recovery export placed before the longer proposal list.
+The URL completed the packet download, packet replay, standalone-receipt replay, and altered-receipt failure during this guide's August 28, 2026 release pass. The production alias and successful Vercel commit status were connected to product release `2dee60545e18bea965afd2bb381eb9d918af8a98`; Vercel target `54zjcRQwWTDw66vdRGrSaCE7yaed` reported **Deployment has completed**. Evidence Gap Mode, Recovery Plan v1, and the inspectable Granite boundary remain present from the earlier release.
 
 Why Vercel?
 
@@ -1681,7 +1681,7 @@ Remaining risks include:
 
 ## 41. What remains before the hackathon release is fully complete
 
-At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, citation-closed Recovery Plan v1 export, Granite selection hardening, inspectable Granite boundary, narrow OTLP adapter, automated evaluation corpus, Evidence Gap Mode, Portable Receipt Verifier, screenshots, license, public repository, judge guide, exact product-release CI, Vercel deployment, and focused public journeys were complete in the deployed baseline. Portable Evidence Packet v1 passed the complete local gate, exact downloaded-file verification, documentation audit, and rendered-PDF inspection; it remains a local release candidate pending separate release approval. Public deterministic-fallback evidence remains separate from local packet, PDF, and live-Granite checks.
+At the guide snapshot, the P0 implementation, incident grouping, human-approved recovery proposals, citation-closed Recovery Plan v1 export, Granite selection hardening, inspectable Granite boundary, narrow OTLP adapter, automated evaluation corpus, Evidence Gap Mode, Portable Receipt Verifier, Portable Evidence Packet v1, screenshots, license, public repository, judge guide, exact product-release CI, Vercel deployment, and focused public journeys were complete in the deployed release. Public deterministic-fallback evidence remains separate from local responsive, rendered-PDF, and live-Granite checks.
 
 Open release work included:
 
@@ -2074,14 +2074,14 @@ This guide was cross-checked against the complete tracked repository, including 
 
 ## Current external evidence used
 
-- The public Agent Receipt URL and repository were reachable, and GitHub Actions run `33224543916` plus Vercel deployment `dpl_8H1hpRVHXgXmZhJBapPcKKYNk3kZ` reported successful status for product release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f` during the August 28, 2026 guide pass: `https://receipt-one-flax.vercel.app` and `https://github.com/mihirduvedi/agent-receipt`.
+- The public Agent Receipt URL and repository were reachable, and GitHub Actions run `33227804643` plus Vercel target `54zjcRQwWTDw66vdRGrSaCE7yaed` reported successful status for product release `2dee60545e18bea965afd2bb381eb9d918af8a98` during the August 28, 2026 guide pass: `https://receipt-one-flax.vercel.app` and `https://github.com/mihirduvedi/agent-receipt`.
 - The current challenge page describes the August 31, 2026 11:59 PM ET submission deadline, public repository, clear README, working prototype, IBM Bob primary-development requirement, SkillsBuild activity, and public video up to three minutes: `https://aibuilderschallenge-bobhub.bemyapp.com/`.
 
 ## Evidence boundaries
 
 - The combined Evidence Gap Mode and Portable Receipt Verifier release is supported by source inspection, 335 tests across 19 files, a successful production build and release audit, focused local browser checks at 390, 840, and 1280 CSS pixels, exact-SHA hosted CI, and a ready Vercel production deployment.
-- The local Portable Evidence Packet v1 candidate is supported by 346 tests across 20 files, a successful production build and release audit, a strict UI scan with 0 errors and 0 warnings, 390/840/default-viewport browser checks, and an independently verified 40,064-byte downloaded packet. It has no hosted CI or deployment evidence yet.
-- Exact product-release CI, Vercel status, public repository visibility, the incomplete receipt, and both verifier states were checked live on August 28. Public browser automation activated both verifier controls: the valid shortcut passed all eight gates and the altered shortcut produced policy and citation failures. The deployed incomplete trace retained 3/3 accounting and both evidence gaps. All three journeys matched the 1280-pixel viewport and logged no browser errors.
+- The deployed Portable Evidence Packet v1 release is supported by 346 tests across 20 files, a successful production build and release audit, exact-SHA hosted CI, Vercel's successful deployment status, a strict local UI scan with 0 errors and 0 warnings, 390/840/default-viewport local browser checks, and an independently verified 42,376-byte production download. The deployed packet and receipt-only demonstrations passed all eight relevant gates; the altered receipt failed deterministic policy and cited-claim validation.
+- The earlier combined product release's exact-SHA CI, Vercel status, public repository visibility, incomplete receipt, and both standalone-verifier states were checked live on August 28. Public browser automation activated both verifier controls: the valid shortcut passed all eight gates and the altered shortcut produced policy and citation failures. The deployed incomplete trace retained 3/3 accounting and both evidence gaps. Those three earlier journeys matched the 1280-pixel viewport and logged no browser errors.
 - Earlier public fixture checks remain the evidence for expected/overreaching Granite-boundary counts, recovery-plan placement, and 390-pixel behavior. Neither browser-created Blob file was independently captured.
 - Local live Granite success under the compact selection boundary was re-observed on August 28, 2026. Prior rejected-claim fallback, explicit fallback mode, and invalid-credential fallback remain recorded evidence. Live Granite on the exact final public release, a real screen-reader session, the public video, and final submission were not verified as complete in this guide pass.
 - Challenge and provider details can change; recheck official pages before release action.

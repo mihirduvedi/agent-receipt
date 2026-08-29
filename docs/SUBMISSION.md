@@ -72,5 +72,5 @@ A passing verifier report means the supplied receipt or packet agrees with itsel
 - Confirm every teammate completed the required IBM SkillsBuild Bob activity.
 - Open the repository, live demo, and video links while signed out.
 - Confirm the video duration is at or below three minutes.
-- Confirm GitHub Actions remains successful for current `main`. Product release `4f96c4b34c3336a5f4facc1fde135a1368d0e89f` passed run `33224543916`, reached Vercel production deployment `dpl_8H1hpRVHXgXmZhJBapPcKKYNk3kZ`, and passed the public Evidence Gap Mode plus valid/altered verifier journeys.
+- Confirm GitHub Actions remains successful for current `main`. Product release `2dee60545e18bea965afd2bb381eb9d918af8a98` passed run `33227804643`, received Vercel's successful exact-SHA deployment status, and passed the public packet download, packet replay, standalone-receipt replay, and altered-receipt failure journeys.
 - Submit before August 31, 2026 at 11:59 PM ET / 8:59 PM PT, unless the live challenge page shows a newer deadline.

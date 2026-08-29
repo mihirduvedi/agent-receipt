@@ -1,11 +1,13 @@
 # Product Requirements Document: Agent Receipt
 
 **Status:** Approved build baseline
-**Version:** 1.0
+**Version:** 1.1
 **Date:** August 25, 2026
 **Owner:** Product team
 **Deadline:** August 31, 2026, 11:59 PM ET / 8:59 PM PT
 **Track:** IBM SkillsBuild AI Builders Challenge with IBM Bob — Wildcard: Build Intelligent Systems for the Future of Work
+
+**August 28 extension:** Add a deterministic, reviewer-confirmed mapping path for generic JSON record arrays. This broadens post-run ingestion without changing the product into a collector or observability platform and without allowing a model to infer missing action semantics.
 
 ## 1. Executive summary
 
@@ -126,19 +128,20 @@ The default interface must remain manager-readable. Canonical and raw evidence a
 ### Required flow
 
 1. The start page offers “Expected run” and “Overreaching run” sample cards plus JSON upload and paste controls.
-2. The client checks file type, byte size, JSON syntax, and top-level schema.
+2. The client checks file type, byte size, JSON syntax, and either a built-in schema or a non-empty generic record array.
 3. The system preserves the exact UTF-8 bytes, computes SHA-256, and selects a versioned adapter.
-4. The authority page displays the fixture’s preset or a blank form for uploaded input.
-5. The user reviews and confirms the task, permitted systems, operations, data restrictions, egress rule, volume limit, and approval requirements.
-6. The adapter produces canonical events, raw-event accounting records, and warnings.
-7. Coverage and integrity checks run before verdict computation.
-8. Deterministic rules compare successful or ambiguously completed actions with the authority envelope.
-9. A minimized and redacted fact bundle is sent server-side to Granite when live mode is enabled.
-10. Generated JSON is schema-validated and every cited ID is checked.
-11. Invalid, timed-out, or unavailable model output is replaced by deterministic templates.
-12. The reviewer sees the overview, attention items, timeline, systems/data view, deviations, coverage, and integrity metadata.
-13. Any statement or finding opens canonical evidence and the retained raw object.
-14. The reviewer records a disposition and can export the receipt JSON.
+4. For generic JSON, the reviewer selects the action-record array and explicitly confirms run facts, JSON Pointer field paths, and value translations. The adapter previews mapped and material-unparsed counts and retains the validated manifest.
+5. The authority page displays the fixture’s preset or a blank form for uploaded input.
+6. The user reviews and confirms the task, permitted systems, operations, data restrictions, egress rule, volume limit, and approval requirements.
+7. The adapter produces canonical events, raw-event accounting records, and warnings.
+8. Coverage and integrity checks run before verdict computation.
+9. Deterministic rules compare successful or ambiguously completed actions with the authority envelope.
+10. A minimized and redacted fact bundle is sent server-side to Granite when live mode is enabled.
+11. Generated JSON is schema-validated and every cited ID is checked.
+12. Invalid, timed-out, or unavailable model output is replaced by deterministic templates.
+13. The reviewer sees the overview, attention items, timeline, systems/data view, deviations, coverage, and integrity metadata.
+14. Any statement or finding opens canonical evidence and the retained raw object.
+15. The reviewer records a disposition and can export the receipt JSON.
 
 ### Review dispositions
 
@@ -158,7 +161,7 @@ The disposition must never overwrite or relabel the product verdict. In the MVP 
 - Encoding: UTF-8 JSON only
 - Maximum input: 2 MiB
 - Source: file upload or pasted JSON
-- Accepted top-level shapes: Agent Receipt Native Trace v1; one explicitly tested OTLP JSON export shape only if P0 work finishes by August 28
+- Accepted shapes: Agent Receipt Native Trace v1; one explicitly tested OTLP JSON export shape; or one selected non-empty JSON record array with a validated `agent-receipt.generic-json-mapping.v1` manifest
 - Rejected: JSONL, ZIP, YAML, binary protobuf, remote URLs, and multiple runs in one file
 - Duplicate object keys: parser behavior must be documented; fixture files must not contain them
 - Timestamps: RFC 3339 with timezone; preserve original precision
@@ -212,6 +215,8 @@ type NativeEventV1 = {
 ```
 
 Rules may use only explicit schema fields and deterministic adapter mappings. The MVP must not infer data categories, boundaries, quantities, or approvals with Granite.
+
+For generic JSON, structural suggestions are inert until the reviewer confirms the mapping. Missing or unmapped required semantics make the selected record material-unparsed; optional policy facts remain unknown. Every selected array item must receive exactly one accounting record, and the complete validated mapping manifest must be retained with receipt integrity.
 
 ### Authority envelope v1
 

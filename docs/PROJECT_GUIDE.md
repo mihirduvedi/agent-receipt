@@ -127,17 +127,21 @@ Developers, security reviewers, and internal auditors are secondary users. They 
 
 ## 4. The reviewer's journey
 
-The product has two intake modes. **Review a trace** follows three visible steps; **Verify an export** replays a standalone receipt or complete evidence packet without starting a new trace review.
+The product has two intake modes. **Review a trace** follows three visible steps for built-in formats and adds an explicit mapping step for generic JSON; **Verify an export** replays a standalone receipt or complete evidence packet without starting a new trace review.
 
 ### Step 1: Choose a trace
 
-The reviewer can select one of three synthetic samples, upload one JSON file, or paste one JSON object. The limit is 2 MiB. The app accepts the versioned Native Trace v1 format and one narrow documented OTLP/JSON GenAI export shape.
+The reviewer can select one of three synthetic samples, upload one JSON file, or paste one JSON object or array. The limit is 2 MiB. The app accepts Native Trace v1, one narrow documented OTLP/JSON GenAI export, and non-empty generic JSON record arrays through an explicit reviewer-confirmed mapping.
 
 ![Agent Receipt trace intake](screenshots/agent-receipt-trace-intake.jpg)
 
 The word **exact** is important. File bytes are copied and hashed before the JSON is decoded or rearranged.
 
-### Step 2: Confirm the authority envelope
+### Conditional step 2: Map unfamiliar JSON
+
+Generic JSON does not receive guessed semantics. The reviewer selects one record array, enters run facts, confirms JSON Pointer field paths, translates observed scalar values into the canonical operation/status/state-change vocabulary, and previews mapped versus material-unparsed accounting. Optional system, boundary, category, quantity, and approval fields remain unknown unless explicitly mapped. The validated mapping manifest is retained in receipt integrity. See `docs/GENERIC_JSON_ADAPTER.md`.
+
+### Step 2 or 3: Confirm the authority envelope
 
 The reviewer confirms the rule boundary before analysis. The form includes:
 
@@ -154,7 +158,7 @@ The reviewer confirms the rule boundary before analysis. The form includes:
 
 The system never infers authority from the agent's behavior. If the agent contacted an email system, that does not make the email system permitted.
 
-### Step 3: Review the receipt
+### Final step: Review the receipt
 
 The receipt presents:
 
@@ -645,7 +649,7 @@ The pipeline then:
 4. decodes UTF-8 with `fatal: true`;
 5. parses JSON;
 6. checks the top-level schema version;
-7. selects and validates exactly one supported input shape: Native Trace v1 or the documented OTLP/JSON GenAI export.
+7. selects and validates Native Trace v1, the documented OTLP/JSON GenAI export, or a generic record array plus its strict reviewer-confirmed mapping manifest.
 
 The browser-safe digest lives in `portableDigest.ts`. A Node-only equivalent in `integrity.ts` supports isolated tests and server contexts.
 
@@ -687,6 +691,10 @@ The adapter can mark duplicate source IDs as material and unparsed, but `buildRe
 `src/adapters/otlpGenAi.ts` accepts one OTLP `ExportTraceServiceRequest` JSON shape with `resourceSpans[].scopeSpans[].spans[]`. It requires one trace ID and unique span IDs. Standard GenAI inference operation names map conservatively to non-state-changing `execute` events. Tool or application action spans require explicit `agent.receipt.operation` and `agent.receipt.state_change` attributes; the adapter does not guess authority semantics from span names or prompt text.
 
 Every raw span is mapped, metadata-only, or unparsed. A material action-like span without enough explicit semantics is unparsed and forces an incomplete assessment. The exact profile and limitations are documented in `docs/OTLP_GENAI_ADAPTER.md`.
+
+### Explicit generic JSON adaptation
+
+`src/adapters/genericJson.ts` accepts a selected JSON record array only alongside `agent-receipt.generic-json-mapping.v1`. RFC 6901 pointers identify source fields, typed value maps translate only reviewer-confirmed scalar semantics, and RFC 3339 or declared epoch timestamp formats normalize deterministically. Every selected item is material: it maps to one canonical event or becomes unparsed with a reason. Duplicate mapped IDs, primitive items, missing required facts, and unmapped values cannot disappear. `src/ui/genericMappingView.ts` supplies structural suggestions and the pre-authority preview, while `src/components/GenericMappingStep.tsx` exposes the full mapping contract in the browser. The validated manifest is stored under receipt integrity for later inspection. See `docs/GENERIC_JSON_ADAPTER.md` for the complete contract and example.
 
 ## 15. Coverage and event accounting
 

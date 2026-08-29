@@ -3,6 +3,7 @@ import {
   adaptOtlpGenAiTrace,
   OtlpExportTraceServiceRequestSchema,
 } from "../adapters/otlpGenAi";
+import { adaptGenericJson } from "../adapters/genericJson";
 import { buildFactBundle } from "../ai/factBundle";
 import { deterministicFallback } from "../ai/deterministicFallback";
 import { validateClaims } from "../ai/validateClaims";
@@ -16,6 +17,7 @@ import {
   AUTHORITY_SCHEMA_VERSION,
   AuthorityEnvelopeV1Schema,
   CANONICAL_EVENT_SCHEMA_VERSION,
+  GenericJsonMappingSchema,
   NATIVE_TRACE_SCHEMA_VERSION,
   NativeTraceV1Schema,
   RECEIPT_SCHEMA_VERSION,
@@ -50,6 +52,7 @@ export type ReceiptBuildErrorCode =
   | "invalid_json"
   | "unsupported_format"
   | "invalid_trace"
+  | "invalid_mapping"
   | "invalid_authority"
   | "invalid_disposition"
   | "internal_contract";
@@ -72,6 +75,7 @@ export type DeterministicReceiptEvidence = {
 export type BuildReceiptInput = {
   rawBytes: Uint8Array;
   authority: unknown;
+  genericJsonMapping?: unknown;
   reviewerDisposition?: unknown;
 };
 
@@ -131,6 +135,10 @@ export async function buildReceipt(
   // Snapshot caller-owned configuration before the first await so later
   // mutations cannot change the authority used for this receipt.
   const authorityResult = AuthorityEnvelopeV1Schema.safeParse(input.authority);
+  const genericMappingResult =
+    input.genericJsonMapping === undefined
+      ? undefined
+      : GenericJsonMappingSchema.safeParse(input.genericJsonMapping);
   const dispositionResult = ReviewDispositionSchema.safeParse(
     input.reviewerDisposition ?? "unreviewed",
   );
@@ -175,10 +183,10 @@ export async function buildReceipt(
     );
   }
 
-  if (!isRecord(rawDocument)) {
+  if (!isRecord(rawDocument) && !Array.isArray(rawDocument)) {
     return failure(
       "unsupported_format",
-      `This schema is not supported. Agent Receipt accepts ${NATIVE_TRACE_SCHEMA_VERSION} and one documented OTLP/JSON resourceSpans shape.`,
+      `This schema is not supported. Agent Receipt accepts ${NATIVE_TRACE_SCHEMA_VERSION}, one documented OTLP/JSON resourceSpans shape, or a JSON record array with an explicit mapping.`,
       retainedSource,
     );
   }
@@ -189,8 +197,12 @@ export async function buildReceipt(
   let inputSchemaVersion: string;
   let adapterName: string;
   let nativeTrace: NativeTraceV1 | undefined;
+  let genericJsonMapping: ReturnType<typeof GenericJsonMappingSchema.parse> | undefined;
 
-  if (rawDocument["schemaVersion"] === NATIVE_TRACE_SCHEMA_VERSION) {
+  if (
+    isRecord(rawDocument) &&
+    rawDocument["schemaVersion"] === NATIVE_TRACE_SCHEMA_VERSION
+  ) {
     const traceResult = NativeTraceV1Schema.safeParse(rawDocument);
     if (!traceResult.success) {
       return failure(
@@ -238,7 +250,7 @@ export async function buildReceipt(
     rawEventCount = trace.events.length;
     inputSchemaVersion = trace.schemaVersion;
     adapterName = NATIVE_ADAPTER_NAME;
-  } else if ("resourceSpans" in rawDocument) {
+  } else if (isRecord(rawDocument) && "resourceSpans" in rawDocument) {
     const otlpResult = OtlpExportTraceServiceRequestSchema.safeParse(rawDocument);
     if (!otlpResult.success) {
       return failure(
@@ -264,10 +276,36 @@ export async function buildReceipt(
         retainedSource,
       );
     }
+  } else if (genericMappingResult !== undefined) {
+    if (!genericMappingResult.success) {
+      return failure(
+        "invalid_mapping",
+        "The generic JSON mapping is incomplete or invalid.",
+        retainedSource,
+        zodIssues(genericMappingResult.error.issues),
+      );
+    }
+    try {
+      const adapted = adaptGenericJson(rawDocument, genericMappingResult.data);
+      adapter = adapted.adapter;
+      run = adapted.run;
+      rawEventCount = adapted.rawRecordCount;
+      inputSchemaVersion = adapted.schemaVersion;
+      adapterName = adapted.adapterName;
+      genericJsonMapping = adapted.mapping;
+    } catch (error) {
+      return failure(
+        "invalid_mapping",
+        error instanceof Error
+          ? error.message
+          : "The generic JSON records could not be mapped.",
+        retainedSource,
+      );
+    }
   } else {
     return failure(
       "unsupported_format",
-      `This schema is not supported. Agent Receipt accepts ${NATIVE_TRACE_SCHEMA_VERSION} and one documented OTLP/JSON resourceSpans shape.`,
+      `This schema is not supported automatically. Use ${NATIVE_TRACE_SCHEMA_VERSION}, the documented OTLP/JSON resourceSpans shape, or confirm an explicit mapping for a JSON record array.`,
       retainedSource,
     );
   }
@@ -427,6 +465,7 @@ export async function buildReceipt(
       canonicalEventSchemaVersion: CANONICAL_EVENT_SCHEMA_VERSION,
       receiptSchemaVersion: RECEIPT_SCHEMA_VERSION,
       generatedAt,
+      ...(genericJsonMapping === undefined ? {} : { genericJsonMapping }),
       generationSource: generation.generationSource,
       ...(generation.generationSource === "granite"
         ? {

@@ -3209,6 +3209,340 @@ tr:last-child td {
   font-size: 0.78rem;
 }
 
+/* Generic JSON mapping — a reviewer-confirmed bridge into canonical evidence. */
+.mapping-layout {
+  display: grid;
+  min-height: calc(100vh - var(--header-height));
+  grid-template-columns: minmax(300px, 0.72fr) minmax(650px, 1.28fr);
+  background: var(--paper);
+}
+
+.mapping-context {
+  position: sticky;
+  top: var(--header-height);
+  align-self: start;
+  min-height: calc(100vh - var(--header-height));
+  padding: clamp(42px, 5vw, 78px);
+  border-right: 1px solid var(--ink);
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0,
+      transparent 20px,
+      rgb(35 107 162 / 7%) 20px,
+      rgb(35 107 162 / 7%) 21px
+    ),
+    var(--raised);
+}
+
+.mapping-context .back-button {
+  margin-bottom: 54px;
+}
+
+.mapping-context h1 {
+  max-width: 11ch;
+  margin-bottom: 24px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.7rem, 4.7vw, 5rem);
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  line-height: 0.95;
+}
+
+.mapping-context > p:not(.section-number) {
+  max-width: 46ch;
+  color: var(--muted);
+}
+
+.mapping-trust-note {
+  margin-top: 34px;
+  padding: 20px;
+  border: 1px solid var(--ink);
+  border-left: 7px solid var(--blue);
+  background: var(--paper);
+}
+
+.mapping-trust-note strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.mapping-trust-note p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.mapping-form-shell {
+  padding: clamp(42px, 5vw, 78px);
+}
+
+.mapping-heading h2 {
+  max-width: 15ch;
+}
+
+.mapping-section {
+  margin: 0 0 32px;
+  padding: 26px;
+  border: 1px solid var(--line-strong);
+  background: var(--raised);
+}
+
+fieldset.mapping-section > legend,
+.semantic-map > legend {
+  padding: 0 10px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.55rem;
+}
+
+.mapping-section > p,
+.mapping-section-heading > p,
+.mapping-help,
+.semantic-map-empty {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.mapping-section > p {
+  max-width: 72ch;
+  margin-bottom: 22px;
+}
+
+.mapping-section label > span,
+.mapping-source-pair label > span,
+.semantic-map-row label > span {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.mapping-section label em {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mapping-selection-summary {
+  margin: 12px 0 0 !important;
+  font-weight: 800;
+}
+
+.mapping-run-grid,
+.mapping-field-grid,
+.mapping-source-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.mapping-field-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mapping-source-pair {
+  margin-top: 22px;
+}
+
+.mapping-source-pair > div {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.mapping-help {
+  margin: 16px 0 0 !important;
+}
+
+.semantic-section {
+  padding: 0;
+  border-color: var(--ink);
+  background: var(--paper);
+}
+
+.mapping-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 26px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.mapping-section-heading .section-number {
+  margin-bottom: 8px;
+}
+
+.mapping-section-heading h3 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem, 2.7vw, 2.5rem);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+}
+
+.semantic-map {
+  margin: 22px 26px;
+  padding: 0;
+  border: 1px solid var(--line);
+}
+
+.semantic-map > legend {
+  font-size: 1.15rem;
+}
+
+.semantic-map-empty {
+  margin: 0;
+  padding: 18px;
+}
+
+.semantic-map-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 0.55fr);
+  gap: 20px;
+  align-items: center;
+  padding: 14px 18px;
+}
+
+.semantic-map-row + .semantic-map-row {
+  border-top: 1px solid var(--line);
+}
+
+.semantic-map-row > div {
+  min-width: 0;
+}
+
+.semantic-map-row code {
+  overflow-wrap: anywhere;
+}
+
+.semantic-map-row > div > span {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.advanced-mapping {
+  padding: 0;
+}
+
+.advanced-mapping > summary {
+  min-height: 58px;
+  padding: 18px 24px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.advanced-mapping[open] > summary {
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.advanced-mapping > p,
+.advanced-mapping > .mapping-field-grid,
+.advanced-mapping > .semantic-map {
+  margin-right: 24px;
+  margin-left: 24px;
+}
+
+.advanced-mapping > p {
+  margin-top: 22px;
+}
+
+.advanced-mapping > .mapping-field-grid {
+  margin-bottom: 24px;
+}
+
+.mapping-preview {
+  margin-bottom: 32px;
+  padding: 26px;
+  border: 1px solid var(--ink);
+  border-left-width: 8px;
+}
+
+.mapping-preview-complete {
+  border-left-color: var(--green);
+  background: var(--green-soft);
+}
+
+.mapping-preview-partial {
+  border-left-color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.mapping-preview-incomplete {
+  border-left-color: var(--red);
+  background: var(--red-soft);
+}
+
+.mapping-preview h3 {
+  margin: 0 0 20px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.6rem, 2.5vw, 2.3rem);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+}
+
+.mapping-preview dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+}
+
+.mapping-preview dl > div {
+  padding: 16px;
+}
+
+.mapping-preview dl > div + div {
+  border-left: 1px solid var(--line);
+}
+
+.mapping-preview dt {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mapping-preview dd {
+  margin: 5px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2rem;
+}
+
+.mapping-preview-note,
+.mapping-preview-reasons,
+.mapping-issues {
+  margin: 18px 0 0;
+  font-size: 0.82rem;
+}
+
+.mapping-preview-reasons p {
+  margin-bottom: 8px;
+  font-weight: 800;
+}
+
+.mapping-preview-reasons ul,
+.mapping-issues {
+  padding-left: 20px;
+}
+
+.mapping-submit-row .primary-button {
+  flex: 0 0 auto;
+}
+
 /* Portable Receipt Verifier — an offline replay desk inside trace intake. */
 .intake-mode-tabs {
   display: grid;
@@ -3639,8 +3973,14 @@ tr:last-child td {
     grid-template-columns: 0.72fr 1.28fr;
   }
 
+  .mapping-layout {
+    grid-template-columns: minmax(270px, 0.62fr) minmax(600px, 1.38fr);
+  }
+
   .intro-panel,
-  .intake-workbench {
+  .intake-workbench,
+  .mapping-context,
+  .mapping-form-shell {
     padding: 48px 38px;
   }
 
@@ -3708,8 +4048,20 @@ tr:last-child td {
   }
 
   .intake-layout,
+  .mapping-layout,
   .authority-layout {
     grid-template-columns: 1fr;
+  }
+
+  .mapping-context {
+    position: static;
+    min-height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--ink);
+  }
+
+  .mapping-context h1 {
+    max-width: 14ch;
   }
 
   .intro-panel {
@@ -3900,6 +4252,54 @@ tr:last-child td {
 
   .verdict-attention a {
     display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .mapping-context,
+  .mapping-form-shell {
+    padding: 36px 20px;
+  }
+
+  .mapping-context .back-button {
+    margin-bottom: 34px;
+  }
+
+  .mapping-run-grid,
+  .mapping-field-grid,
+  .mapping-source-pair,
+  .semantic-map-row {
+    grid-template-columns: 1fr;
+  }
+
+  .mapping-section,
+  .mapping-preview {
+    padding: 20px;
+  }
+
+  .mapping-section-heading {
+    align-items: start;
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .semantic-map {
+    margin-right: 20px;
+    margin-left: 20px;
+  }
+
+  .mapping-preview dl {
+    grid-template-columns: 1fr;
+  }
+
+  .mapping-preview dl > div + div {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .mapping-submit-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 

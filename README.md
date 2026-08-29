@@ -15,6 +15,7 @@ The receipt puts the deterministic verdict, evidence scope, and manager attentio
 ## What the prototype does
 
 - Preserves the exact source bytes and computes their SHA-256 before normalization.
+- Accepts unfamiliar JSON record arrays through a reviewer-confirmed field and value mapping, then retains that manifest with the receipt.
 - Accounts for every raw event as mapped, metadata-only, or unparsed.
 - Stops the assessment when material evidence is missing, shows why, and opens retained raw-only records that have no canonical event.
 - Compares observed actions with declared systems, operations, data restrictions, egress rules, volume limits, and approvals.
@@ -40,7 +41,11 @@ Screenshots below come from the production build using the repository's syntheti
 
 ![Agent Receipt trace intake with expected, overreaching, and incomplete synthetic samples](docs/screenshots/agent-receipt-trace-intake.jpg)
 
-Start from a synthetic fixture, upload one Native Trace v1 or supported OTLP/JSON document, or paste one document. File bytes are preserved and hashed before parsing.
+Start from a synthetic fixture, upload Native Trace v1, supported OTLP/JSON, or another JSON record array, or paste one document. File bytes are preserved and hashed before parsing.
+
+### 1A. Map an unfamiliar JSON log without guessing
+
+If the JSON is not a built-in format, Agent Receipt finds candidate record arrays and opens an explicit mapping step. The reviewer confirms run facts, JSON Pointer field paths, and translations from observed operation/outcome/state-change values into the canonical vocabulary. A deterministic preview shows mapped and material-unparsed counts before authority review. The mapping manifest is retained in the exported receipt; Granite never participates in ingestion. See the [generic JSON adapter contract](docs/GENERIC_JSON_ADAPTER.md).
 
 ### 2. Declare authority before judging the run
 
@@ -136,7 +141,7 @@ The samples are synthetic. The expected run contains three in-authority events. 
 ```text
 exact trace bytes
       ↓ SHA-256 before normalization
-versioned native or narrow OTLP adapter → canonical events + raw-event accounting
+native, narrow OTLP, or reviewer-mapped generic adapter → canonical events + raw-event accounting
       ↓
 deterministic policy engine → findings + qualified verdict + policy decision ledger
       ↓
@@ -159,7 +164,7 @@ The browser retains the source snapshot for evidence drill-down. The server rout
 |---|---|
 | Technical execution | A working strict-TypeScript prototype preserves exact input bytes, accounts for every raw event, records every manager-facing policy check, validates external boundaries with Zod, and replays a three-artifact evidence packet without a service dependency. |
 | Innovation | Compares declared intent with observed action, makes fired, non-fired, unknown, and inactive checks inspectable, prevents generated prose from changing the verdict, and turns the manager handoff into a self-checking evidence contract. |
-| Feasibility | Accepts bounded Native Trace v1 and documented OTLP/JSON GenAI contracts, works locally without external services, exports one complete evidence packet, verifies receipts and packets offline, and isolates the optional watsonx.ai call behind one server route. |
+| Feasibility | Accepts bounded Native Trace v1, documented OTLP/JSON GenAI, and explicitly mapped generic JSON record arrays; works locally without external services; exports one complete evidence packet; verifies receipts and packets offline; and isolates the optional watsonx.ai call behind one server route. |
 | Challenge fit | Gives teams and AI operations managers decision support for reviewing work completed by AI collaborators, directly matching the future-of-work wildcard theme. |
 | Real-world impact | Helps a manager decide whether to accept, investigate, or reject a completed run while showing where the supplied evidence cannot support any complete conclusion. |
 
@@ -185,6 +190,7 @@ Granite gives the prototype an IBM-native runtime explanation layer that fits th
 |---|---:|---|
 | Exact-byte capture and digest | Yes | Preserve the supplied source and its reproducible hash |
 | Adapter and event accounting | Yes | Normalize known fields and expose mapped, metadata-only, and unparsed counts |
+| Generic JSON mapping manifest | Human + deterministic validation | Record reviewer-confirmed paths and value meanings; reject or expose anything that cannot map |
 | Evidence Gap Mode | Yes | Stop unsupported conclusions and link gaps to canonical or raw-only source records |
 | Policy findings and verdict | Yes | Reconcile observed actions with declared authority |
 | Policy Decision Ledger | Yes | Record fired, non-fired, unable-to-assess, and inactive checks with citations to supplied evidence |
@@ -215,7 +221,7 @@ The full gate runs lint, strict TypeScript, the complete test suite, a productio
 
 ## Input contract
 
-The MVP accepts one UTF-8 Agent Receipt Native Trace v1 document or one [narrow documented OTLP/JSON GenAI export](docs/OTLP_GENAI_ADAPTER.md) up to 2 MiB, via sample selection, file upload, or paste. It rejects JSONL, archives, remote URLs, binary formats, unsupported schemas, and multiple runs or traces in one file.
+The MVP accepts one UTF-8 Agent Receipt Native Trace v1 document, one [narrow documented OTLP/JSON GenAI export](docs/OTLP_GENAI_ADAPTER.md), or one JSON document containing a reviewer-selected action-record array through the [explicit generic JSON adapter](docs/GENERIC_JSON_ADAPTER.md), up to 2 MiB via sample selection, file upload, or paste. It rejects JSONL, archives, remote URLs, binary formats, documents without a non-empty record array, and multiple runs in one receipt.
 
 ## Test live Granite
 
@@ -254,10 +260,11 @@ This MVP targets the IBM SkillsBuild AI Builders Challenge with IBM Bob, Wildcar
 - [Paste-ready submission copy](docs/SUBMISSION.md)
 - [Three-minute judge demo script](docs/DEMO_SCRIPT.md)
 - [Narrow OTLP/JSON adapter contract](docs/OTLP_GENAI_ADAPTER.md)
+- [Explicit generic JSON adapter contract](docs/GENERIC_JSON_ADAPTER.md)
 
 ## Limits
 
-Agent Receipt is a post-run review aid, not live interception, enforcement, legal compliance certification, trusted capture, a tamper-proof log, or access to private chain-of-thought. “No observed activity” means no supplied event referenced an item; it does not prove real-world inactivity outside the trace. A ledger status of “No finding” means the corresponding deterministic check produced no deviation from explicit supplied facts; it does not prove trace completeness, safety, or compliance. Every conclusion applies only to the supplied trace and authority envelope.
+Agent Receipt is a post-run review aid, not live interception, enforcement, legal compliance certification, trusted capture, a tamper-proof log, or access to private chain-of-thought. The generic adapter broadens structure, not evidence: it cannot recover fields an exporter omitted or prove the selected record array captured every action. “No observed activity” means no supplied event referenced an item; it does not prove real-world inactivity outside the trace. A ledger status of “No finding” means the corresponding deterministic check produced no deviation from explicit supplied facts; it does not prove trace completeness, safety, or compliance. Every conclusion applies only to the supplied trace and authority envelope.
 
 ## License
 

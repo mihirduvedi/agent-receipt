@@ -29,6 +29,7 @@ import type {
   CanonicalEvent,
   CanonicalOperation,
   Finding,
+  GenericJsonMapping,
   ReceiptResult,
   ReviewDisposition,
 } from "../core/schemas/index";
@@ -79,13 +80,31 @@ import type {
   PolicyDecisionLedger,
   PolicyDecisionStatus,
 } from "../core/policyLedger";
+import type { GenericJsonInspection } from "../adapters/genericJson";
+import {
+  createGenericJsonMappingDraft,
+  refreshGenericValueMaps,
+  validateGenericJsonMappingDraft,
+} from "../ui/genericMappingView";
+import type {
+  GenericJsonMappingDraft,
+  GenericMappingValidation,
+} from "../ui/genericMappingView";
+import { GenericMappingStep } from "./GenericMappingStep";
 
-type Step = "intake" | "authority" | "receipt";
+type Step = "intake" | "mapping" | "authority" | "receipt";
 
 type TraceSource = {
   bytes: Uint8Array;
   label: string;
   kind: TraceSourceKind;
+  format: "native" | "otlp" | "generic";
+  genericJsonMapping?: GenericJsonMapping;
+};
+
+type GenericIntake = {
+  rawDocument: unknown;
+  inspection: GenericJsonInspection;
 };
 
 type SuccessfulBuild = Extract<BuildReceiptResult, { ok: true }>;
@@ -146,6 +165,9 @@ export function ReceiptReviewApp(props: {
 }) {
   const [step, setStep] = useState<Step>("intake");
   const [source, setSource] = useState<TraceSource | null>(null);
+  const [genericIntake, setGenericIntake] = useState<GenericIntake | null>(null);
+  const [genericDraft, setGenericDraft] =
+    useState<GenericJsonMappingDraft | null>(null);
   const [pasteValue, setPasteValue] = useState("");
   const [authorityDraft, setAuthorityDraft] = useState<AuthorityDraft>(
     blankAuthorityDraft,
@@ -170,6 +192,13 @@ export function ReceiptReviewApp(props: {
     () => validateAuthorityDraft(authorityDraft),
     [authorityDraft],
   );
+  const genericValidation = useMemo<GenericMappingValidation | null>(() => {
+    if (!genericIntake || !genericDraft) return null;
+    return validateGenericJsonMappingDraft(
+      genericIntake.rawDocument,
+      genericDraft,
+    );
+  }, [genericDraft, genericIntake]);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -243,11 +272,53 @@ export function ReceiptReviewApp(props: {
     setBuildError(null);
     setExportStatus("");
     setRecoveryExportStatus("");
-    setSource({ bytes: Uint8Array.from(bytes), label, kind });
+    setSource({
+      bytes: Uint8Array.from(bytes),
+      label,
+      kind,
+      format: validation.format,
+    });
+    if (validation.format === "generic") {
+      setGenericIntake({
+        rawDocument: validation.rawDocument,
+        inspection: validation.inspection,
+      });
+      setGenericDraft(
+        createGenericJsonMappingDraft(
+          validation.rawDocument,
+          validation.inspection,
+        ),
+      );
+      setAuthorityDraft(blankAuthorityDraft());
+      setResult(null);
+      setStep("mapping");
+      return;
+    }
+    setGenericIntake(null);
+    setGenericDraft(null);
     setAuthorityDraft(
       presetAuthority ? authorityToDraft(presetAuthority) : blankAuthorityDraft(),
     );
     setResult(null);
+    setStep("authority");
+  }
+
+  function updateGenericDraft(next: GenericJsonMappingDraft) {
+    if (!genericIntake) return;
+    setGenericDraft(
+      refreshGenericValueMaps(genericIntake.rawDocument, next),
+    );
+  }
+
+  function confirmGenericMapping() {
+    if (!source || !genericValidation?.ok) return;
+    setSource({
+      ...source,
+      format: "generic",
+      genericJsonMapping: genericValidation.mapping,
+    });
+    setAuthorityDraft(blankAuthorityDraft());
+    setBuildError(null);
     setStep("authority");
   }
 
@@ -296,7 +367,10 @@ export function ReceiptReviewApp(props: {
 
   function usePastedTrace() {
     if (pasteValue.trim().length === 0) {
-      setIntakeError({ message: "Paste one Native Trace v1 or supported OTLP/JSON object first." });
+      setIntakeError({
+        message:
+          "Paste one Native Trace v1, supported OTLP/JSON object, or JSON record array first.",
+      });
       return;
     }
     beginWithSource(
@@ -317,6 +391,9 @@ export function ReceiptReviewApp(props: {
         {
           rawBytes: source.bytes,
           authority: authorityValidation.authority,
+          ...(source.genericJsonMapping === undefined
+            ? {}
+            : { genericJsonMapping: source.genericJsonMapping }),
         },
         { generateCopy: requestGeneratedCopy },
       );
@@ -459,6 +536,8 @@ export function ReceiptReviewApp(props: {
     setStep("intake");
     setResult(null);
     setSource(null);
+    setGenericIntake(null);
+    setGenericDraft(null);
     setBuildError(null);
     setIntakeError(null);
     setExportStatus("");
@@ -466,6 +545,11 @@ export function ReceiptReviewApp(props: {
     setPasteValue("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
+
+  const progressSteps: Step[] =
+    source?.format === "generic"
+      ? ["intake", "mapping", "authority", "receipt"]
+      : ["intake", "authority", "receipt"];
 
   return (
     <>
@@ -478,8 +562,8 @@ export function ReceiptReviewApp(props: {
           </span>
         </a>
         <ol className="step-list" aria-label="Review progress">
-          {(["intake", "authority", "receipt"] as const).map((item, index) => {
-            const currentIndex = ["intake", "authority", "receipt"].indexOf(step);
+          {progressSteps.map((item, index) => {
+            const currentIndex = progressSteps.indexOf(step);
             return (
               <li
                 key={item}
@@ -489,7 +573,13 @@ export function ReceiptReviewApp(props: {
                 aria-current={item === step ? "step" : undefined}
               >
                 <span>{String(index + 1).padStart(2, "0")}</span>
-                {item === "intake" ? "Trace" : item === "authority" ? "Authority" : "Receipt"}
+                {item === "intake"
+                  ? "Trace"
+                  : item === "mapping"
+                    ? "Map"
+                    : item === "authority"
+                      ? "Authority"
+                      : "Receipt"}
               </li>
             );
           })}
@@ -519,6 +609,19 @@ export function ReceiptReviewApp(props: {
           />
         ) : null}
 
+        {step === "mapping" && source && genericIntake && genericDraft && genericValidation ? (
+          <GenericMappingStep
+            source={source}
+            document={genericIntake.rawDocument}
+            inspection={genericIntake.inspection}
+            draft={genericDraft}
+            validation={genericValidation}
+            onDraftChange={updateGenericDraft}
+            onBack={() => setStep("intake")}
+            onContinue={confirmGenericMapping}
+          />
+        ) : null}
+
         {step === "authority" && source ? (
           <AuthorityStep
             source={source}
@@ -527,7 +630,7 @@ export function ReceiptReviewApp(props: {
             analyzing={analyzing}
             buildError={buildError}
             onDraftChange={setAuthorityDraft}
-            onBack={() => setStep("intake")}
+            onBack={() => setStep(source.format === "generic" ? "mapping" : "intake")}
             onAnalyze={analyzeTrace}
           />
         ) : null}
@@ -719,14 +822,14 @@ function IntakeStep({
         </h1>
         <p className="intro-copy">
           {mode === "trace"
-            ? "Add the execution trace, then compare it with the authority the manager approved. The policy rules produce the verdict. Granite can help word the receipt once those rules have finished."
+            ? "Add the execution log, map unfamiliar JSON fields explicitly when needed, then compare the observed actions with the authority the manager approved. Deterministic policy rules produce the verdict."
               : "Import a receipt or evidence packet. This browser hashes the exact file and replays its accounting, policy result, cited claims, and packet manifest without credentials or a network call."}
         </p>
         <div className="trust-note">
           <span aria-hidden="true">{mode === "trace" ? "01" : "V1"}</span>
           <p>
             {mode === "trace"
-              ? "Your source trace stays in this browser session. The server route recomputes the findings and sends Granite only the minimized, redacted facts needed to draft the receipt."
+              ? "Your source log stays in this browser session. Original bytes are hashed unchanged; unfamiliar fields are never interpreted until you confirm their meaning."
               : "A passing report proves internal consistency, not authenticity. It cannot establish who created the export, whether the trace was complete, or whether the original trace bytes were trustworthy."}
           </p>
         </div>
@@ -765,7 +868,7 @@ function IntakeStep({
             <p className="section-number">Step 01</p>
             <h2 id="choose-trace-title">Choose a trace</h2>
           </div>
-          <p>Native Trace v1 or supported OTLP/JSON · 2 MiB max</p>
+          <p>Native, OTLP/JSON, or mapped JSON records · 2 MiB max</p>
         </div>
 
         {error ? <ErrorSummary error={error} /> : null}
@@ -811,7 +914,7 @@ function IntakeStep({
             />
           </div>
           <div className="paste-field">
-            <label htmlFor="trace-json">Paste trace JSON</label>
+            <label htmlFor="trace-json">Paste agent log JSON</label>
             <textarea
               id="trace-json"
               name="trace-json"
@@ -823,7 +926,7 @@ function IntakeStep({
               placeholder={'{\n  "schemaVersion": "agent-receipt.native-trace.v1"\n}' }
             />
             <div className="field-action-row">
-              <p id="trace-json-help">Paste one UTF-8 JSON object. Native Trace v1 and the documented OTLP resourceSpans shape are supported; JSONL and remote URLs are not.</p>
+              <p id="trace-json-help">Paste one UTF-8 JSON object or array. Native and documented OTLP shapes open directly; other record arrays open an explicit mapping step. JSONL and remote URLs are not supported.</p>
               <button className="secondary-button" type="button" onClick={onUsePaste}>
                 Use pasted trace
               </button>
@@ -1054,6 +1157,17 @@ function SampleButton(props: {
   );
 }
 
+function formatTraceFormat(format: TraceSource["format"]): string {
+  switch (format) {
+    case "native":
+      return "Native Trace v1";
+    case "otlp":
+      return "Documented OTLP/JSON";
+    case "generic":
+      return "Generic JSON · explicit map";
+  }
+}
+
 type AuthorityStepProps = {
   source: TraceSource;
   draft: AuthorityDraft;
@@ -1085,8 +1199,12 @@ function AuthorityStep(props: AuthorityStepProps) {
   return (
     <div className="authority-layout">
       <aside className="authority-context">
-        <button className="back-button" type="button" onClick={props.onBack}>← Back to trace</button>
-        <p className="section-number">Step 02</p>
+        <button className="back-button" type="button" onClick={props.onBack}>
+          {props.source.format === "generic" ? "← Back to mapping" : "← Back to trace"}
+        </button>
+        <p className="section-number">
+          Step {props.source.format === "generic" ? "03" : "02"}
+        </p>
         <h1>Set the authority for this review.</h1>
         <p>
           The manager&rsquo;s rules for the run are recorded here and evaluated as written.
@@ -1094,6 +1212,7 @@ function AuthorityStep(props: AuthorityStepProps) {
         <dl className="source-facts">
           <div><dt>Trace</dt><dd>{props.source.label}</dd></div>
           <div><dt>Input</dt><dd>{formatTraceSourceLabel(props.source.kind)}</dd></div>
+          <div><dt>Format</dt><dd>{formatTraceFormat(props.source.format)}</dd></div>
           <div><dt>File size</dt><dd>{props.source.bytes.byteLength.toLocaleString()} bytes</dd></div>
         </dl>
       </aside>
@@ -1271,7 +1390,7 @@ function AuthorityStep(props: AuthorityStepProps) {
 
           <div className="form-submit-row">
             <p>
-              The original bytes are hashed before the trace is mapped and checked against this authority.
+              The original bytes are hashed before the trace is mapped and checked against this authority. Generic mappings remain attached to the receipt.
             </p>
             <button
               className="primary-button"

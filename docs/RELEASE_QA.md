@@ -2,9 +2,9 @@
 
 **Snapshot:** August 29, 2026
 
-**Scope:** Policy Decision Ledger release candidate and presentation repairs, with local evidence kept separate from the previously verified Portable Evidence Packet v1 product release `2dee60545e18bea965afd2bb381eb9d918af8a98`
+**Scope:** Generic JSON Adapter release candidate, with local evidence kept separate from the previously verified Policy Decision Ledger product release `27e740cfafd31a0e5f07162ddf79dd4b9ba86aea`
 
-**Decision:** The candidate passed the complete automated gate, reproducible evaluation, strict UI scan, and focused responsive browser checks. This ledger records local evidence; exact hosted status remains a mutable external fact that must be verified against the release commit after a push. Release `2dee60545e18bea965afd2bb381eb9d918af8a98` remains the separately verified public baseline until that check is recorded.
+**Decision:** The candidate passed the complete automated gate, reproducible evaluation, strict UI scan, and a full generic-log browser journey. This ledger records local evidence; exact hosted status remains a mutable external fact that must be verified against the release commit after a push. Release `27e740cfafd31a0e5f07162ddf79dd4b9ba86aea` remains the separately verified public baseline until that check is recorded.
 
 This ledger separates automated evidence from browser, manual-accessibility, live-service, deployment, and submission evidence. A checked local test does not prove an unexecuted layer.
 
@@ -12,9 +12,10 @@ This ledger separates automated evidence from browser, manual-accessibility, liv
 
 | Check | Latest result | What it supports |
 |---|---|---|
-| Local candidate `npm run verify` | August 29: lint with zero warnings, strict TypeScript, 21 test files and 351 tests, production build, release audit across 83 source files, 143 build files, 474 dependency entries, and 11 media assets | The Policy Decision Ledger, pluralization repair, source-ledger rail repair, and unchanged trust contracts pass locally; this is not hosted evidence |
-| Local candidate `npm run eval` | One evaluation test covering four declared cases and 36 policy decisions passed on August 29 | The ledger records six deviations, 25 no findings, one unable-to-assess outcome, and four inactive outcomes across the declared synthetic corpus |
-| Local candidate strict UI scan | 32 source files, 0 errors, 0 warnings | Source-level UI heuristics only; not rendered or assistive-technology proof |
+| Local candidate `npm run verify` | August 29: lint with zero warnings, strict TypeScript, 24 test files and 364 tests, production build, release audit across 90 source files, 143 build files, 474 dependency entries, and 11 media assets | The Generic JSON Adapter, existing receipt contracts, and release-safety boundaries pass locally; this is not hosted evidence |
+| Local candidate `npm run eval` | One evaluation test covering five declared cases, 25 accounted raw records, 22 canonical events, and 45 policy decisions passed on August 29 | The generic example maps 10 of 10 records and reaches the same qualified clean result as its native equivalent |
+| Local candidate strict UI scan | 64 source files, 0 errors, 0 warnings | Source-level UI heuristics only; not rendered or assistive-technology proof |
+| Previously deployed Policy Decision Ledger CI | [Run `33236376079`](https://github.com/mihirduvedi/agent-receipt/actions/runs/33236376079) passed for exact product SHA `27e740cfafd31a0e5f07162ddf79dd4b9ba86aea` on August 29 | A clean hosted install and complete gate passed for the public baseline immediately before this adapter candidate |
 | `npm run verify` | Portable Evidence Packet v1 passed locally and in exact-SHA hosted CI on August 28: lint with zero warnings, strict TypeScript, 20 test files and 346 tests, production build, release audit across 80 source files, 143 build files, 474 dependency entries, and 11 media assets | The tested deterministic, packet, UI-helper, build, and release-safety contracts reproduce in a clean hosted runner; this is not browser or live-provider proof |
 | GitHub Actions `CI` | [Run `33227804643`](https://github.com/mihirduvedi/agent-receipt/actions/runs/33227804643) passed for exact product SHA `2dee60545e18bea965afd2bb381eb9d918af8a98` on August 28 | A clean hosted install and complete `npm run verify` passed for the deployed packet release |
 | `npm run eval` | One evaluation test covering four declared cases passed on August 28 | Synthetic verdict, rule-family, accounting, deterministic replay, citation, fallback, OTLP limitation, evidence-gap, and Recovery Plan v1 assertions passed |
@@ -22,7 +23,13 @@ This ledger separates automated evidence from browser, manual-accessibility, liv
 | Strict UI static scan | Packet release scan: 31 source files, 0 errors, 0 warnings | Source-level UI heuristics only; not rendered or assistive-technology proof |
 | Markdown local-link audit | 52 local links checked across 17 repository Markdown files, 0 missing | Current judge-facing repository links resolve locally |
 
-The full suite covers exact-byte digest behavior, native and narrow OTLP adaptation/accounting, deterministic policy rules, incident grouping, recovery proposals, Recovery Plan v1 binding and citation closure, Granite fact minimization/redaction/selection validation/fallback/token caching, route media and body limits, receipt orchestration and export validation, all declared fixtures, portable-receipt replay and failure boundaries, the synthetic evaluation corpus, release-source enumeration, and deterministic UI view helpers.
+The full suite covers exact-byte digest behavior, native, narrow OTLP, and explicitly mapped generic JSON adaptation/accounting; deterministic policy rules; incident grouping; recovery proposals; Recovery Plan v1 binding and citation closure; Granite fact minimization/redaction/selection validation/fallback/token caching; route media and body limits; receipt orchestration and export validation; all declared fixtures; portable-receipt replay and failure boundaries; the synthetic evaluation corpus; release-source enumeration; and deterministic UI view helpers.
+
+## Generic JSON Adapter release candidate
+
+The adapter accepts one reviewer-selected action-record array from a UTF-8 JSON object or root array. Structural suggestions remain inert until the reviewer confirms RFC 6901 field pointers and typed operation, status, state-change, actor-type, and boundary translations. Every selected item becomes one canonical event or one material-unparsed accounting record. The validated mapping manifest remains in receipt integrity, and Granite never participates in ingestion.
+
+Focused generic-log tests passed 27 of 27 checks across adapter, mapping-view, example-equivalence, and intake suites. The local production browser mapped the 5,363-byte vendor-shaped example at SHA-256 `e5648722f62afccffcd40274f3b9c72a5c5c927f751c5b6ced7173003d90d0e1`: 10 selected, 10 mapped, zero unparsed, six systems, four state changes, one external event, one prior human approval, and zero findings. Raw evidence opened at `/activity_log/0`, closing the drawer restored focus, document width matched the 1280 × 720 viewport, and browser warning/error logs were empty. Earlier responsive checks covered the mapping interface at 390 × 844 without document overflow. These results establish the supplied example and reviewed manifest, not universal zero-configuration parsing or trace completeness.
 
 ## Policy Decision Ledger release candidate
 
@@ -71,9 +78,9 @@ Focused production-build and development-browser checks covered:
 
 The deployed incomplete fixture built an **Authority assessment incomplete** receipt in deterministic fallback mode, displayed 3/3 accounting with the 1/1/1 split, retained both evidence gaps and all three raw records, matched the 1280-pixel viewport width, and logged no browser errors. Local checks retain the wider responsive and evidence-drawer evidence. Cross-browser behavior, a physical-device result, and a real screen-reader experience remain unverified.
 
-## Current public deployment
+## Previously verified Portable Evidence Packet deployment
 
-Verified product target: <https://receipt-one-flax.vercel.app>, exact feature-bearing product commit `2dee60545e18bea965afd2bb381eb9d918af8a98`, synthetic fixtures only. Vercel target `54zjcRQwWTDw66vdRGrSaCE7yaed` reported **Deployment has completed** and a successful exact-SHA commit status.
+Historical verified product target: <https://receipt-one-flax.vercel.app>, exact packet feature commit `2dee60545e18bea965afd2bb381eb9d918af8a98`, synthetic fixtures only. Vercel target `54zjcRQwWTDw66vdRGrSaCE7yaed` reported **Deployment has completed** and a successful exact-SHA commit status. Newer release evidence supersedes this entry only when its exact hosted SHA and browser results are recorded.
 
 - The alias returned HTTP 200 on August 28.
 - Vercel reported **Deployment has completed** for the exact SHA.

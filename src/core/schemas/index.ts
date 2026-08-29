@@ -8,6 +8,8 @@ export const AUTHORITY_SCHEMA_VERSION =
 export const CANONICAL_EVENT_SCHEMA_VERSION =
   "agent-receipt.canonical-event.v1" as const;
 export const RECEIPT_SCHEMA_VERSION = "agent-receipt.receipt.v1" as const;
+export const GENERIC_JSON_MAPPING_SCHEMA_VERSION =
+  "agent-receipt.generic-json-mapping.v1" as const;
 export const VERDICT_QUALIFIER =
   "Based on the supplied trace and authority envelope." as const;
 
@@ -52,6 +54,138 @@ export const CanonicalOperationSchema = z.enum([
   "unknown",
 ]);
 export type CanonicalOperation = z.infer<typeof CanonicalOperationSchema>;
+
+// ─── Explicit generic JSON mapping v1 ───────────────────────────────────────
+
+/**
+ * RFC 6901 JSON Pointer syntax. The empty string addresses the root document;
+ * field pointers below deliberately require at least one path segment.
+ */
+export const JsonPointerSchema = z.string().refine(
+  (value) =>
+    value === "" || /^(?:\/(?:[^~/]|~0|~1)*)+$/.test(value),
+  { message: "Use an RFC 6901 JSON Pointer such as /records or /event/id." },
+);
+
+const GenericFieldPointerSchema = JsonPointerSchema.refine(
+  (value) => value !== "",
+  { message: "Choose a field inside each source record." },
+);
+
+const GenericStringSourceSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("path"),
+      pointer: GenericFieldPointerSchema,
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("constant"),
+      value: NonBlankStringSchema,
+    })
+    .strict(),
+]);
+
+const GenericActorTypeSourceSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("path"),
+      pointer: GenericFieldPointerSchema,
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("constant"),
+      value: z.enum(["agent", "workflow", "tool", "human"]),
+    })
+    .strict(),
+]);
+
+export const GenericJsonMappingSchema = z
+  .object({
+    schemaVersion: z.literal(GENERIC_JSON_MAPPING_SCHEMA_VERSION),
+    recordsPointer: JsonPointerSchema,
+    run: z
+      .object({
+        traceId: NonBlankStringSchema,
+        agent: z
+          .object({
+            id: NonBlankStringSchema,
+            name: NonBlankStringSchema.optional(),
+            version: NonBlankStringSchema.optional(),
+          })
+          .strict(),
+        startedAt: Rfc3339Schema,
+        completedAt: Rfc3339Schema.optional(),
+        status: z.enum(["succeeded", "failed", "cancelled", "unknown"]),
+      })
+      .strict(),
+    fields: z
+      .object({
+        sourceEventId: GenericFieldPointerSchema.optional(),
+        parentEventId: GenericFieldPointerSchema.optional(),
+        timestamp: z
+          .object({
+            pointer: GenericFieldPointerSchema,
+            format: z.enum([
+              "rfc3339",
+              "unix-seconds",
+              "unix-milliseconds",
+              "unix-nanoseconds",
+            ]),
+          })
+          .strict(),
+        actorId: GenericStringSourceSchema,
+        actorType: GenericActorTypeSourceSchema,
+        operation: GenericFieldPointerSchema,
+        toolName: GenericFieldPointerSchema.optional(),
+        sourceSystem: GenericFieldPointerSchema.optional(),
+        destinationSystem: GenericFieldPointerSchema.optional(),
+        destinationBoundary: GenericFieldPointerSchema.optional(),
+        resourceType: GenericFieldPointerSchema.optional(),
+        dataCategories: GenericFieldPointerSchema.optional(),
+        quantityValue: GenericFieldPointerSchema.optional(),
+        quantityUnit: z
+          .enum(["records", "messages", "bytes", "files"])
+          .optional(),
+        stateChange: GenericFieldPointerSchema,
+        status: GenericFieldPointerSchema,
+        approvalRef: GenericFieldPointerSchema.optional(),
+        actionKey: GenericFieldPointerSchema.optional(),
+        attempt: GenericFieldPointerSchema.optional(),
+      })
+      .strict()
+      .superRefine((fields, context) => {
+        if ((fields.quantityValue === undefined) !== (fields.quantityUnit === undefined)) {
+          context.addIssue({
+            code: "custom",
+            path: ["quantityValue"],
+            message: "Quantity value and unit must be supplied together.",
+          });
+        }
+      }),
+    values: z
+      .object({
+        operations: z.record(z.string(), CanonicalOperationSchema),
+        statuses: z.record(
+          z.string(),
+          z.enum(["started", "succeeded", "failed", "cancelled", "unknown"]),
+        ),
+        stateChanges: z.record(z.string(), z.boolean()),
+        actorTypes: z.record(
+          z.string(),
+          z.enum(["agent", "workflow", "tool", "human"]),
+        ),
+        boundaries: z.record(
+          z.string(),
+          z.enum(["local", "internal", "external", "unknown"]),
+        ),
+      })
+      .strict(),
+  })
+  .strict();
+export type GenericJsonMapping = z.infer<typeof GenericJsonMappingSchema>;
 
 // ─── Native trace v1 ─────────────────────────────────────────────────────────
 
@@ -236,6 +370,7 @@ const IntegrityMetadataBaseSchema = z.object({
   canonicalEventSchemaVersion: z.literal(CANONICAL_EVENT_SCHEMA_VERSION),
   receiptSchemaVersion: z.literal(RECEIPT_SCHEMA_VERSION),
   generatedAt: Rfc3339Schema,
+  genericJsonMapping: GenericJsonMappingSchema.optional(),
 });
 
 export const IntegrityMetadataSchema = z.discriminatedUnion(
@@ -547,7 +682,10 @@ export const ReceiptExportSchema = z
         receipt.integrity.schemaVersion === NATIVE_TRACE_SCHEMA_VERSION) ||
       (receipt.integrity.inputFormat === "otlp-json-resource-spans.v1" &&
         receipt.integrity.schemaVersion ===
-          "opentelemetry.proto.collector.trace.v1.ExportTraceServiceRequest");
+          "opentelemetry.proto.collector.trace.v1.ExportTraceServiceRequest") ||
+      (receipt.integrity.inputFormat === "generic-json-records.v1" &&
+        receipt.integrity.schemaVersion === "unversioned-json" &&
+        receipt.integrity.genericJsonMapping !== undefined);
     if (!inputContractMatches) {
       context.addIssue({
         code: "custom",

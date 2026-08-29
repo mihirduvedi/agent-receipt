@@ -100,6 +100,28 @@ describe("receipt UI view helpers", () => {
     expect(malformed.message).toContain("supported resourceSpans shape");
   });
 
+  it("routes unfamiliar JSON record arrays into explicit mapping", () => {
+    const document = {
+      export: {
+        actions: [{ id: "one", action: "read", at: "2026-08-28T18:00:00Z" }],
+      },
+    };
+    const accepted = validateTraceBytes(
+      new TextEncoder().encode(JSON.stringify(document)),
+      MAX_TRACE_BYTES,
+    );
+    expect(accepted.ok).toBe(true);
+    if (!accepted.ok) return;
+    expect(accepted.format).toBe("generic");
+    if (accepted.format !== "generic") return;
+    expect(accepted.inspection.recordSets[0]).toEqual(
+      expect.objectContaining({ pointer: "/export/actions", recordCount: 1 }),
+    );
+    expect(resolveRawPointer(document, "/export/actions/0")).toEqual(
+      document.export.actions[0],
+    );
+  });
+
   it("maps authority drafts through the authoritative Zod boundary", () => {
     const valid = validateAuthorityDraft(authorityToDraft(sharedAuthority));
     expect(valid).toEqual({ ok: true, authority: sharedAuthority });

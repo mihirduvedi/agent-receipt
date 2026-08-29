@@ -4,6 +4,11 @@ import {
   NativeTraceV1Schema,
 } from "../core/schemas/index";
 import { OtlpExportTraceServiceRequestSchema } from "../adapters/otlpGenAi";
+import {
+  inspectGenericJson,
+  resolveJsonPointer,
+} from "../adapters/genericJson";
+import type { GenericJsonInspection } from "../adapters/genericJson";
 import type {
   RecoveryAction,
   RecoveryIncident,
@@ -49,6 +54,12 @@ export type AuthorityDraft = {
 export type IntakeValidation =
   | { ok: true; format: "native"; trace: NativeTraceV1 }
   | { ok: true; format: "otlp" }
+  | {
+      ok: true;
+      format: "generic";
+      rawDocument: unknown;
+      inspection: GenericJsonInspection;
+    }
   | {
       ok: false;
       code: "input_too_large" | "invalid_utf8" | "invalid_json" | "unsupported_format" | "invalid_trace";
@@ -164,11 +175,11 @@ export function validateTraceBytes(
       ok: false,
       code: "unsupported_format",
       message:
-        "This schema is not supported. Use Native Trace v1 or the documented OTLP/JSON resourceSpans shape.",
+        "This schema is not supported. Use a JSON object or array containing action records.",
     };
   }
 
-  if ("resourceSpans" in rawDocument) {
+  if (!Array.isArray(rawDocument) && "resourceSpans" in rawDocument) {
     const otlp = OtlpExportTraceServiceRequestSchema.safeParse(rawDocument);
     if (!otlp.success) {
       return {
@@ -185,31 +196,36 @@ export function validateTraceBytes(
   }
 
   if (
-    !("schemaVersion" in rawDocument) ||
-    rawDocument.schemaVersion !== "agent-receipt.native-trace.v1"
+    !Array.isArray(rawDocument) &&
+    "schemaVersion" in rawDocument &&
+    rawDocument.schemaVersion === "agent-receipt.native-trace.v1"
   ) {
-    return {
-      ok: false,
-      code: "unsupported_format",
-      message:
-        "This schema is not supported. Use Native Trace v1 or the documented OTLP/JSON resourceSpans shape.",
-    };
+    const trace = NativeTraceV1Schema.safeParse(rawDocument);
+    if (!trace.success) {
+      return {
+        ok: false,
+        code: "invalid_trace",
+        message: "Some trace fields are invalid. Review the fields listed below.",
+        issues: trace.error.issues.map((issue) => ({
+          path: issue.path.length > 0 ? issue.path.join(".") : "trace",
+          message: issue.message,
+        })),
+      };
+    }
+    return { ok: true, format: "native", trace: trace.data };
   }
 
-  const trace = NativeTraceV1Schema.safeParse(rawDocument);
-  if (!trace.success) {
-    return {
-      ok: false,
-      code: "invalid_trace",
-      message: "Some trace fields are invalid. Review the fields listed below.",
-      issues: trace.error.issues.map((issue) => ({
-        path: issue.path.length > 0 ? issue.path.join(".") : "trace",
-        message: issue.message,
-      })),
-    };
+  const inspection = inspectGenericJson(rawDocument);
+  if (inspection.recordSets.length > 0) {
+    return { ok: true, format: "generic", rawDocument, inspection };
   }
 
-  return { ok: true, format: "native", trace: trace.data };
+  return {
+    ok: false,
+    code: "unsupported_format",
+    message:
+      "No non-empty JSON record array was found. Use Native Trace v1, the documented OTLP/JSON shape, or an object/array containing action records.",
+  };
 }
 
 export function authorityToDraft(
@@ -719,6 +735,9 @@ export function resolveRawPointer(
   rawDocument: unknown,
   rawPointer: string,
 ): unknown {
+  if (rawPointer.startsWith("/")) {
+    return resolveJsonPointer(rawDocument, rawPointer);
+  }
   if (typeof rawDocument !== "object" || rawDocument === null) {
     return undefined;
   }

@@ -31,8 +31,37 @@ import {
   buildRecoveryPlan,
   exactFixtureBytes,
 } from "../ui/receiptView";
+import genericReleaseLog from "../../examples/codex-policy-ledger-release-generic-log.json";
+import genericReleaseMapping from "../../examples/codex-policy-ledger-release-generic-mapping.json";
+import type { AuthorityEnvelopeV1 } from "../core/schemas/index";
 
 const EVALUATION_TIME = "2026-08-27T23:00:00.000Z";
+
+const releaseAuthority: AuthorityEnvelopeV1 = {
+  schemaVersion: "agent-receipt.authority.v1",
+  policyId: "policy-codex-release-001",
+  task: "Inspect and improve Agent Receipt, verify the exact candidate, then commit, push, and deploy only after explicit human approval.",
+  permittedSystems: [
+    { systemId: "local-workspace", boundary: "local" },
+    { systemId: "local-shell", boundary: "local" },
+    { systemId: "git-local", boundary: "local" },
+    { systemId: "github", boundary: "external" },
+    { systemId: "github-actions", boundary: "external" },
+    { systemId: "vercel", boundary: "external" },
+  ],
+  permittedOperations: [
+    "read",
+    "retrieve",
+    "create",
+    "update",
+    "send",
+    "execute",
+    "approve",
+  ],
+  prohibitedDataCategories: [],
+  externalEgressAllowed: true,
+  approvalRequiredFor: ["send"],
+};
 
 type EvaluationCase = {
   name: string;
@@ -50,6 +79,7 @@ export type HackathonEvaluationResult = {
     canonicalEvents: number;
     nativeCases: number;
     otlpCases: number;
+    genericCases: number;
   };
   seededPolicyRules: {
     expected: string[];
@@ -75,6 +105,7 @@ export type HackathonEvaluationResult = {
     invalidCitationRejected: boolean;
     invalidGraniteSelectionFellBack: boolean;
     materialUnparsedSpanForcedIncompleteVerdict: boolean;
+    genericMappedExamplePassed: boolean;
   };
   recoveryPlan: {
     incidents: number;
@@ -126,6 +157,16 @@ export async function runHackathonEvaluation(): Promise<HackathonEvaluationResul
       { now: () => EVALUATION_TIME },
     ),
   );
+  const genericReceipt = await requireReceipt(
+    buildReceipt(
+      {
+        rawBytes: formattedBytes(genericReleaseLog),
+        authority: releaseAuthority,
+        genericJsonMapping: genericReleaseMapping,
+      },
+      { now: () => EVALUATION_TIME },
+    ),
+  );
 
   const cases: EvaluationCase[] = [
     {
@@ -147,6 +188,11 @@ export async function runHackathonEvaluation(): Promise<HackathonEvaluationResul
       name: "incomplete OTLP evidence",
       receipt: incompleteReceipt,
       expectedVerdict: "unable_to_assess_fully",
+    },
+    {
+      name: "explicitly mapped generic JSON release log",
+      receipt: genericReceipt,
+      expectedVerdict: "within_declared_authority",
     },
   ];
 
@@ -249,6 +295,10 @@ export async function runHackathonEvaluation(): Promise<HackathonEvaluationResul
           item.receipt.integrity.inputFormat ===
           "otlp-json-resource-spans.v1",
       ).length,
+      genericCases: cases.filter(
+        (item) =>
+          item.receipt.integrity.inputFormat === "generic-json-records.v1",
+      ).length,
     },
     seededPolicyRules: {
       expected: expectedRuleIds,
@@ -299,6 +349,11 @@ export async function runHackathonEvaluation(): Promise<HackathonEvaluationResul
       materialUnparsedSpanForcedIncompleteVerdict:
         incompleteReceipt.verdict === "unable_to_assess_fully" &&
         incompleteReceipt.coverage.unparsed === 1,
+      genericMappedExamplePassed:
+        genericReceipt.verdict === "within_declared_authority" &&
+        genericReceipt.coverage.rawEvents === 10 &&
+        genericReceipt.coverage.mapped === 10 &&
+        genericReceipt.integrity.genericJsonMapping !== undefined,
     },
     recoveryPlan: {
       incidents: recoveryPlan.incidents.length,
@@ -332,7 +387,8 @@ export async function runHackathonEvaluation(): Promise<HackathonEvaluationResul
           (gate) => gate.id === "embedded_receipt_replay",
         )?.status === "failed",
     },
-  };
+};
+
 }
 
 function policyLedgerFor(receipt: ReceiptResult): PolicyDecisionLedger {

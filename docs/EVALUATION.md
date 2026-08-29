@@ -6,18 +6,19 @@ This report records a reproducible automated evaluation of the current prototype
 
 | Check | Result |
 |---|---:|
-| Expected deterministic verdicts | 4 / 4 |
+| Expected deterministic verdicts | 5 / 5 |
 | Seeded authority-rule detections | 6 / 6 |
-| Policy Decision Ledger | 36 / 36 decisions recorded across 4 cases |
-| Ledger outcomes | 6 deviations, 25 no findings, 1 unable to assess, 4 not active |
-| Raw records explicitly accounted for | 15 / 15 |
+| Policy Decision Ledger | 45 / 45 decisions recorded across 5 cases |
+| Ledger outcomes | 6 deviations, 31 no findings, 1 unable to assess, 7 not active |
+| Raw records explicitly accounted for | 25 / 25 |
 | Known native-trace SHA-256 digests | 2 / 2 |
-| Receipt schemas accepted | 4 / 4 |
-| Generated receipt items with valid citations | 22 |
+| Receipt schemas accepted | 5 / 5 |
+| Generated receipt items with valid citations | 24 |
 | Byte-identical deterministic replay | Passed |
 | Invented citation rejected | Passed |
 | Invalid Granite selection rejected with usable fallback | Passed |
 | Material unparsed OTLP span forced an incomplete verdict | Passed |
+| Explicitly mapped generic JSON records | 10 / 10 mapped; clean qualified verdict |
 | Recovery plan receipt binding and deterministic replay | Passed |
 | Recovery plan evidence closure | 2 incidents, 6 actions, 3 events, 12 findings |
 | Recovery plan execution boundary | Closed: not executed, current state unknown, approval required |
@@ -43,8 +44,9 @@ The executable corpus and assertions live in `src/evaluation/hackathonEvaluation
 | Native overreaching run | Agent Receipt Native Trace v1, 6 raw events | `material_deviations_found` | Seeds six policy-rule families and checks that each is detected. |
 | Narrow OTLP GenAI export | OTLP/JSON `resourceSpans`, 3 raw spans | `within_declared_authority` | Confirms the documented external adapter path and metadata-only accounting. |
 | Incomplete OTLP evidence | OTLP/JSON `resourceSpans`, 3 raw spans | `unable_to_assess_fully` | Confirms that a material unmapped action and unknown run termination stop the assessment without dropping source records. |
+| Explicit generic JSON release log | Vendor-shaped `activity_log`, 10 raw records + versioned mapping manifest | `within_declared_authority` | Confirms that an unrelated field structure reaches the same deterministic authority result when its semantics are explicitly mapped. |
 
-Across the corpus, all 15 raw records are classified as mapped, metadata-only, or unparsed. Twelve become canonical events. The incomplete case still accounts for all three source spans: one maps, one stays metadata-only, and one material action remains unparsed.
+Across the corpus, all 25 raw records are classified as mapped, metadata-only, or unparsed. Twenty-two become canonical events. The incomplete case still accounts for all three source spans: one maps, one stays metadata-only, and one material action remains unparsed. The generic case maps all ten vendor-shaped records and retains the exact mapping manifest with receipt integrity.
 
 ## Seeded rule coverage
 
@@ -72,6 +74,7 @@ The harness also changes inputs or generated output to verify failure behavior:
 7. The Portable Receipt Verifier accepts valid exports from the clean, overreaching, and incomplete fixtures; catches exact-byte changes; rejects oversize, invalid UTF-8, invalid JSON, and non-receipt input; and detects altered verdicts, findings, accounting, and citations.
 8. Portable Evidence Packet v1 deterministically serializes a manager brief, receipt, and recovery plan. The evaluation replays all three manifest entries, the full embedded receipt, and the recovery binding, then changes one deterministic finding and confirms both manifest and policy replay fail.
 9. The Policy Decision Ledger records nine check families for every corpus case. The expected run shows nine no-finding outcomes, the overreaching run keeps six fired checks beside three non-fired checks, and the incomplete run separates one unable-to-assess check from two inactive constraints.
+10. The generic case loads a non-native `activity_log` plus `agent-receipt.generic-json-mapping.v1`, verifies all ten records map, and produces the same qualified clean result as its equivalent Native Trace example.
 
 These checks protect the product's central claim: uncertainty is exposed rather than filled in by a model.
 
@@ -80,6 +83,7 @@ These checks protect the product's central claim: uncertainty is exposed rather 
 - It is not a production benchmark, penetration test, legal-compliance assessment, or independent audit.
 - It does not measure manager task time, usability, false-positive rates on real traces, or performance at scale.
 - It does not claim universal OpenTelemetry compatibility; the OTLP adapter supports one documented JSON shape and a small GenAI/action semantic profile.
+- It does not claim that arbitrary logs contain enough facts. The generic adapter broadens field structure through explicit reviewer mapping; missing or ambiguous semantics remain unknown or unparsed.
 - It does not compare Granite with other models. Granite is optional and cannot change the deterministic verdict.
 - A passing portable-verifier report establishes internal receipt consistency, not exporter identity, trace completeness, trusted capture, original trace bytes, or signed provenance.
 - The evidence-packet manifest is unsigned. A passing packet is not an authenticity, tamper-proof provenance, digital-signature, or nonrepudiation result.

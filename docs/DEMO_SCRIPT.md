@@ -84,6 +84,10 @@ Target length: 2 minutes 58 seconds. Record at 1280 × 720 or higher. Keep the b
 
 “IBM Bob built the trust-critical foundation. Granite adds a bounded runtime layer. Agent Receipt shows what the evidence proves, where it stops, and whether the complete handoff still agrees with itself.”
 
+## Optional general-log proof
+
+If a judge asks whether the product only accepts its own fixture shape, upload `examples/codex-policy-ledger-release-generic-log.json`. Select `/activity_log`, review the explicit field and value translations, expand **Additional policy evidence**, and apply the paths documented in `docs/GENERIC_JSON_ADAPTER.md`. The preview must report **10 mapped / 0 unparsed** before continuing. Explain that the adapter generalizes structure, not meaning: it never guesses an operation, status, state change, actor, or authority rule, and it retains the reviewed mapping manifest with the receipt.
+
 ## Recording checks
 
 - Keep the final cut at or below three minutes, including title and end cards.

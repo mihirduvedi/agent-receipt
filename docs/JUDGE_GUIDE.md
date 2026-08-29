@@ -6,9 +6,9 @@ Agent Receipt is a post-run review tool for an AI operations manager. It compare
 
 **Public repository:** <https://github.com/mihirduvedi/agent-receipt>
 
-**Current public release:** Portable Evidence Packet v1 at product commit `2dee60545e18bea965afd2bb381eb9d918af8a98`. Exact-SHA GitHub Actions run `33227804643`, Vercel deployment status, the packet download, both verifier formats, and the altered-artifact failure passed on August 28, 2026.
+**Current codebase:** The Generic JSON Adapter extends post-run review to record-oriented JSON logs through an explicit, retained mapping manifest. The exact hosted SHA and post-deployment checks belong in `docs/RELEASE_QA.md`; repository code alone is not deployment evidence.
 
-**Local candidate:** Policy Decision Ledger adds a deterministic outcome for every manager-facing policy check. It is implemented and locally evaluated but is not part of the public release above until a separately approved commit, push, and deployment occur.
+**Previously verified hosted baseline:** The Policy Decision Ledger release at product commit `27e740cfafd31a0e5f07162ddf79dd4b9ba86aea` passed exact-SHA CI and Vercel deployment checks before this adapter release.
 
 ## If you have 30 seconds
 
@@ -32,6 +32,12 @@ The same deployed verifier retains the standalone receipt proof through **Verify
 
 The seeded run records six events. Three stay inside the declared authority. The other three capture an external spreadsheet attempt with an unknown result, its successful retry, and an unapproved customer-email send. Deterministic rules produce 12 findings and group them into two incidents without hiding the underlying queue.
 
+## If a judge brings a different JSON log
+
+Upload a JSON file whose actions are stored in an array of records. Agent Receipt inventories candidate arrays and scalar paths, but the reviewer must explicitly select the action array and translate the log's identifiers, timestamps, operations, statuses, state-change values, and actor fields. Each selected record is then mapped or retained as material-unparsed; nothing is silently dropped and no model supplies missing semantics. The reviewed manifest travels with the receipt. The bundled `examples/codex-policy-ledger-release-generic-log.json` and [mapping recipe](GENERIC_JSON_ADAPTER.md) provide a reproducible proof.
+
+This is broad structural interoperability, not a claim of universal zero-configuration parsing. Text transcripts, mixed multi-stream bundles, and logs without explicit semantic fields require a future format-specific adapter or user-authored preprocessing.
+
 ## What makes the project different
 
 Most trace tools show activity. Agent Receipt asks whether that activity stayed inside a specific authority envelope and gives the accountable human a bounded decision: accept, investigate, or reject.
@@ -54,7 +60,7 @@ Portable Evidence Packet v1 completes that handoff. One file carries the manager
 |---|---|
 | Technical execution | Exact-byte SHA-256, complete raw-event accounting, a strict four-status policy-decision contract, deterministic policy and verdict, three-artifact manifest replay, full embedded-receipt verification, server-only Granite route, full tests, production build, and release audit |
 | Innovation | Intent-versus-action reconciliation, a complete fired/non-fired/unknown/inactive policy register, deterministic evidence refusal, an inspectable AI boundary, and a self-checking manager handoff that catches altered deterministic claims |
-| Feasibility | Native Trace v1 plus a documented OTLP/JSON shape, credential-free fallback, one complete evidence-packet export, and browser-only receipt or packet verification with no service dependency |
+| Feasibility | Native Trace v1, documented OTLP/JSON, and an explicit adapter for record-oriented generic JSON; credential-free fallback; one complete evidence-packet export; and browser-only receipt or packet verification with no service dependency |
 | Challenge fit | Decision support for managers reviewing work completed by AI collaborators, under the Future of Work wildcard theme |
 | Real-world impact | A manager can see what happened, what crossed authority, why the evidence may be insufficient, and what a controlled response workflow should review next |
 

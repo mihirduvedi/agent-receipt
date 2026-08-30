@@ -12,13 +12,13 @@ The product rule is simple: deterministic rules establish what happened relative
 
 The receipt puts the deterministic verdict, evidence scope, and manager attention queue first.
 
-**Live app:** [receipt-one-flax.vercel.app](https://receipt-one-flax.vercel.app) · **Submission video:** [watch the 2:09 demo](docs/media/agent-receipt-submission-video.mp4) · **60-second judge path:** [judge guide](docs/JUDGE_GUIDE.md) · **Public repository:** [GitHub](https://github.com/mihirduvedi/agent-receipt) · **Full guide:** [project guide](docs/PROJECT_GUIDE.md) ([PDF](output/pdf/agent-receipt-complete-project-guide.pdf))
+**Live app:** [receipt-one-flax.vercel.app](https://receipt-one-flax.vercel.app) · **Submission video:** [watch the 2:09 demo](https://drive.google.com/file/d/1a6-qbUImL2ZFOYaWq4reeaHr3TRfzV1U/view?usp=sharing) · **60-second judge path:** [judge guide](docs/JUDGE_GUIDE.md) · **Public repository:** [GitHub](https://github.com/mihirduvedi/agent-receipt) · **Full guide:** [project guide](docs/PROJECT_GUIDE.md) ([PDF](output/pdf/agent-receipt-complete-project-guide.pdf))
 
 ## Submission video
 
-[![Watch the Agent Receipt submission video](docs/screenshots/agent-receipt-overview.jpg)](docs/media/agent-receipt-submission-video.mp4)
+[![Watch the Agent Receipt submission video](docs/media/agent-receipt-submission-background.png)](https://drive.google.com/file/d/1a6-qbUImL2ZFOYaWq4reeaHr3TRfzV1U/view?usp=sharing)
 
-[Watch the 2:09 submission video](docs/media/agent-receipt-submission-video.mp4) for the complete problem, product workflow, evidence boundary, and IBM Bob/Granite story. [English captions](docs/media/agent-receipt-submission-video.en.srt) are available alongside the video.
+[Watch the 2:09 submission video in the public Google Drive player](https://drive.google.com/file/d/1a6-qbUImL2ZFOYaWq4reeaHr3TRfzV1U/view?usp=sharing) for the complete problem, product workflow, evidence boundary, and IBM Bob/Granite story. A [repository video copy](docs/media/agent-receipt-submission-video.mp4) and [English captions](docs/media/agent-receipt-submission-video.en.srt) are retained as download fallbacks.
 
 ## Bring your own agent log
 

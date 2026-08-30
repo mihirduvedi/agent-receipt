@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="700" viewBox="0 0 1920 700" role="img" aria-labelledby="title desc">
+  <title id="title">Agent Receipt submission background</title>
+  <desc id="desc">A product-led composition using the real Agent Receipt interface, its receipt-paper grid, red evidence band, and lime AR mark.</desc>
+  <defs>
+    <pattern id="ledger-grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M 64 0 L 0 0 0 64" fill="none" stroke="#c9ccc5" stroke-width="1" opacity="0.42"/>
+    </pattern>
+    <filter id="card-shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#171c1a" flood-opacity="0.18"/>
+    </filter>
+    <clipPath id="screen-clip">
+      <rect x="684" y="80" width="1088" height="612"/>
+    </clipPath>
+  </defs>
+
+  <rect width="1920" height="700" fill="#eeece3"/>
+  <rect x="480" width="1440" height="700" fill="url(#ledger-grid)"/>
+  <rect width="480" height="700" fill="#171c1a"/>
+  <rect x="480" y="506" width="1440" height="130" fill="#f7ded8"/>
+  <rect x="480" y="506" width="1440" height="2" fill="#c94330"/>
+  <rect x="480" y="634" width="1440" height="2" fill="#c94330"/>
+
+  <g aria-label="Agent Receipt brand mark">
+    <rect x="94" y="126" width="292" height="292" fill="#fbfaf5"/>
+    <rect x="116" y="148" width="248" height="248" fill="#c8f23f" stroke="#171c1a" stroke-width="5"/>
+    <text x="240" y="294" text-anchor="middle" dominant-baseline="middle" fill="#283400" font-family="Arial, Helvetica, sans-serif" font-size="104" font-weight="900" letter-spacing="-7">AR</text>
+  </g>
+
+  <g fill="#fbfaf5" opacity="0.9">
+    <rect x="116" y="456" width="248" height="4"/>
+    <rect x="116" y="480" width="178" height="4"/>
+    <rect x="116" y="504" width="214" height="4"/>
+  </g>
+  <rect x="116" y="554" width="74" height="18" fill="#c94330"/>
+  <rect x="202" y="554" width="162" height="18" fill="#fbfaf5"/>
+
+  <g filter="url(#card-shadow)">
+    <rect x="646" y="44" width="1164" height="682" fill="#fbfaf5" stroke="#171c1a" stroke-width="2"/>
+    <rect x="662" y="60" width="1132" height="650" fill="#171c1a"/>
+    <image href="../screenshots/agent-receipt-overview.jpg" x="684" y="80" width="1088" height="612" preserveAspectRatio="xMidYMid slice" clip-path="url(#screen-clip)"/>
+  </g>
+
+  <rect x="600" y="90" width="18" height="148" fill="#c8f23f"/>
+  <rect x="600" y="250" width="18" height="82" fill="#171c1a"/>
+  <rect x="600" y="344" width="18" height="44" fill="#c94330"/>
+  <path d="M 520 44 H 618 M 520 62 H 592" stroke="#171c1a" stroke-width="3"/>
+  <path d="M 520 660 H 618 M 544 678 H 618" stroke="#171c1a" stroke-width="3"/>
+</svg>

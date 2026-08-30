@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" role="img" aria-labelledby="icon-title icon-desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="icon-title icon-desc">
   <title id="icon-title">Agent Receipt AR icon</title>
-  <desc id="icon-desc">The lime AR monogram used by the Agent Receipt application.</desc>
-  <rect width="100" height="100" fill="#c8f23f"/>
-  <rect x="3" y="3" width="94" height="94" fill="none" stroke="#171c1a" stroke-width="3"/>
-  <text x="50" y="52" text-anchor="middle" dominant-baseline="middle" fill="#283400" font-family="Arial, Helvetica, sans-serif" font-size="39" font-weight="900" letter-spacing="-2">AR</text>
+  <desc id="icon-desc">A crop-safe circular version of the lime AR monogram used by the Agent Receipt application.</desc>
+  <circle cx="512" cy="512" r="480" fill="#171c1a"/>
+  <circle cx="512" cy="512" r="438" fill="#c8f23f"/>
+  <text x="500" y="528" text-anchor="middle" dominant-baseline="middle" fill="#283400" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="350" font-weight="900" letter-spacing="-16">AR</text>
 </svg>

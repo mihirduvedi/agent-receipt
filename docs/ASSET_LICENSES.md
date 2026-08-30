@@ -20,4 +20,4 @@ under the repository's proprietary [license](../LICENSE).
 - `docs/media/agent-receipt-submission-background.svg` — Agent Receipt Authors, 2026. Original submission artwork built from the project-owned overview screenshot and the shipped Agent Receipt visual system.
 - `docs/media/agent-receipt-submission-background.png` — Agent Receipt Authors, 2026. Raster export of the original submission background artwork.
 - `docs/media/agent-receipt-icon.svg` — Agent Receipt Authors, 2026. Original vector export of the shipped Agent Receipt `AR` brand mark.
-- `docs/media/agent-receipt-icon.png` — Agent Receipt Authors, 2026. 100-by-100-pixel raster export of the original project icon.
+- `docs/media/agent-receipt-icon.png` — Agent Receipt Authors, 2026. 1024-by-1024-pixel, crop-safe circular raster export of the original project icon.

@@ -12,7 +12,13 @@ The product rule is simple: deterministic rules establish what happened relative
 
 The receipt puts the deterministic verdict, evidence scope, and manager attention queue first.
 
-**Live app:** [receipt-one-flax.vercel.app](https://receipt-one-flax.vercel.app) · **60-second judge path:** [judge guide](docs/JUDGE_GUIDE.md) · **Public repository:** [GitHub](https://github.com/mihirduvedi/agent-receipt) · **Full guide:** [project guide](docs/PROJECT_GUIDE.md) ([PDF](output/pdf/agent-receipt-complete-project-guide.pdf))
+**Live app:** [receipt-one-flax.vercel.app](https://receipt-one-flax.vercel.app) · **Submission video:** [watch the 2:09 demo](docs/media/agent-receipt-submission-video.mp4) · **60-second judge path:** [judge guide](docs/JUDGE_GUIDE.md) · **Public repository:** [GitHub](https://github.com/mihirduvedi/agent-receipt) · **Full guide:** [project guide](docs/PROJECT_GUIDE.md) ([PDF](output/pdf/agent-receipt-complete-project-guide.pdf))
+
+## Submission video
+
+[![Watch the Agent Receipt submission video](docs/screenshots/agent-receipt-overview.jpg)](docs/media/agent-receipt-submission-video.mp4)
+
+[Watch the 2:09 submission video](docs/media/agent-receipt-submission-video.mp4) for the complete problem, product workflow, evidence boundary, and IBM Bob/Granite story. [English captions](docs/media/agent-receipt-submission-video.en.srt) are available alongside the video.
 
 ## Bring your own agent log
 
@@ -259,14 +265,14 @@ The MVP accepts one UTF-8 Agent Receipt Native Trace v1 document, one [narrow do
 
 The default experience requires no credentials. To test live watsonx.ai Granite instead of the deterministic fallback:
 
-1. In IBM watsonx.ai, get a project ID, regional base URL, and IAM API key (**Developer access** / **Administration → Access (IAM) → API keys**), and pick a provided, pay-per-token Granite model ID. As of August 2026, Dallas offers `ibm/granite-4-h-small`.
-2. Copy `.env.example` to `.env.local` (already git-ignored) and set `GRANITE_MODE=live` plus `WATSONX_API_KEY`, `WATSONX_PROJECT_ID`, `WATSONX_URL`, and `WATSONX_MODEL_ID`. Keep these server-only — never add a `NEXT_PUBLIC_` prefix, and never commit or paste the key anywhere. A public production deployment also requires the deliberate `GRANITE_ALLOW_PUBLIC_LIVE=true` opt-in after live release checks.
+1. In your own IBM watsonx.ai account, get a project ID, regional base URL, and IAM API key (**Developer access** / **Administration → Access (IAM) → API keys**), and pick a provided, pay-per-token Granite model ID. As of August 2026, Dallas offers `ibm/granite-4-h-small`. Repository clones contain no shared credential: whoever enables live mode pays through the IBM account associated with the credentials they supply.
+2. Copy `.env.example` to `.env.local` (already git-ignored) and set `GRANITE_MODE=live` plus `WATSONX_API_KEY`, `WATSONX_PROJECT_ID`, `WATSONX_URL`, and `WATSONX_MODEL_ID`. Keep these server-only — never add a `NEXT_PUBLIC_` prefix, and never commit or paste the key anywhere. Vercel production and preview deployments also require the deliberate `GRANITE_ALLOW_PUBLIC_LIVE=true` opt-in after live release checks.
 3. Restart `npm run dev` and run a sample. A successful call shows **Granite explanation** in the verdict source line and `granite` as the integrity record's copy source. An unreachable or misconfigured endpoint uses **Deterministic template** and keeps the review available.
 4. `npm run test:run -- tests/unit/granite.test.ts tests/unit/generateReceiptCopy.test.ts` covers the boundary's safety contracts without needing live credentials.
 
 The server uses watsonx.ai's Chat API. The older text-generation endpoint is deprecated, and withdrawn Granite model IDs should not be reused from older setup notes.
 
-For deployment, set the same five variables through the host's encrypted environment settings. The app is fully usable without them, in deterministic fallback mode.
+For deployment, set the same five variables through the host's encrypted environment settings. The app is fully usable without them, in deterministic fallback mode. Keep public live mode disabled unless the host also enforces request throttling and spend limits: this six-day MVP intentionally has no accounts or durable rate limiter, so a publicly enabled model route could otherwise be used by any visitor.
 
 ## Deployment
 

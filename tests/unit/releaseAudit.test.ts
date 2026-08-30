@@ -113,6 +113,7 @@ describe("release audit", () => {
     const result = auditAssetLicenses(
       [
         "README.md",
+        "docs/media/demo.mp4",
         "docs/screenshots/review.jpg",
         "public/diagram.svg",
         "src/app/icon.png",
@@ -121,6 +122,7 @@ describe("release audit", () => {
       [
         "# Asset licenses",
         "",
+        "- `docs/media/demo.mp4` — project-owned.",
         "- `docs/screenshots/review.jpg` — project-owned.",
         "- `public/diagram.svg` — project-owned.",
       ].join("\n"),
@@ -128,6 +130,7 @@ describe("release audit", () => {
 
     expect(result).toEqual({
       appAssets: [
+        "docs/media/demo.mp4",
         "docs/screenshots/review.jpg",
         "public/diagram.svg",
         "src/app/icon.png",

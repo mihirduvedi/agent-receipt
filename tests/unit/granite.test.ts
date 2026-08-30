@@ -1271,20 +1271,23 @@ describe("Group E — callGranite (mocked fetch)", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("keeps accidental production live mode disabled without explicit opt-in", async () => {
-    vi.stubEnv("GRANITE_MODE", "live");
-    vi.stubEnv("VERCEL_ENV", "production");
-    vi.stubEnv("WATSONX_API_KEY", "test-key");
-    vi.stubEnv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com");
-    vi.stubEnv("WATSONX_PROJECT_ID", "proj-123");
-    vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-4-h-small");
+  it.each(["production", "preview"] as const)(
+    "keeps accidental %s live mode disabled without explicit opt-in",
+    async (vercelEnvironment) => {
+      vi.stubEnv("GRANITE_MODE", "live");
+      vi.stubEnv("VERCEL_ENV", vercelEnvironment);
+      vi.stubEnv("WATSONX_API_KEY", "test-key");
+      vi.stubEnv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com");
+      vi.stubEnv("WATSONX_PROJECT_ID", "proj-123");
+      vi.stubEnv("WATSONX_MODEL_ID", "ibm/granite-4-h-small");
 
-    expect(await callGranite(makeSimpleBundle())).toEqual({
-      ok: false,
-      reason: "missing_credentials",
-    });
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
+      expect(await callGranite(makeSimpleBundle())).toEqual({
+        ok: false,
+        reason: "missing_credentials",
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
 
   it("GRANITE_MODE=live, WATSONX_URL is HTTP not HTTPS → missing_credentials, fetch never called", async () => {
     vi.stubEnv("GRANITE_MODE", "live");

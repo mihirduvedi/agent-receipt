@@ -16,3 +16,4 @@ under the repository's proprietary [license](../LICENSE).
 - `docs/screenshots/agent-receipt-granite-boundary.jpg` — Agent Receipt Authors, 2026.
 - `docs/screenshots/agent-receipt-disposition-export.jpg` — Agent Receipt Authors, 2026.
 - `docs/screenshots/agent-receipt-evidence-gap.jpg` — Agent Receipt Authors, 2026.
+- `docs/media/agent-receipt-submission-video.mp4` — Agent Receipt Authors, 2026. This web-optimized copy uses only the product's synthetic fixtures and a clearly synthetic narrator; it contains no user-provided trace or credential data.

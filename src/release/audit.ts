@@ -241,6 +241,7 @@ export function auditAssetLicenses(
       (file) =>
         file.startsWith("public/") ||
         file.startsWith("src/") ||
+        file.startsWith("docs/media/") ||
         file.startsWith("docs/screenshots/"),
     )
     .filter((file) => APP_ASSET_EXTENSIONS.has(path.extname(file).toLowerCase()))

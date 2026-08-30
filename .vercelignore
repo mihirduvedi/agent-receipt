@@ -1,0 +1,10 @@
+video/
+docs/media/
+tmp/
+output/
+outputs/
+work/
+node_modules/
+.next/
+agent-receipt-*-handoff-*.md
+*-plan.md

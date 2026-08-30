@@ -30,3 +30,10 @@ npm-debug.log*
 
 # Personal, not for the public repo
 docs/AI_ASSISTANCE_LOG.md
+/.vercel/
+/.claude/
+/agent-receipt-*-handoff-*.md
+/*-plan.md
+/outputs/
+/tmp/
+/video/

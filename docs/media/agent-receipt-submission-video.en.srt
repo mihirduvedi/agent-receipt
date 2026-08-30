@@ -1,0 +1,155 @@
+1
+00:00:00,170 --> 00:00:01,925
+The agent says it finished.
+
+2
+00:00:01,925 --> 00:00:04,240
+You still need to know what it actually did.
+
+3
+00:00:04,240 --> 00:00:06,508
+Did it stay within the job you approved?
+
+4
+00:00:06,898 --> 00:00:08,734
+Run logs help engineers.
+
+5
+00:00:08,734 --> 00:00:12,201
+For everyone else, they are dense and easy to misread.
+
+6
+00:00:12,201 --> 00:00:14,206
+A green check says the run ended.
+
+7
+00:00:14,206 --> 00:00:16,612
+It does not say the run was authorized.
+
+8
+00:00:17,062 --> 00:00:21,768
+Agent Receipt turns the JSON record you provide into a review backed by evidence.
+
+9
+00:00:21,768 --> 00:00:25,750
+It reviews the run afterward, using only the record in front of you.
+
+10
+00:00:26,120 --> 00:00:30,112
+Start with a record-oriented JSON file from an agent or workflow.
+
+11
+00:00:30,112 --> 00:00:34,668
+Before parsing anything, Agent Receipt hashes the file's exact bytes.
+
+12
+00:00:34,668 --> 00:00:39,200
+If the fields are unfamiliar, you confirm the paths and what each value means.
+
+13
+00:00:39,200 --> 00:00:41,619
+All ten selected records are counted.
+
+14
+00:00:41,619 --> 00:00:43,628
+Unknown values stay unknown.
+
+15
+00:00:44,038 --> 00:00:46,605
+The run log does not decide what was allowed.
+
+16
+00:00:46,605 --> 00:00:48,327
+You enter that separately.
+
+17
+00:00:48,327 --> 00:00:53,575
+Name the systems, actions, egress rules, and approvals that were in force for this run.
+
+18
+00:00:53,965 --> 00:00:56,623
+Here, the trace stays within that envelope.
+
+19
+00:00:56,623 --> 00:00:59,458
+The finding applies to this file and these rules.
+
+20
+00:00:59,458 --> 00:01:05,732
+The receipt keeps the file digest, mapping manifest, record accounting, and policy decisions together.
+
+21
+00:01:06,222 --> 00:01:07,870
+Now look at a different run.
+
+22
+00:01:07,870 --> 00:01:10,830
+A spreadsheet action ends with an unknown outcome.
+
+23
+00:01:10,830 --> 00:01:14,285
+The same run sends a customer email without approval.
+
+24
+00:01:14,285 --> 00:01:18,212
+The policy engine flags both deviations in the supplied trace.
+
+25
+00:01:18,212 --> 00:01:22,858
+Open a finding to see the rule, normalized event, and retained source record.
+
+26
+00:01:23,268 --> 00:01:26,838
+If the trace is incomplete, the answer stays incomplete.
+
+27
+00:01:26,838 --> 00:01:32,545
+This OTLP run has one material span Agent Receipt cannot parse, and no final status.
+
+28
+00:01:32,545 --> 00:01:34,279
+Every span is counted.
+
+29
+00:01:34,279 --> 00:01:37,239
+Missing evidence cannot become a clean verdict.
+
+30
+00:01:37,749 --> 00:01:43,092
+Export the brief, receipt, and proposal-only recovery plan as one evidence packet.
+
+31
+00:01:43,092 --> 00:01:46,194
+The browser verifier replays eight checks offline.
+
+32
+00:01:46,194 --> 00:01:48,810
+Change one claim, and the packet fails.
+
+33
+00:01:49,250 --> 00:01:54,518
+Granite sees only minimized, redacted facts and citation IDs it is allowed to use.
+
+34
+00:01:54,518 --> 00:01:56,558
+Code still decides the verdict.
+
+35
+00:01:56,558 --> 00:01:59,612
+The deterministic fallback works without Granite.
+
+36
+00:02:00,152 --> 00:02:02,987
+IBM Bob built the first trust-critical layer.
+
+37
+00:02:02,987 --> 00:02:04,996
+Later work is logged separately.
+
+38
+00:02:05,586 --> 00:02:07,428
+When an agent says it's done...
+
+39
+00:02:07,428 --> 00:02:08,559
+Check the work.

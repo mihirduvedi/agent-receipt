@@ -230,8 +230,13 @@ export async function callGranite(
     .enum(["true", "false"])
     .catch("false")
     .parse(process.env["GRANITE_ALLOW_PUBLIC_LIVE"]);
+  const vercelEnvironment = z
+    .enum(["production", "preview", "development"])
+    .optional()
+    .catch(undefined)
+    .parse(process.env["VERCEL_ENV"]);
   if (
-    process.env["VERCEL_ENV"] === "production" &&
+    (vercelEnvironment === "production" || vercelEnvironment === "preview") &&
     publicLiveEnabled !== "true"
   ) {
     return { ok: false, reason: "missing_credentials" };

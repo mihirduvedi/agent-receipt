@@ -1063,8 +1063,11 @@ function VerificationReportPanel(props: {
       aria-label="Verification report"
     >
       <div className="verifier-status" role="status" aria-live="polite">
-        <div className="verifier-stamp" aria-hidden="true">
-          <span>{props.view.statusCode}</span>
+        <div
+          className={`verifier-stamp ${props.view.status === "pass" ? "verifier-stamp-icon-only" : ""}`}
+          aria-hidden="true"
+        >
+          {props.view.status === "pass" ? null : <span>{props.view.statusCode}</span>}
           <strong>{props.view.status === "pass" ? "✓" : "!"}</strong>
         </div>
         <div>

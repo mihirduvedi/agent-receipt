@@ -3704,6 +3704,15 @@ fieldset.mapping-section > legend,
   line-height: 1;
 }
 
+.verifier-stamp-icon-only {
+  justify-content: center;
+}
+
+.verifier-stamp-icon-only strong {
+  font-size: 5.35rem;
+  transform: translateY(-0.04em);
+}
+
 .verifier-summary {
   display: grid;
   grid-template-columns: 1.1fr 1fr 1fr 1.8fr;
